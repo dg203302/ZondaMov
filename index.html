@@ -1,36 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>TransitSJ</h1>
-    <h2>ESPECIFICACION INICIAL DEL PROYECTO
-
-datos de paradas y rutas guardado mediante archivo GEOJSON — cargado localmente
-
-mapa dibujado mediante llamada a leafleet o descargado mediante leafleet — llamada a api optimizada (rapida)
-
-Requisitos Funcionales:
-
-- Buscar Lineas
-- Al colocar un lugar que se abra una interfaz para ver todas las lineas que llegan
-- guardar como minimo 5 lugares
-- guardar como minimo 5 lineas
-- guardar como minimo 5 paradas
-- que al tocar una parada se abran las lineas que pasan por ella
-- que al tocar una linea en cualquiera de los casos anteriores se abra su recorrido
-- ESTO HAY QUE VERLO: ver los horarios de llegada para cada parada, esto se debe cargar dinamicamente
-- ESTO HAY QUE VERLO: que tenga un recorrido en tiempo real como tenia red tulum
-
-Requisitos No funcionales:
-
-- Anuncios ya sea: google adsense o adsterra — requisito importante
-- interfaz estilo ios (transparencia/translucencia), con toggles para desactivarla y mejorar su rendimiento — requisito importante
-- a la hora de cargar los horarios de llegada y en el recorrido en tiempo real que se llame a una api optimizada — requisito indispensable
-- inicio de sesion con google — requisito deseable
-- almacenamiento de preferencias (paradas guardadas, lineas guardadas y lugares guardados) con localstorage</h2>
-</body>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+        <title>Document</title>
+    </head>
+    <body>
+        <h1>TransitSJ</h1>
+        <div id="map" style="height: 400px;"></div>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script src="scripts/script_index.js"></script>
+    </body>
 </html>
