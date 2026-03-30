@@ -7,8 +7,24 @@
         <title>Document</title>
     </head>
     <body>
-        <h1>TransitSJ</h1>
-        <div id="map" style="height: 400px;"></div>
+        <header>
+            <button>Inicio</button>
+            <h1>TransitSJ</h1>
+        </header>
+        <main>
+            <div id="map" style="height: 400px;"></div>
+            <div id="contenedor_paradas">
+
+            </div>
+            <div id="favoritos" style="display: none;">
+                <div id="paradas_favs"></div>
+                <div id="lineas_favs"></div>
+            </div>
+        </main>
+        <footer>
+            <button onclick="Centrar()">Recentrar</button>
+            <button onclick="MostrarFavs()">favoritos</button>
+        </footer>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
         <script src="scripts/script_index.js"></script>
     </body>
