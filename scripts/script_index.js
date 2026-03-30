@@ -114,14 +114,18 @@ function cerrarBottomSheet() {
 function abrirBottomSheetFavoritos() {
   const contParadas = document.getElementById('paradas_favs');
   const contLineas = document.getElementById('lineas_favs');
+  const contLugares = document.getElementById('lugares_favs');
   const paradasHtml = contParadas?.innerHTML || '<p>No hay paradas favoritas.</p>';
   const lineasHtml = contLineas?.innerHTML || '<p>No hay líneas favoritas.</p>';
+  const lugaresHtml = contLugares?.innerHTML || '<p>No hay lugares favoritos.</p>';
   
   const html = `
     <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 16px; font-weight: 600;">Paradas Favoritas</h3>
     <div style="margin-bottom: 24px;">${paradasHtml}</div>
     <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Líneas Favoritas</h3>
-    <div>${lineasHtml}</div>
+    <div style="margin-bottom: 24px;">${lineasHtml}</div>
+    <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Lugares Favoritos</h3>
+    <div>${lugaresHtml}</div>
   `;
   abrirBottomSheet('Favoritos', html);
 }
@@ -307,35 +311,39 @@ function renderLineasFavs() {
   for (const f of favs) {
     const ref = typeof f?.ref === 'string' ? f.ref.trim() : '';
     const name = typeof f?.name === 'string' ? f.name.trim() : '';
+    
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;';
+    
     const item = document.createElement('button');
     item.type = 'button';
     item.dataset.lineaKey = ref || name;
     item.dataset.lineaRef = ref;
     item.dataset.lineaName = name;
     item.textContent = ref ? `Línea ${ref}${name ? ` — ${name}` : ''}` : name;
-    item.style.cssText = 'display: block; width: 100%; padding: 12px 16px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
+    item.style.cssText = 'flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
     item.onmouseover = () => { item.style.background = '#f0f0f0'; item.style.borderColor = '#007BFF'; };
     item.onmouseout = () => { item.style.background = 'white'; item.style.borderColor = '#ddd'; };
-    contLineasFavs.appendChild(item);
+    
+    const btnEliminar = document.createElement('button');
+    btnEliminar.type = 'button';
+    btnEliminar.textContent = '✕';
+    btnEliminar.title = 'Eliminar de favoritos';
+    btnEliminar.className = 'btn-eliminar-fav';
+    btnEliminar.style.cssText = 'width: 40px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; color: #999; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;';
+    btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
+    btnEliminar.onmouseout = () => { btnEliminar.style.background = 'white'; btnEliminar.style.borderColor = '#ddd'; btnEliminar.style.color = '#999'; };
+    btnEliminar.dataset.lineaRef = ref;
+    btnEliminar.dataset.lineaName = name;
+    
+    wrapper.appendChild(item);
+    wrapper.appendChild(btnEliminar);
+    contLineasFavs.appendChild(wrapper);
   }
 }
 
 if (contLineasFavs) {
-  contLineasFavs.addEventListener('click', (ev) => {
-    const target = ev.target;
-    if (!(target instanceof HTMLElement)) return;
-    const btn = target.closest('button[data-linea-key]');
-    if (!(btn instanceof HTMLButtonElement)) return;
-
-    const ref = btn.dataset.lineaRef || '';
-    const name = btn.dataset.lineaName || '';
-    if (!ref) {
-      abrirBottomSheet('Error', '<p>Esta línea favorita no tiene referencia (ref) para buscar su recorrido.</p>');
-      return;
-    }
-
-    void mostrarRecorridoDeLinea(ref, name);
-  });
+  // Este listener ya no será el principal, pero lo dejamos como respaldo
 }
 
 const bsContent = document.getElementById('bs-content');
@@ -343,9 +351,44 @@ if (bsContent) {
   bsContent.addEventListener('click', (ev) => {
     const target = ev.target;
     if (!(target instanceof HTMLElement)) return;
+    
+    // Manejar botones de eliminar de favoritos
+    const btnDeleteLugar = target.closest('.btn-eliminar-fav[data-lugar-nombre]');
+    if (btnDeleteLugar instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const nombre = btnDeleteLugar.dataset.lugarNombre || '';
+      const lat = btnDeleteLugar.dataset.lugarLat ? Number(btnDeleteLugar.dataset.lugarLat) : 0;
+      const lng = btnDeleteLugar.dataset.lugarLng ? Number(btnDeleteLugar.dataset.lugarLng) : 0;
+      agregarLugarAFavoritos(nombre, lat, lng);
+      abrirBottomSheetFavoritos(); // Actualizar vista
+      return;
+    }
+    
+    const btnDeleteParada = target.closest('button.btn-eliminar-fav[data-parada-id]');
+    if (btnDeleteParada instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const id = btnDeleteParada.dataset.paradaId || '';
+      const lat = btnDeleteParada.dataset.paradaLat ? Number(btnDeleteParada.dataset.paradaLat) : null;
+      const lng = btnDeleteParada.dataset.paradaLng ? Number(btnDeleteParada.dataset.paradaLng) : null;
+      const fakeFeature = { properties: { id }, geometry: { coordinates: [lng, lat] } };
+      agregarParadaAFavoritos(fakeFeature);
+      abrirBottomSheetFavoritos(); // Actualizar vista
+      return;
+    }
+    
+    // Eliminar líneas favoritas
+    const btnDeleteLinea = target.closest('[data-linea-ref].btn-eliminar-fav');
+    if (btnDeleteLinea instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const ref = btnDeleteLinea.dataset.lineaRef || '';
+      const name = btnDeleteLinea.dataset.lineaName || '';
+      agregarLineaAFavoritos({ ref, name });
+      abrirBottomSheetFavoritos(); // Actualizar vista
+      return;
+    }
 
     const btnParadaFav = target.closest('button[data-parada-id][data-lat][data-lng]');
-    if (btnParadaFav instanceof HTMLButtonElement) {
+    if (btnParadaFav instanceof HTMLButtonElement && !btnParadaFav.classList.contains('btn-eliminar-fav')) {
       const id = btnParadaFav.dataset.paradaId || '';
       const label = btnParadaFav.textContent || 'Parada';
       const lat = btnParadaFav.dataset.lat ? Number(btnParadaFav.dataset.lat) : null;
@@ -355,7 +398,7 @@ if (bsContent) {
     }
 
     const btnParada = target.closest('button[data-parada-id]');
-    if (btnParada instanceof HTMLButtonElement) {
+    if (btnParada instanceof HTMLButtonElement && !btnParada.classList.contains('btn-eliminar-fav')) {
       const paradaId = btnParada.dataset.paradaId || '';
       if (!paradaId) return;
       if (Array.isArray(paradasRecorrido)) {
@@ -371,7 +414,7 @@ if (bsContent) {
     }
 
     const btn = target.closest('button[data-linea-ref]');
-    if (!(btn instanceof HTMLButtonElement)) return;
+    if (!(btn instanceof HTMLButtonElement) || btn.classList.contains('btn-eliminar-fav')) return;
     const ref = btn.dataset.lineaRef || '';
     const name = btn.dataset.lineaName || '';
     if (!ref && !name) return;
@@ -393,16 +436,36 @@ function renderParadasFavs() {
     const label = typeof f?.label === 'string' ? f.label : 'Parada';
     const lat = typeof f?.lat === 'number' ? f.lat : null;
     const lng = typeof f?.lng === 'number' ? f.lng : null;
+    
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;';
+    wrapper.dataset.paradaContainer = 'true';
+    
     const item = document.createElement('button');
     item.type = 'button';
     item.dataset.paradaId = id;
     if (lat !== null) item.dataset.lat = String(lat);
     if (lng !== null) item.dataset.lng = String(lng);
     item.textContent = label;
-    item.style.cssText = 'display: block; width: 100%; padding: 12px 16px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
+    item.style.cssText = 'flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
     item.onmouseover = () => { item.style.background = '#f0f0f0'; item.style.borderColor = '#007BFF'; };
     item.onmouseout = () => { item.style.background = 'white'; item.style.borderColor = '#ddd'; };
-    contParadasFavs.appendChild(item);
+    
+    const btnEliminar = document.createElement('button');
+    btnEliminar.type = 'button';
+    btnEliminar.textContent = '✕';
+    btnEliminar.title = 'Eliminar de favoritos';
+    btnEliminar.className = 'btn-eliminar-fav';
+    btnEliminar.style.cssText = 'width: 40px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; color: #999; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;';
+    btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
+    btnEliminar.onmouseout = () => { btnEliminar.style.background = 'white'; btnEliminar.style.borderColor = '#ddd'; btnEliminar.style.color = '#999'; };
+    btnEliminar.dataset.paradaId = id;
+    btnEliminar.dataset.paradaLat = lat;
+    btnEliminar.dataset.paradaLng = lng;
+    
+    wrapper.appendChild(item);
+    wrapper.appendChild(btnEliminar);
+    contParadasFavs.appendChild(wrapper);
   }
 }
 
@@ -634,8 +697,14 @@ function agregarLineaAFavoritos(linea) {
   if (!key) return;
 
   const favs = obtenerLineasFavs();
-  if (favs.some((f) => f?.ref === ref)) return;
-  favs.push({ ref, name });
+  const indice = favs.findIndex((f) => f?.ref === ref);
+  
+  if (indice !== -1) {
+    favs.splice(indice, 1);
+  } else {
+    favs.push({ ref, name });
+  }
+  
   guardarLineasFavs(favs);
   renderLineasFavs();
   actualizarEstadoBotonFavoritos();
@@ -651,16 +720,20 @@ function agregarParadaAFavoritos(feature) {
   const lat = Array.isArray(coords) && coords.length >= 2 ? Number(coords[1]) : null;
 
   const favs = obtenerParadasFavs();
-  if (favs.some((f) => f?.id === id)) return;
-
-  favs.push({
-    id,
-    label,
-    lat: Number.isFinite(lat) ? lat : null,
-    lng: Number.isFinite(lng) ? lng : null,
-  });
-  while (favs.length > MAX_PARADAS_FAVS) {
-    favs.shift();
+  const indice = favs.findIndex((f) => f?.id === id);
+  
+  if (indice !== -1) {
+    favs.splice(indice, 1);
+  } else {
+    favs.push({
+      id,
+      label,
+      lat: Number.isFinite(lat) ? lat : null,
+      lng: Number.isFinite(lng) ? lng : null,
+    });
+    while (favs.length > MAX_PARADAS_FAVS) {
+      favs.shift();
+    }
   }
   guardarParadasFavs(favs);
   renderParadasFavs();
@@ -937,7 +1010,231 @@ function MostrarFavs(){
 function cargarFavos(){
   renderParadasFavs();
   renderLineasFavs();
+  renderLugaresFavs();
 }
+
+// FUNCIONES DE BÚSQUEDA DE LUGARES
+const STORAGE_LUGARES_FAVS_KEY = 'transitsj_lugares_favs_v1';
+const MAX_LUGARES_FAVS = 5;
+
+function obtenerLugaresFavs() {
+  return leerJsonLocalStorage(STORAGE_LUGARES_FAVS_KEY, []);
+}
+
+function guardarLugaresFavs(arr) {
+  guardarJsonLocalStorage(STORAGE_LUGARES_FAVS_KEY, arr);
+}
+
+function abrirModalBusqueda() {
+  const modal = document.getElementById('search-modal');
+  if (modal) {
+    modal.classList.add('active');
+    document.getElementById('search-input')?.focus();
+  }
+}
+
+function cerrarModalBusqueda() {
+  const modal = document.getElementById('search-modal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Escribe para buscar</p>';
+}
+
+let searchTimeout;
+
+async function buscarLugaresEnTiempoReal() {
+  const input = document.getElementById('search-input');
+  const query = input?.value?.trim() || '';
+  const modal = document.getElementById('search-modal');
+  const resultsDiv = document.getElementById('search-results');
+  
+  // Limpiar timeout anterior
+  if (searchTimeout) clearTimeout(searchTimeout);
+  
+  // Si está vacío, cerrar modal
+  if (!query) {
+    modal.classList.remove('active');
+    resultsDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Escribe para buscar</p>';
+    return;
+  }
+  
+  // Abrir modal
+  if (!modal.classList.contains('active')) {
+    modal.classList.add('active');
+  }
+  
+  // Mostrar estado de búsqueda
+  resultsDiv.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Buscando...</p>';
+  
+  // Hacer búsqueda con debounce (800ms)
+  searchTimeout = setTimeout(() => buscarLugares(), 800);
+}
+
+async function buscarLugares() {
+  const input = document.getElementById('search-input');
+  const query = input?.value?.trim() || '';
+  if (!query) return;
+  
+  const resultsDiv = document.getElementById('search-results');
+  
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=10&countrycodes=ar`
+    );
+    
+    if (!response.ok) throw new Error('Error en búsqueda');
+    
+    const lugares = await response.json();
+    
+    if (lugares.length === 0) {
+      resultsDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No se encontraron resultados</p>';
+      return;
+    }
+    
+    const puntos = await cargarParadasPuntos();
+    if (!puntos) {
+      resultsDiv.innerHTML = '<p style="color: #c00; text-align: center; padding: 20px;">Error al cargar paradas</p>';
+      return;
+    }
+    
+    let html = '';
+    for (const lugar of lugares) {
+      const lat = Number(lugar.lat);
+      const lng = Number(lugar.lon);
+      
+      let paradaCercana = null;
+      let distMin = Infinity;
+      for (const punto of puntos) {
+        const dist = calcularDistancia(lat, lng, punto.lat, punto.lng);
+        if (dist < distMin) {
+          distMin = dist;
+          paradaCercana = punto;
+        }
+      }
+      
+      const nombreLugar = lugar.name || lugar.display_name;
+      const infoParada = paradaCercana ? `Parada: ${obtenerEtiquetaParada(paradaCercana.feature)}` : 'No hay paradas cercanas';
+      const distKm = (distMin / 1000).toFixed(2);
+      
+      const lugaresFavs = obtenerLugaresFavs();
+      const esFavorito = lugaresFavs.some(f => f.nombre === nombreLugar);
+      const textoBoton = esFavorito ? '⭐ Saved' : '⭐ Guardar';
+      const estiloBoton = esFavorito ? 'background: #fff3cd; border-color: #ffc107;' : '';
+      
+      html += `<div class="search-result-item" onclick="irAParadaDelLugar(${lat}, ${lng}, '${nombreLugar.replace(/'/g, "\\'")}', ${paradaCercana?.lat || 0}, ${paradaCercana?.lng || 0})"><div class="search-result-item-title">${escapeHtml(nombreLugar)}</div><div class="search-result-item-info">${escapeHtml(infoParada)} (${distKm} km)</div><button type="button" style="padding: 6px 12px; background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; margin-top: 8px; font-size: 12px; ${estiloBoton}" onclick="event.stopPropagation(); agregarLugarAFavoritos('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng}); buscarLugares();">${textoBoton}</button></div>`;
+    }
+    
+    resultsDiv.innerHTML = html;
+  } catch (error) {
+    console.error('Error en búsqueda:', error);
+    resultsDiv.innerHTML = '<p style="color: #c00; text-align: center; padding: 20px;">Error al buscar. Intenta de nuevo.</p>';
+  }
+}
+
+function calcularDistancia(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * toRad;
+  const dLng = (lng2 - lng1) * toRad;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+async function irAParadaDelLugar(lat, lng, nombreLugar, paradaLat, paradaLng) {
+  cerrarModalBusqueda();
+  
+  if (!leafletMap) return;
+  
+  leafletMap.setView([paradaLat, paradaLng], ZOOM_CALLE);
+  
+  const puntos = await cargarParadasPuntos();
+  let feature = null;
+  let closest = { dist: Infinity };
+  
+  for (const punto of puntos) {
+    const dist = calcularDistancia(paradaLat, paradaLng, punto.lat, punto.lng);
+    if (dist < closest.dist) {
+      closest.dist = dist;
+      feature = punto.feature;
+    }
+  }
+  
+  if (feature) {
+    mostrarLineasEnContenedorParadas(feature);
+  }
+}
+
+function agregarLugarAFavoritos(nombre, lat, lng) {
+  const favs = obtenerLugaresFavs();
+  const indice = favs.findIndex(f => f.nombre === nombre);
+  
+  if (indice !== -1) {
+    favs.splice(indice, 1);
+  } else {
+    favs.push({ nombre, lat, lng });
+    
+    while (favs.length > MAX_LUGARES_FAVS) {
+      favs.shift();
+    }
+  }
+  
+  guardarLugaresFavs(favs);
+  renderLugaresFavs();
+}
+
+function renderLugaresFavs() {
+  const favs = obtenerLugaresFavs();
+  const container = document.getElementById('lugares_favs');
+  
+  if (!container) {
+    const div = document.createElement('div');
+    div.id = 'lugares_favs';
+    document.getElementById('favoritos')?.appendChild(div);
+  }
+  
+  const contLugares = document.getElementById('lugares_favs') || document.createElement('div');
+  contLugares.innerHTML = '';
+  
+  if (favs.length === 0) {
+    contLugares.innerHTML = '<p style="color: #999; font-size: 14px; text-align: center; margin: 16px 0;">Sin lugares favoritos</p>';
+    return;
+  }
+  
+  for (const lugar of favs) {
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;';
+    
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.lugar = JSON.stringify(lugar);
+    btn.textContent = lugar.nombre;
+    btn.style.cssText = 'flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
+    btn.onmouseover = () => { btn.style.background = '#f0f0f0'; btn.style.borderColor = '#007BFF'; };
+    btn.onmouseout = () => { btn.style.background = 'white'; btn.style.borderColor = '#ddd'; };
+    btn.onclick = () => irAParadaDelLugar(lugar.lat, lugar.lng, lugar.nombre, lugar.lat, lugar.lng);
+    
+    const btnEliminar = document.createElement('button');
+    btnEliminar.type = 'button';
+    btnEliminar.textContent = '✕';
+    btnEliminar.title = 'Eliminar de favoritos';
+    btnEliminar.className = 'btn-eliminar-fav';
+    btnEliminar.style.cssText = 'width: 40px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; color: #999; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;';
+    btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
+    btnEliminar.onmouseout = () => { btnEliminar.style.background = 'white'; btnEliminar.style.borderColor = '#ddd'; btnEliminar.style.color = '#999'; };
+    btnEliminar.dataset.lugarNombre = lugar.nombre;
+    btnEliminar.dataset.lugarLat = lugar.lat;
+    btnEliminar.dataset.lugarLng = lugar.lng;
+    
+    wrapper.appendChild(btn);
+    wrapper.appendChild(btnEliminar);
+    contLugares.appendChild(wrapper);
+  }
+}
+
 window.onload = async () => {
   try {
     await Centrar();
