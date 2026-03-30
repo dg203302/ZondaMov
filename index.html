@@ -39,7 +39,7 @@
             width: 100%;
             height: 100%;
             z-index: 1;
-            padding-bottom: 76px;
+            padding-bottom: 0;
           }
 
           
@@ -70,24 +70,34 @@
           
           .footer-buttons {
             display: flex;
-            gap: 8px;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
           }
           
           footer .btn-floating {
             position: static;
-            width: 40px;
-            height: 40px;
-            font-size: 18px;
-            box-shadow: none;
-            border: 1px solid #e0e0e0;
-            background: white;
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             color: #333;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
           }
           
           footer .btn-floating:hover {
-            background: #f0f0f0;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            border-color: #007BFF;
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+            transform: scale(1.05);
+          }
+          
+          footer .btn-floating:active {
+            transform: scale(0.95);
           }
           
           .bottom-sheet-overlay {
@@ -125,7 +135,7 @@
             transform: translateY(0);
           }
           .bottom-sheet.dragging {
-            transition: none;
+            transition: none !important;
           }
           
           .bottom-sheet-header {
@@ -317,35 +327,53 @@
             left: 0;
             width: 100%;
             height: auto;
-            background: white;
-            padding: 12px;
+            background: transparent;
+            padding: 16px;
             gap: 12px;
-            align-items: center;
-            border-top: 1px solid #e0e0e0;
-            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+            align-items: flex-end;
+            justify-content: space-between;
+            border-top: none;
+            box-shadow: none;
             z-index: 500;
+            flex-wrap: wrap;
+            pointer-events: none;
+          }
+          
+          footer > * {
+            pointer-events: auto;
           }
           
           .search-bar-container {
             flex: 1;
             display: flex;
             gap: 8px;
+            min-width: 250px;
+            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 8px;
+            border-radius: 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
           }
           
           .search-bar {
             flex: 1;
             padding: 10px 14px;
-            border: 1px solid #ddd;
+            border: none;
             border-radius: 20px;
             font-size: 14px;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            background: transparent;
+            box-shadow: none;
             outline: none;
             transition: all 0.2s ease;
+            color: #333;
           }
           .search-bar:focus {
-            border-color: #007BFF;
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+            border: none;
+            box-shadow: none;
+            background: rgba(255, 255, 255, 0.1);
           }
           .search-bar::placeholder {
             color: #999;
@@ -429,7 +457,7 @@
                 </div>
             </div>
             
-            <div id="bottom-sheet-overlay" class="bottom-sheet-overlay"></div>
+            <div id="bottom-sheet-overlay" class="bottom-sheet-overlay" onclick="if(event.target.id === 'bottom-sheet-overlay') cerrarBottomSheet()"></div>
             <div id="bottom-sheet" class="bottom-sheet">
                 <div class="bottom-sheet-header">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%;">
@@ -454,7 +482,7 @@
                 <input type="text" id="search-input" class="search-bar" placeholder="🔍 Buscar..." oninput="buscarLugaresEnTiempoReal()" onkeydown="if(event.key==='Escape') cerrarModalBusqueda()">
             </div>
             <div class="footer-buttons">
-                <button id="btn-centrar" class="btn-floating" title="Recentrar ubicación" onclick="Centrar()">📍</button>
+                <button id="btn-centrar" class="btn-floating" title="Recentrar ubicación" onclick="CentrarYOferécerGuardar()">📍</button>
                 <button id="btn-favs" class="btn-floating" title="Ver favoritos" onclick="abrirBottomSheetFavoritos()">⭐</button>
             </div>
         </footer>

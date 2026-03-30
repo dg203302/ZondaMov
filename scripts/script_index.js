@@ -69,8 +69,18 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
   
   bsTitle.textContent = titulo;
   bsContent.innerHTML = contenidoHtml;
+  
+  // Limpiar estilos transform previos
+  bs.style.transform = '';
+  bs.style.transition = '';
+  
   bs?.classList.add('active');
   overlay?.classList.add('active');
+  
+  // Reinicializar el drag después de un pequeño delay para asegurar que el DOM está actualizado
+  setTimeout(() => {
+    setupBottomSheetDrag();
+  }, 50);
   
   // Mostrar/ocultar botón de favoritos según el tipo
   if (favBtn) {
@@ -101,13 +111,19 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
 function cerrarBottomSheet() {
   const bs = document.getElementById('bottom-sheet');
   const overlay = document.getElementById('bottom-sheet-overlay');
-  bs?.classList.remove('active');
-  overlay?.classList.remove('active');
-  // Limpiar el transform
+  
+  // Limpiar estilos y clases
   if (bs) {
+    bs.classList.remove('active');
+    bs.classList.remove('dragging');
     bs.style.transform = '';
     bs.style.transition = '';
   }
+  
+  overlay?.classList.remove('active');
+  
+  // Limpiar recorrido activo al cerrar
+  limpiarRecorrido();
   volverVistaGeneral();
 }
 
@@ -117,14 +133,14 @@ function abrirBottomSheetFavoritos() {
   const contLugares = document.getElementById('lugares_favs');
   const paradasHtml = contParadas?.innerHTML || '<p>No hay paradas favoritas.</p>';
   const lineasHtml = contLineas?.innerHTML || '<p>No hay líneas favoritas.</p>';
-  const lugaresHtml = contLugares?.innerHTML || '<p>No hay lugares favoritos.</p>';
+  const lugaresHtml = contLugares?.innerHTML || '<p>No hay lugares guardados.</p>';
   
   const html = `
     <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 16px; font-weight: 600;">Paradas Favoritas</h3>
     <div style="margin-bottom: 24px;">${paradasHtml}</div>
     <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Líneas Favoritas</h3>
     <div style="margin-bottom: 24px;">${lineasHtml}</div>
-    <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Lugares Favoritos</h3>
+    <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Lugares Guardados</h3>
     <div>${lugaresHtml}</div>
   `;
   abrirBottomSheet('Favoritos', html);
@@ -134,6 +150,7 @@ function abrirBottomSheetFavoritos() {
 function setupBottomSheetDrag() {
   const handle = document.getElementById('bs-handle');
   const bottomSheet = document.getElementById('bottom-sheet');
+  const content = document.getElementById('bs-content');
   
   if (!handle || !bottomSheet) return;
   
@@ -146,6 +163,12 @@ function setupBottomSheetDrag() {
     startY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
     currentY = 0;
     bottomSheet.classList.add('dragging');
+    // Prevenir selección de texto durante el drag
+    document.body.style.userSelect = 'none';
+    if (content) {
+      content.style.pointerEvents = 'none';
+    }
+    e.preventDefault();
   };
 
   const handleDragMove = (e) => {
@@ -161,21 +184,36 @@ function setupBottomSheetDrag() {
     if (!isDragging) return;
     isDragging = false;
     bottomSheet.classList.remove('dragging');
+    document.body.style.userSelect = '';
+    if (content) {
+      content.style.pointerEvents = '';
+    }
     
     // Cerrar si se arrastró más de 40px hacia abajo
     if (currentY > 40) {
+      bottomSheet.style.transform = '';
+      bottomSheet.style.transition = '';
       cerrarBottomSheet();
     } else {
       // Volver a la posición normal con animación suave
       bottomSheet.style.transition = 'transform 0.2s ease';
       bottomSheet.style.transform = '';
+      // Restaurar transición después de la animación
       setTimeout(() => {
-        bottomSheet.style.transition = '';
+        bottomSheet.classList.remove('dragging');
       }, 200);
     }
     
     currentY = 0;
   };
+
+  // Remover listeners previos para evitar duplicados
+  handle.removeEventListener('mousedown', handleDragStart);
+  handle.removeEventListener('touchstart', handleDragStart);
+  document.removeEventListener('mousemove', handleDragMove);
+  document.removeEventListener('mouseup', handleDragEnd);
+  document.removeEventListener('touchmove', handleDragMove);
+  document.removeEventListener('touchend', handleDragEnd);
 
   // Listener para el inicio del drag (solo en el handle)
   handle.addEventListener('mousedown', handleDragStart);
@@ -224,6 +262,42 @@ async function Centrar() {
   } catch (error) {
     console.error('Error:', error.message ?? error);
   }
+}
+
+async function CentrarYOferécerGuardar() {
+  await Centrar();
+  
+  if (!ubicacion) {
+    alert('No se pudo obtener tu ubicación. Intenta de nuevo.');
+    return;
+  }
+  
+  // Generar nombre con timestamp
+  const ahora = new Date();
+  const opciones = { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' };
+  const fechaHora = ahora.toLocaleDateString('es-AR', opciones).replace(/\//g, '/');
+  const nombreLugar = `Mi ubicación - ${fechaHora}`;
+  
+  // Abrir bottom-sheet para confirmar guardado
+  const html = `
+    <div style="text-align: center; padding: 24px;">
+      <p style="font-size: 14px; color: #666; margin-bottom: 16px;">Coordenadas:</p>
+      <p style="font-size: 12px; color: #999; margin-bottom: 24px; font-family: monospace;">
+        ${ubicacion.lat.toFixed(6)}, ${ubicacion.lng.toFixed(6)}
+      </p>
+      <div style="display: flex; gap: 12px;">
+        <button type="button" style="flex: 1; padding: 12px; background: #e0e0e0; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="cerrarBottomSheet()">Cancelar</button>
+        <button type="button" style="flex: 1; padding: 12px; background: #007BFF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="guardarUbicacionActualDesdeBottomSheet('${nombreLugar}', ${ubicacion.lat}, ${ubicacion.lng})">Guardar</button>
+      </div>
+    </div>
+  `;
+  
+  abrirBottomSheet('¿Guardar ubicación?', html);
+}
+
+function guardarUbicacionActualDesdeBottomSheet(nombreLugar, lat, lng) {
+  agregarLugarAFavoritos(nombreLugar, lat, lng);
+  cerrarBottomSheet();
 }
 
 function esFeatureParada(feature) {
@@ -1120,7 +1194,7 @@ async function buscarLugares() {
       
       const lugaresFavs = obtenerLugaresFavs();
       const esFavorito = lugaresFavs.some(f => f.nombre === nombreLugar);
-      const textoBoton = esFavorito ? '⭐ Saved' : '⭐ Guardar';
+      const textoBoton = esFavorito ? '💾 Guardado' : '💾 Guardar';
       const estiloBoton = esFavorito ? 'background: #fff3cd; border-color: #ffc107;' : '';
       
       html += `<div class="search-result-item" onclick="irAParadaDelLugar(${lat}, ${lng}, '${nombreLugar.replace(/'/g, "\\'")}', ${paradaCercana?.lat || 0}, ${paradaCercana?.lng || 0})"><div class="search-result-item-title">${escapeHtml(nombreLugar)}</div><div class="search-result-item-info">${escapeHtml(infoParada)} (${distKm} km)</div><button type="button" style="padding: 6px 12px; background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; margin-top: 8px; font-size: 12px; ${estiloBoton}" onclick="event.stopPropagation(); agregarLugarAFavoritos('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng}); buscarLugares();">${textoBoton}</button></div>`;
@@ -1200,7 +1274,7 @@ function renderLugaresFavs() {
   contLugares.innerHTML = '';
   
   if (favs.length === 0) {
-    contLugares.innerHTML = '<p style="color: #999; font-size: 14px; text-align: center; margin: 16px 0;">Sin lugares favoritos</p>';
+    contLugares.innerHTML = '<p style="color: #999; font-size: 14px; text-align: center; margin: 16px 0;">Sin lugares guardados</p>';
     return;
   }
   
@@ -1220,7 +1294,7 @@ function renderLugaresFavs() {
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
     btnEliminar.textContent = '✕';
-    btnEliminar.title = 'Eliminar de favoritos';
+    btnEliminar.title = 'Eliminar lugar guardado';
     btnEliminar.className = 'btn-eliminar-fav';
     btnEliminar.style.cssText = 'width: 40px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; color: #999; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;';
     btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
@@ -1234,6 +1308,7 @@ function renderLugaresFavs() {
     contLugares.appendChild(wrapper);
   }
 }
+
 
 window.onload = async () => {
   try {
