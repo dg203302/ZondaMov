@@ -278,16 +278,20 @@ async function CentrarYOferécerGuardar() {
   const fechaHora = ahora.toLocaleDateString('es-AR', opciones).replace(/\//g, '/');
   const nombreLugar = `Mi ubicación - ${fechaHora}`;
   
+  abrirBottomSheetGuardarUbicacion(nombreLugar, ubicacion.lat, ubicacion.lng);
+}
+
+function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng) {
   // Abrir bottom-sheet para confirmar guardado
   const html = `
     <div style="text-align: center; padding: 24px;">
       <p style="font-size: 14px; color: #666; margin-bottom: 16px;">Coordenadas:</p>
       <p style="font-size: 12px; color: #999; margin-bottom: 24px; font-family: monospace;">
-        ${ubicacion.lat.toFixed(6)}, ${ubicacion.lng.toFixed(6)}
+        ${lat.toFixed(6)}, ${lng.toFixed(6)}
       </p>
       <div style="display: flex; gap: 12px;">
         <button type="button" style="flex: 1; padding: 12px; background: #e0e0e0; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="cerrarBottomSheet()">Cancelar</button>
-        <button type="button" style="flex: 1; padding: 12px; background: #007BFF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="guardarUbicacionActualDesdeBottomSheet('${nombreLugar}', ${ubicacion.lat}, ${ubicacion.lng})">Guardar</button>
+        <button type="button" style="flex: 1; padding: 12px; background: #007BFF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="guardarUbicacionActualDesdeBottomSheet('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng})">Guardar</button>
       </div>
     </div>
   `;
@@ -442,10 +446,11 @@ if (bsContent) {
     if (btnDeleteParada instanceof HTMLButtonElement) {
       ev.stopPropagation();
       const id = btnDeleteParada.dataset.paradaId || '';
-      const lat = btnDeleteParada.dataset.paradaLat ? Number(btnDeleteParada.dataset.paradaLat) : null;
-      const lng = btnDeleteParada.dataset.paradaLng ? Number(btnDeleteParada.dataset.paradaLng) : null;
-      const fakeFeature = { properties: { id }, geometry: { coordinates: [lng, lat] } };
-      agregarParadaAFavoritos(fakeFeature);
+      if (!id) return;
+      const favs = obtenerParadasFavs();
+      const nextFavs = favs.filter((f) => f?.id !== id);
+      guardarParadasFavs(nextFavs);
+      renderParadasFavs();
       abrirBottomSheetFavoritos(); // Actualizar vista
       return;
     }
@@ -468,6 +473,15 @@ if (bsContent) {
       const lat = btnParadaFav.dataset.lat ? Number(btnParadaFav.dataset.lat) : null;
       const lng = btnParadaFav.dataset.lng ? Number(btnParadaFav.dataset.lng) : null;
       void centrarEnParadaFavorita({ id, label, lat, lng });
+      return;
+    }
+
+    const btnLugarGuardado = target.closest('button[data-lugar-nombre][data-lat][data-lng]');
+    if (btnLugarGuardado instanceof HTMLButtonElement && !btnLugarGuardado.classList.contains('btn-eliminar-fav')) {
+      const nombre = btnLugarGuardado.dataset.lugarNombre || (btnLugarGuardado.textContent || 'Lugar guardado');
+      const lat = btnLugarGuardado.dataset.lat ? Number(btnLugarGuardado.dataset.lat) : null;
+      const lng = btnLugarGuardado.dataset.lng ? Number(btnLugarGuardado.dataset.lng) : null;
+      void centrarEnLugarGuardado({ nombre, lat, lng });
       return;
     }
 
@@ -496,6 +510,51 @@ if (bsContent) {
   });
 }
 
+async function centrarEnLugarGuardado({ nombre, lat, lng }) {
+  const latNum = typeof lat === 'number' ? lat : Number(lat);
+  const lngNum = typeof lng === 'number' ? lng : Number(lng);
+
+  if (!leafletMap) {
+    if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+      cargarLF({ lat: latNum, lng: lngNum }, ZOOM_CALLE);
+    }
+  }
+  if (!leafletMap || typeof L === 'undefined') return;
+
+  limpiarRecorrido();
+
+  const layerSel = asegurarSeleccionParadaLayer();
+  layerSel?.clearLayers();
+
+  if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+    const marker = L.marker([latNum, lngNum]).bindPopup(escapeHtml(nombre || 'Lugar guardado')).addTo(layerSel);
+    const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
+    leafletMap.setView([latNum, lngNum], Number.isFinite(z) ? z : ZOOM_CALLE);
+    marker.openPopup();
+  }
+
+  try {
+    const puntos = await cargarParadasPuntos();
+    if (!Array.isArray(puntos) || puntos.length === 0) return;
+
+    let paradaCercana = null;
+    let distMin = Infinity;
+    for (const punto of puntos) {
+      const dist = calcularDistancia(latNum, lngNum, punto.lat, punto.lng);
+      if (dist < distMin) {
+        distMin = dist;
+        paradaCercana = punto;
+      }
+    }
+
+    if (paradaCercana?.feature) {
+      mostrarLineasEnContenedorParadas(paradaCercana.feature);
+    }
+  } catch {
+    // noop
+  }
+}
+
 function renderParadasFavs() {
   const contParadasFavs = document.getElementById('paradas_favs');
   if (!contParadasFavs) return;
@@ -508,8 +567,8 @@ function renderParadasFavs() {
   for (const f of favs) {
     const id = typeof f?.id === 'string' ? f.id : '';
     const label = typeof f?.label === 'string' ? f.label : 'Parada';
-    const lat = typeof f?.lat === 'number' ? f.lat : null;
-    const lng = typeof f?.lng === 'number' ? f.lng : null;
+    const lat = typeof f?.lat === 'number' && Number.isFinite(f.lat) ? f.lat : null;
+    const lng = typeof f?.lng === 'number' && Number.isFinite(f.lng) ? f.lng : null;
     
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;';
@@ -534,8 +593,8 @@ function renderParadasFavs() {
     btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
     btnEliminar.onmouseout = () => { btnEliminar.style.background = 'white'; btnEliminar.style.borderColor = '#ddd'; btnEliminar.style.color = '#999'; };
     btnEliminar.dataset.paradaId = id;
-    btnEliminar.dataset.paradaLat = lat;
-    btnEliminar.dataset.paradaLng = lng;
+    if (lat !== null) btnEliminar.dataset.paradaLat = String(lat);
+    if (lng !== null) btnEliminar.dataset.paradaLng = String(lng);
     
     wrapper.appendChild(item);
     wrapper.appendChild(btnEliminar);
@@ -1154,22 +1213,34 @@ async function buscarLugares() {
   const resultsDiv = document.getElementById('search-results');
   
   try {
+    // Búsqueda específica en San Juan, Argentina
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=10&countrycodes=ar`
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' San Juan Argentina')}&format=json&limit=10&countrycodes=ar`
     );
     
     if (!response.ok) throw new Error('Error en búsqueda');
     
-    const lugares = await response.json();
+    let lugares = await response.json();
+    
+    // Filtrar solo lugares en San Juan (aproximadamente entre -31.5 y -31.3 lat, -68.6 y -68.4 lon)
+    const SAN_JUAN_BOUNDS = {
+      minLat: -31.6,
+      maxLat: -31.2,
+      minLng: -68.7,
+      maxLng: -68.3
+    };
+    
+    lugares = lugares.filter(lugar => {
+      const lat = Number(lugar.lat);
+      const lng = Number(lugar.lon);
+      return lat >= SAN_JUAN_BOUNDS.minLat && 
+             lat <= SAN_JUAN_BOUNDS.maxLat &&
+             lng >= SAN_JUAN_BOUNDS.minLng && 
+             lng <= SAN_JUAN_BOUNDS.maxLng;
+    });
     
     if (lugares.length === 0) {
-      resultsDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No se encontraron resultados</p>';
-      return;
-    }
-    
-    const puntos = await cargarParadasPuntos();
-    if (!puntos) {
-      resultsDiv.innerHTML = '<p style="color: #c00; text-align: center; padding: 20px;">Error al cargar paradas</p>';
+      resultsDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No se encontraron resultados en San Juan</p>';
       return;
     }
     
@@ -1177,27 +1248,10 @@ async function buscarLugares() {
     for (const lugar of lugares) {
       const lat = Number(lugar.lat);
       const lng = Number(lugar.lon);
-      
-      let paradaCercana = null;
-      let distMin = Infinity;
-      for (const punto of puntos) {
-        const dist = calcularDistancia(lat, lng, punto.lat, punto.lng);
-        if (dist < distMin) {
-          distMin = dist;
-          paradaCercana = punto;
-        }
-      }
-      
       const nombreLugar = lugar.name || lugar.display_name;
-      const infoParada = paradaCercana ? `Parada: ${obtenerEtiquetaParada(paradaCercana.feature)}` : 'No hay paradas cercanas';
-      const distKm = (distMin / 1000).toFixed(2);
+      const tipoLugar = lugar.type || 'Lugar';
       
-      const lugaresFavs = obtenerLugaresFavs();
-      const esFavorito = lugaresFavs.some(f => f.nombre === nombreLugar);
-      const textoBoton = esFavorito ? '💾 Guardado' : '💾 Guardar';
-      const estiloBoton = esFavorito ? 'background: #fff3cd; border-color: #ffc107;' : '';
-      
-      html += `<div class="search-result-item" onclick="irAParadaDelLugar(${lat}, ${lng}, '${nombreLugar.replace(/'/g, "\\'")}', ${paradaCercana?.lat || 0}, ${paradaCercana?.lng || 0})"><div class="search-result-item-title">${escapeHtml(nombreLugar)}</div><div class="search-result-item-info">${escapeHtml(infoParada)} (${distKm} km)</div><button type="button" style="padding: 6px 12px; background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; margin-top: 8px; font-size: 12px; ${estiloBoton}" onclick="event.stopPropagation(); agregarLugarAFavoritos('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng}); buscarLugares();">${textoBoton}</button></div>`;
+      html += `<div class="search-result-item" onclick="centrarEnLugar(${lat}, ${lng}, '${nombreLugar.replace(/'/g, "\\'")}')"><div class="search-result-item-title">${escapeHtml(nombreLugar)}</div><div class="search-result-item-info">${escapeHtml(tipoLugar)}</div></div>`;
     }
     
     resultsDiv.innerHTML = html;
@@ -1205,6 +1259,27 @@ async function buscarLugares() {
     console.error('Error en búsqueda:', error);
     resultsDiv.innerHTML = '<p style="color: #c00; text-align: center; padding: 20px;">Error al buscar. Intenta de nuevo.</p>';
   }
+}
+
+function centrarEnLugar(lat, lng, nombreLugar) {
+  if (!leafletMap) return;
+  
+  cerrarModalBusqueda();
+  centrarEnCoordenadas(lat, lng, ZOOM_CALLE);
+  
+  // Abrir bottom-sheet para ofrecer guardar la ubicación
+  abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng);
+}
+
+function centrarEnCoordenadas(lat, lng, zoom = ZOOM_CALLE) {
+  if (!leafletMap) return;
+  const safeLat = Number(lat);
+  const safeLng = Number(lng);
+  if (!Number.isFinite(safeLat) || !Number.isFinite(safeLng)) return;
+
+  // Si había un recorrido dibujado, lo limpiamos antes de mover la vista.
+  limpiarRecorrido();
+  leafletMap.setView([safeLat, safeLng], zoom);
 }
 
 function calcularDistancia(lat1, lng1, lat2, lng2) {
@@ -1249,7 +1324,8 @@ function agregarLugarAFavoritos(nombre, lat, lng) {
   if (indice !== -1) {
     favs.splice(indice, 1);
   } else {
-    favs.push({ nombre, lat, lng });
+    // Guardar coordenadas como números (evita strings en LocalStorage)
+    favs.push({ nombre, lat: Number(lat), lng: Number(lng) });
     
     while (favs.length > MAX_LUGARES_FAVS) {
       favs.shift();
@@ -1279,17 +1355,22 @@ function renderLugaresFavs() {
   }
   
   for (const lugar of favs) {
+    const lat = Number(lugar?.lat);
+    const lng = Number(lugar?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;';
     
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.dataset.lugar = JSON.stringify(lugar);
+    btn.dataset.lugarNombre = String(lugar?.nombre || 'Lugar guardado');
+    btn.dataset.lat = String(lat);
+    btn.dataset.lng = String(lng);
     btn.textContent = lugar.nombre;
     btn.style.cssText = 'flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
     btn.onmouseover = () => { btn.style.background = '#f0f0f0'; btn.style.borderColor = '#007BFF'; };
     btn.onmouseout = () => { btn.style.background = 'white'; btn.style.borderColor = '#ddd'; };
-    btn.onclick = () => irAParadaDelLugar(lugar.lat, lugar.lng, lugar.nombre, lugar.lat, lugar.lng);
     
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
@@ -1300,8 +1381,8 @@ function renderLugaresFavs() {
     btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
     btnEliminar.onmouseout = () => { btnEliminar.style.background = 'white'; btnEliminar.style.borderColor = '#ddd'; btnEliminar.style.color = '#999'; };
     btnEliminar.dataset.lugarNombre = lugar.nombre;
-    btnEliminar.dataset.lugarLat = lugar.lat;
-    btnEliminar.dataset.lugarLng = lugar.lng;
+    btnEliminar.dataset.lugarLat = String(lat);
+    btnEliminar.dataset.lugarLng = String(lng);
     
     wrapper.appendChild(btn);
     wrapper.appendChild(btnEliminar);
