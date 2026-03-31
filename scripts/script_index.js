@@ -294,9 +294,8 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng) {
       <p style="font-size: 12px; color: #999; margin-bottom: 24px; font-family: monospace;">
         ${lat.toFixed(6)}, ${lng.toFixed(6)}
       </p>
-      <div style="display: flex; gap: 12px;">
-        <button type="button" style="flex: 1; padding: 12px; background: #e0e0e0; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="cerrarBottomSheet()">Cancelar</button>
-        <button type="button" style="flex: 1; padding: 12px; background: #007BFF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="guardarUbicacionActualDesdeBottomSheet('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng})">Guardar</button>
+      <div>
+        <button type="button" style="width: 100%; padding: 12px; background: #007BFF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="guardarUbicacionActualDesdeBottomSheet('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng})">Guardar</button>
       </div>
     </div>
   `;
