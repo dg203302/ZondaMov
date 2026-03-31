@@ -25,6 +25,7 @@ const ZOOM_PARADAS_EN_VISTA = 16;
 const STORAGE_LINEAS_FAVS_KEY = 'transitsj_lineas_favs_v1';
 const STORAGE_PARADAS_FAVS_KEY = 'transitsj_paradas_favs_v1';
 const MAX_PARADAS_FAVS = 5;
+const MAX_PARADAS_RECORRIDO = 3;
 
 const GEO_OPTIONS = {
   enableHighAccuracy: true,
@@ -699,6 +700,7 @@ function renderListaParadasRecorrido() {
   if (!Array.isArray(paradasRecorrido) || paradasRecorrido.length === 0) return '';
 
   const items = paradasRecorrido
+    .slice(0, MAX_PARADAS_RECORRIDO)
     .map((p, idx) => {
       const paradaId = p.paradaId || obtenerIdParada(p.feature);
       const etiqueta = obtenerEtiquetaParada(p.feature);
