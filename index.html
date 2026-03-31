@@ -42,6 +42,24 @@
             padding-bottom: 0;
           }
 
+          .page-shade {
+            position: fixed;
+            left: 0;
+            width: 100%;
+            pointer-events: none;
+            z-index: 400;
+          }
+          .page-shade.top {
+            top: 0;
+            height: 88px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0));
+          }
+          .page-shade.bottom {
+            bottom: 0;
+            height: 170px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0));
+          }
+
           
           .btn-floating {
             position: fixed;
@@ -347,6 +365,9 @@
         </header>
         <main>
             <div id="map"></div>
+
+          <div class="page-shade top"></div>
+          <div class="page-shade bottom"></div>
             
             <div id="search-modal" class="search-modal" onclick="if(event.target.id === 'search-modal') cerrarModalBusqueda()">
                 <div class="search-modal-content" onclick="event.stopPropagation()">

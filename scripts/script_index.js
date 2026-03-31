@@ -1116,7 +1116,7 @@ function cargarLF(coords, zoomObjetivo = null){
   // Inicializa una vez y luego actualiza en cada lectura
   if (!leafletMap) {
     leafletMap = L.map('map', {
-      zoomControl: true,
+      zoomControl: false,
       scrollWheelZoom: true,
       maxZoom: 19,
     }).setView([coords.lat, coords.lng], typeof zoomObjetivo === 'number' ? zoomObjetivo : ZOOM_CALLE);
