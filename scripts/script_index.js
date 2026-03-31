@@ -266,19 +266,23 @@ async function Centrar() {
 
 async function CentrarYOferécerGuardar() {
   await Centrar();
-  
-  if (!ubicacion) {
+}
+
+function abrirGuardadoDesdeMarcadorUbicacion() {
+  if (!userMarker) return;
+  const ll = typeof userMarker.getLatLng === 'function' ? userMarker.getLatLng() : null;
+  const lat = Number(ll?.lat ?? ubicacion?.lat);
+  const lng = Number(ll?.lng ?? ubicacion?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     alert('No se pudo obtener tu ubicación. Intenta de nuevo.');
     return;
   }
-  
-  // Generar nombre con timestamp
+
   const ahora = new Date();
   const opciones = { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' };
   const fechaHora = ahora.toLocaleDateString('es-AR', opciones).replace(/\//g, '/');
   const nombreLugar = `Mi ubicación - ${fechaHora}`;
-  
-  abrirBottomSheetGuardarUbicacion(nombreLugar, ubicacion.lat, ubicacion.lng);
+  abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng);
 }
 
 function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng) {
@@ -1122,6 +1126,14 @@ function cargarLF(coords, zoomObjetivo = null){
     }).addTo(leafletMap);
 
     userMarker = L.marker([coords.lat, coords.lng]).addTo(leafletMap);
+    try {
+      userMarker.off('click');
+      userMarker.on('click', () => {
+        abrirGuardadoDesdeMarcadorUbicacion();
+      });
+    } catch {
+      // noop
+    }
 
     leafletMap.on('moveend', agendarActualizacionParadas);
     leafletMap.on('zoomend', agendarActualizacionParadas);
@@ -1173,9 +1185,31 @@ function cerrarModalBusqueda() {
   }
   document.getElementById('search-input').value = '';
   document.getElementById('search-results').innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Escribe para buscar</p>';
+
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+    searchTimeout = null;
+  }
+  if (searchAbortController) {
+    try { searchAbortController.abort(); } catch { /* noop */ }
+    searchAbortController = null;
+  }
+  lastSearchIssuedQuery = '';
 }
 
 let searchTimeout;
+let searchAbortController = null;
+let searchSeq = 0;
+let lastSearchIssuedQuery = '';
+
+const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_MIN_CHARS = 2;
+const SAN_JUAN_BOUNDS = {
+  minLat: -31.6,
+  maxLat: -31.2,
+  minLng: -68.7,
+  maxLng: -68.3,
+};
 
 async function buscarLugaresEnTiempoReal() {
   const input = document.getElementById('search-input');
@@ -1186,10 +1220,15 @@ async function buscarLugaresEnTiempoReal() {
   // Limpiar timeout anterior
   if (searchTimeout) clearTimeout(searchTimeout);
   
-  // Si está vacío, cerrar modal
+  // Si está vacío, cerrar modal y cancelar búsquedas
   if (!query) {
-    modal.classList.remove('active');
+    modal?.classList.remove('active');
     resultsDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Escribe para buscar</p>';
+    if (searchAbortController) {
+      try { searchAbortController.abort(); } catch { /* noop */ }
+      searchAbortController = null;
+    }
+    lastSearchIssuedQuery = '';
     return;
   }
   
@@ -1198,67 +1237,147 @@ async function buscarLugaresEnTiempoReal() {
     modal.classList.add('active');
   }
   
+  // Evitar pedir demasiadas veces: exigir un mínimo de letras
+  if (query.length < SEARCH_MIN_CHARS) {
+    resultsDiv.innerHTML = `<p style="color: #999; text-align: center; padding: 20px;">Escribe al menos ${SEARCH_MIN_CHARS} letras</p>`;
+    if (searchAbortController) {
+      try { searchAbortController.abort(); } catch { /* noop */ }
+      searchAbortController = null;
+    }
+    lastSearchIssuedQuery = '';
+    return;
+  }
+
   // Mostrar estado de búsqueda
   resultsDiv.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Buscando...</p>';
   
-  // Hacer búsqueda con debounce (800ms)
-  searchTimeout = setTimeout(() => buscarLugares(), 800);
+  // Hacer búsqueda con debounce
+  searchTimeout = setTimeout(() => buscarLugares(query), SEARCH_DEBOUNCE_MS);
 }
 
-async function buscarLugares() {
+async function buscarLugares(queryOverride = '') {
   const input = document.getElementById('search-input');
-  const query = input?.value?.trim() || '';
-  if (!query) return;
-  
+  const query = (queryOverride || input?.value?.trim() || '').trim();
+  if (!query || query.length < SEARCH_MIN_CHARS) return;
+
   const resultsDiv = document.getElementById('search-results');
-  
+  if (!resultsDiv) return;
+
+  // Evitar repetir la misma consulta
+  if (query === lastSearchIssuedQuery) return;
+  lastSearchIssuedQuery = query;
+
+  // Cancelar request anterior
+  if (searchAbortController) {
+    try { searchAbortController.abort(); } catch { /* noop */ }
+  }
+  searchAbortController = new AbortController();
+  const mySeq = ++searchSeq;
+
   try {
-    // Búsqueda específica en San Juan, Argentina
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' San Juan Argentina')}&format=json&limit=10&countrycodes=ar`
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.searchParams.set('q', query);
+    url.searchParams.set('format', 'jsonv2');
+    url.searchParams.set('limit', '10');
+    url.searchParams.set('countrycodes', 'ar');
+    url.searchParams.set('dedupe', '1');
+    url.searchParams.set('addressdetails', '0');
+    // Restringir la búsqueda a San Juan por viewbox (mejora mucho el autocompletado)
+    url.searchParams.set(
+      'viewbox',
+      `${SAN_JUAN_BOUNDS.minLng},${SAN_JUAN_BOUNDS.maxLat},${SAN_JUAN_BOUNDS.maxLng},${SAN_JUAN_BOUNDS.minLat}`
     );
-    
-    if (!response.ok) throw new Error('Error en búsqueda');
-    
-    let lugares = await response.json();
-    
-    // Filtrar solo lugares en San Juan (aproximadamente entre -31.5 y -31.3 lat, -68.6 y -68.4 lon)
-    const SAN_JUAN_BOUNDS = {
-      minLat: -31.6,
-      maxLat: -31.2,
-      minLng: -68.7,
-      maxLng: -68.3
-    };
-    
-    lugares = lugares.filter(lugar => {
-      const lat = Number(lugar.lat);
-      const lng = Number(lugar.lon);
-      return lat >= SAN_JUAN_BOUNDS.minLat && 
-             lat <= SAN_JUAN_BOUNDS.maxLat &&
-             lng >= SAN_JUAN_BOUNDS.minLng && 
-             lng <= SAN_JUAN_BOUNDS.maxLng;
+    url.searchParams.set('bounded', '1');
+
+    const response = await fetch(url.toString(), {
+      signal: searchAbortController.signal,
+      headers: {
+        'Accept-Language': 'es',
+      },
     });
-    
+
+    if (!response.ok) throw new Error('Error en búsqueda');
+    const lugaresRaw = await response.json();
+    if (mySeq !== searchSeq) return; // llegó tarde
+
+    let lugares = Array.isArray(lugaresRaw) ? lugaresRaw : [];
+    // Filtro de seguridad por bounds (por si Nominatim devuelve algo fuera del viewbox)
+    lugares = lugares.filter((lugar) => {
+      const lat = Number(lugar?.lat);
+      const lng = Number(lugar?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+      return (
+        lat >= SAN_JUAN_BOUNDS.minLat &&
+        lat <= SAN_JUAN_BOUNDS.maxLat &&
+        lng >= SAN_JUAN_BOUNDS.minLng &&
+        lng <= SAN_JUAN_BOUNDS.maxLng
+      );
+    });
+
     if (lugares.length === 0) {
       resultsDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No se encontraron resultados en San Juan</p>';
       return;
     }
-    
-    let html = '';
+
+    // Render seguro (sin onclick inline)
+    resultsDiv.innerHTML = '';
     for (const lugar of lugares) {
       const lat = Number(lugar.lat);
       const lng = Number(lugar.lon);
-      const nombreLugar = lugar.name || lugar.display_name;
-      const tipoLugar = lugar.type || 'Lugar';
-      
-      html += `<div class="search-result-item" onclick="centrarEnLugar(${lat}, ${lng}, '${nombreLugar.replace(/'/g, "\\'")}')"><div class="search-result-item-title">${escapeHtml(nombreLugar)}</div><div class="search-result-item-info">${escapeHtml(tipoLugar)}</div></div>`;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      const nombreLugar = String(lugar.name || lugar.display_name || 'Lugar');
+      const tipoLugar = String(lugar.type || lugar.class || 'Lugar');
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'search-result-item';
+      btn.dataset.lat = String(lat);
+      btn.dataset.lng = String(lng);
+      btn.dataset.nombre = nombreLugar;
+      btn.style.cssText = 'width: 100%; text-align: left; padding: 12px 14px; border: none; background: transparent; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.06);';
+
+      const title = document.createElement('div');
+      title.className = 'search-result-item-title';
+      title.textContent = nombreLugar;
+      title.style.cssText = 'font-weight: 600; font-size: 14px; color: #222;';
+
+      const info = document.createElement('div');
+      info.className = 'search-result-item-info';
+      info.textContent = tipoLugar;
+      info.style.cssText = 'font-size: 12px; color: #666; margin-top: 4px;';
+
+      btn.appendChild(title);
+      btn.appendChild(info);
+      resultsDiv.appendChild(btn);
     }
-    
-    resultsDiv.innerHTML = html;
+
+    // Quitar borde del último
+    const last = resultsDiv.lastElementChild;
+    if (last instanceof HTMLElement) {
+      last.style.borderBottom = 'none';
+    }
   } catch (error) {
+    // Abort es normal cuando el usuario sigue tipeando
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') return;
     console.error('Error en búsqueda:', error);
     resultsDiv.innerHTML = '<p style="color: #c00; text-align: center; padding: 20px;">Error al buscar. Intenta de nuevo.</p>';
   }
+}
+
+// Click en resultados de búsqueda (delegación)
+const searchResultsEl = document.getElementById('search-results');
+if (searchResultsEl) {
+  searchResultsEl.addEventListener('click', (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLElement)) return;
+    const btn = target.closest('button.search-result-item[data-lat][data-lng]');
+    if (!(btn instanceof HTMLButtonElement)) return;
+    const lat = Number(btn.dataset.lat);
+    const lng = Number(btn.dataset.lng);
+    const nombre = btn.dataset.nombre || btn.textContent || 'Lugar';
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    centrarEnLugar(lat, lng, nombre);
+  });
 }
 
 function centrarEnLugar(lat, lng, nombreLugar) {
