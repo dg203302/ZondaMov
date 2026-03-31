@@ -11,6 +11,10 @@
             padding: 0;
             box-sizing: border-box;
           }
+
+          button, a {
+            -webkit-tap-highlight-color: transparent;
+          }
           html, body {
             height: 100%;
             width: 100%;
@@ -58,6 +62,313 @@
             bottom: 0;
             height: 170px;
             background: linear-gradient(to top, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0));
+          }
+
+          .btn-settings {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 1002;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: #333;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 0;
+          }
+          .btn-settings:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+            transform: scale(1.05);
+          }
+          .btn-settings:active {
+            transform: scale(0.95);
+          }
+
+          .brand-pill {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1002;
+            display: inline-flex;
+            align-items: center;
+            height: 40px;
+            padding: 0 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            color: #111;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            font-variant: small-caps;
+            pointer-events: none;
+            user-select: none;
+          }
+
+          .sidepanel-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            z-index: 1200;
+          }
+          .sidepanel-overlay.active {
+            display: block;
+          }
+          .sidepanel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100vh;
+            width: fit-content;
+            min-width: 240px;
+            max-width: 84vw;
+            background: white;
+            z-index: 1201;
+            transform: translateX(100%);
+            transition: transform 0.25s ease;
+            box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+            display: flex;
+            flex-direction: column;
+          }
+          .sidepanel.active {
+            transform: translateX(0);
+          }
+          .sidepanel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+          }
+          .sidepanel-header h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+          }
+          .sidepanel-close {
+            background: none;
+            border: 1px solid #ddd;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #333;
+          }
+          .sidepanel-content {
+            padding: 16px;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+            flex: 1;
+          }
+
+          .sidepanel-sep {
+            width: 100%;
+            height: 1px;
+            background: #e0e0e0;
+            opacity: 0.9;
+            margin: 12px 0;
+          }
+
+          .sidepanel-credits {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+          }
+          .sidepanel-credits p {
+            margin: 0;
+          }
+
+          .sidepanel-credits-link {
+            margin-top: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #007BFF;
+            text-decoration: none;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 123, 255, 0.2);
+          }
+          .sidepanel-credits-link:hover {
+            background: rgba(0, 123, 255, 0.08);
+          }
+
+          .toggle-row {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 12px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background: white;
+          }
+          .toggle-row span {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+          }
+
+          .ios-switch {
+            position: relative;
+            width: 46px;
+            height: 28px;
+            flex-shrink: 0;
+          }
+          .ios-switch input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            margin: 0;
+            cursor: pointer;
+          }
+          .ios-switch .track {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: #e5e7eb;
+            border: 1px solid #d1d5db;
+            transition: background 0.18s ease, border-color 0.18s ease;
+          }
+          .ios-switch .track::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+            transition: transform 0.18s ease;
+          }
+          .ios-switch input:checked + .track {
+            background: #007BFF;
+            border-color: #007BFF;
+          }
+          .ios-switch input:checked + .track::after {
+            transform: translateX(18px);
+          }
+
+          .dark-mode .ios-switch .track {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.18);
+          }
+          .dark-mode .ios-switch .track::after {
+            background: rgba(255, 255, 255, 0.92);
+          }
+
+          /* Modo oscuro (mínimo, para superficies principales) */
+          .dark-mode body {
+            background: #0b1220;
+            color: #e5e7eb;
+          }
+          .dark-mode .btn-settings {
+            background: rgba(17, 24, 39, 0.92);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e5e7eb;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+          }
+          .dark-mode .brand-pill {
+            background: rgba(17, 24, 39, 0.92);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e5e7eb;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+          }
+          .dark-mode .bottom-sheet {
+            background: rgba(17, 24, 39, 0.98);
+          }
+          .dark-mode .bottom-sheet-header {
+            background: rgba(31, 41, 55, 0.95);
+            border-bottom-color: rgba(255, 255, 255, 0.08);
+          }
+          .dark-mode .bottom-sheet-header h2 {
+            color: #e5e7eb;
+          }
+          .dark-mode .bottom-sheet-content button,
+          .dark-mode .bottom-sheet-content .btn-action {
+            border-color: rgba(255, 255, 255, 0.14);
+            color: #e5e7eb;
+          }
+          .dark-mode .bottom-sheet-content button:hover,
+          .dark-mode .bottom-sheet-content .btn-action:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.22);
+          }
+          .dark-mode .search-bar-container {
+            background: rgba(17, 24, 39, 0.92);
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+          }
+          .dark-mode .search-bar {
+            color: #e5e7eb;
+          }
+          .dark-mode .search-bar::placeholder {
+            color: rgba(229, 231, 235, 0.65);
+          }
+          .dark-mode .search-modal-content {
+            background: rgba(17, 24, 39, 0.92);
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+          }
+          .dark-mode footer .btn-floating {
+            background: rgba(17, 24, 39, 0.92);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e5e7eb;
+          }
+          .dark-mode .sidepanel {
+            background: rgba(17, 24, 39, 0.98);
+          }
+          .dark-mode .sidepanel-header {
+            background: rgba(31, 41, 55, 0.95);
+            border-bottom-color: rgba(255, 255, 255, 0.08);
+          }
+          .dark-mode .sidepanel-header h2 {
+            color: #e5e7eb;
+          }
+          .dark-mode .toggle-row {
+            background: rgba(31, 41, 55, 0.65);
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+          .dark-mode .toggle-row span {
+            color: #e5e7eb;
+          }
+          .dark-mode .sidepanel-sep {
+            background: rgba(255, 255, 255, 0.12);
+          }
+          .dark-mode .sidepanel-credits {
+            color: rgba(229, 231, 235, 0.75);
+          }
+          .dark-mode .sidepanel-credits-link {
+            border-color: rgba(255, 255, 255, 0.14);
+            color: #93c5fd;
+          }
+          .dark-mode .sidepanel-credits-link:hover {
+            background: rgba(147, 197, 253, 0.10);
           }
 
           
@@ -117,6 +428,22 @@
           footer .btn-floating:active {
             transform: scale(0.95);
           }
+
+          .icon {
+            width: 22px;
+            height: 22px;
+            display: block;
+            pointer-events: none;
+          }
+          .icon.dark {
+            display: none;
+          }
+          .dark-mode .icon.light {
+            display: none;
+          }
+          .dark-mode .icon.dark {
+            display: block;
+          }
           
           .bottom-sheet-overlay {
             display: none;
@@ -166,6 +493,45 @@
             flex-direction: column;
             gap: 12px;
           }
+
+          .bs-top-row {
+            position: relative;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .bs-top-row #bs-fav-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+          }
+          #bs-fav-btn {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            box-sizing: border-box;
+          }
+
+          /* Estado del botón de favoritos del bottom-sheet */
+          #bs-fav-btn .fav-state {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+          #bs-fav-btn .fav-state.state-added {
+            display: none;
+          }
+          #bs-fav-btn.is-fav .fav-state.state-add {
+            display: none;
+          }
+          #bs-fav-btn.is-fav .fav-state.state-added {
+            display: inline-flex;
+          }
           .bottom-sheet-header h2 {
             font-size: 18px;
             font-weight: 600;
@@ -211,6 +577,131 @@
           .bottom-sheet-content button:hover, .bottom-sheet-content .btn-action:hover {
             background: #f0f0f0;
             border-color: #007BFF;
+          }
+
+          /* Bottom-sheet: Guardar ubicación */
+          .save-location-sheet {
+            text-align: center;
+            padding: 24px;
+          }
+          .save-location-label {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 16px;
+          }
+          .save-location-coords {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 24px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+          }
+          .dark-mode .save-location-label {
+            color: rgba(229, 231, 235, 0.75);
+          }
+          .dark-mode .save-location-coords {
+            color: rgba(229, 231, 235, 0.60);
+          }
+
+          .bottom-sheet-content .btn-save-location {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 18px;
+            border: none;
+            border-radius: 12px;
+            background: #007BFF;
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+          }
+          .bottom-sheet-content .btn-save-location:hover {
+            background: #0056b3;
+            border-color: transparent;
+          }
+          .bottom-sheet-content .btn-save-location .icon {
+            width: 22px;
+            height: 22px;
+          }
+
+          /* Favoritos (filas con botón X integrado) */
+          .bottom-sheet-content .fav-empty {
+            color: #6b7280;
+            font-size: 14px;
+            text-align: center;
+            margin: 16px 0;
+          }
+          .bottom-sheet-content .fav-row {
+            display: flex;
+            align-items: stretch;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            overflow: hidden;
+            margin-bottom: 8px;
+            transition: background 0.2s ease, border-color 0.2s ease;
+          }
+          .bottom-sheet-content .fav-row:hover {
+            background: #f0f0f0;
+            border-color: #007BFF;
+          }
+          .bottom-sheet-content .fav-row:focus-within {
+            border-color: #007BFF;
+          }
+
+          /* Anula el estilo genérico de botones dentro del bottom-sheet */
+          .bottom-sheet-content .fav-row .fav-main,
+          .bottom-sheet-content .fav-row .btn-eliminar-fav {
+            width: auto;
+            border: none;
+            border-radius: 0;
+            background: transparent;
+          }
+          .bottom-sheet-content .fav-row .fav-main {
+            flex: 1;
+            padding: 12px 16px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            color: inherit;
+          }
+          .bottom-sheet-content .fav-row .btn-eliminar-fav {
+            flex: 0 0 44px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            color: #6b7280;
+            border-left: 1px solid rgba(0, 0, 0, 0.08);
+            transition: background 0.2s ease, color 0.2s ease;
+          }
+          .bottom-sheet-content .fav-row .btn-eliminar-fav:hover {
+            background: rgba(0, 0, 0, 0.04);
+            color: #111827;
+          }
+
+          .dark-mode .bottom-sheet-content .fav-empty {
+            color: rgba(229, 231, 235, 0.65);
+          }
+          .dark-mode .bottom-sheet-content .fav-row {
+            background: rgba(31, 41, 55, 0.65);
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+          .dark-mode .bottom-sheet-content .fav-row:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(147, 197, 253, 0.35);
+          }
+          .dark-mode .bottom-sheet-content .fav-row .btn-eliminar-fav {
+            border-left-color: rgba(255, 255, 255, 0.10);
+            color: rgba(229, 231, 235, 0.70);
+          }
+          .dark-mode .bottom-sheet-content .fav-row .btn-eliminar-fav:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #e5e7eb;
           }
           .action-buttons {
             display: flex;
@@ -368,6 +859,39 @@
 
           <div class="page-shade top"></div>
           <div class="page-shade bottom"></div>
+
+            <div class="brand-pill" aria-hidden="true">TransitSJ</div>
+
+          <button id="btn-settings" class="btn-settings" type="button" title="Configuración" aria-label="Configuración">
+            <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
+            <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
+          </button>
+
+          <div id="settings-overlay" class="sidepanel-overlay" aria-hidden="true"></div>
+          <aside id="settings-panel" class="sidepanel" aria-hidden="true">
+            <div class="sidepanel-header">
+              <h2>Configuración</h2>
+            </div>
+            <div class="sidepanel-content">
+              <label class="toggle-row" for="toggle-darkmode">
+                <span>Modo oscuro</span>
+                <span class="ios-switch">
+                  <input id="toggle-darkmode" type="checkbox" />
+                  <span class="track" aria-hidden="true"></span>
+                </span>
+              </label>
+
+              <div class="sidepanel-sep" role="separator" aria-hidden="true"></div>
+
+              <div class="sidepanel-credits">
+                <p>Créditos a OpenStreetMap</p>
+                <p>Créditos a Leaflet</p>
+                <p>Creditos a Lucide</p>
+              </div>
+
+              <a class="sidepanel-credits-link" href="https://djsolutionss.netlify.app" target="_blank" rel="noopener">Créditos</a>
+            </div>
+          </aside>
             
             <div id="search-modal" class="search-modal" onclick="if(event.target.id === 'search-modal') cerrarModalBusqueda()">
                 <div class="search-modal-content" onclick="event.stopPropagation()">
@@ -380,10 +904,21 @@
             <div id="bottom-sheet-overlay" class="bottom-sheet-overlay" onclick="if(event.target.id === 'bottom-sheet-overlay') cerrarBottomSheet()"></div>
             <div id="bottom-sheet" class="bottom-sheet">
                 <div class="bottom-sheet-header">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%;">
-                        <div class="bottom-sheet-handle" id="bs-handle"></div>
-                        <button id="bs-fav-btn" type="button" style="background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; display: none;">⭐</button>
-                    </div>
+                <div class="bs-top-row">
+                  <div class="bottom-sheet-handle" id="bs-handle"></div>
+                  <button id="bs-fav-btn" type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: none;" aria-label="Agregar a favoritos">
+                    <span class="fav-state state-add" aria-hidden="true">
+                      <!-- No favorito: corazón + -->
+                      <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1oZWFydC1wbHVzLWljb24gbHVjaWRlLWhlYXJ0LXBsdXMiPjxwYXRoIGQ9Im0xNC40NzkgMTkuMzc0LS45NzEuOTM5YTIgMiAwIDAgMS0zIC4wMTlMNSAxNWMtMS41LTEuNS0zLTMuMi0zLTUuNWE1LjUgNS41IDAgMCAxIDkuNTkxLTMuNjc2LjU2LjU2IDAgMCAwIC44MTggMEE1LjQ5IDUuNDkgMCAwIDEgMjIgOS41YTUuMiA1LjIgMCAwIDEtLjIxOSAxLjQ5Ii8+PHBhdGggZD0iTTE1IDE1aDYiLz48cGF0aCBkPSJNMTggMTJ2NiIvPjwvc3ZnPg==" />
+                      <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1oZWFydC1wbHVzLWljb24gbHVjaWRlLWhlYXJ0LXBsdXMiPjxwYXRoIGQ9Im0xNC40NzkgMTkuMzc0LS45NzEuOTM5YTIgMiAwIDAgMS0zIC4wMTlMNSAxNWMtMS41LTEuNS0zLTMuMi0zLTUuNWE1LjUgNS41IDAgMCAxIDkuNTkxLTMuNjc2LjU2LjU2IDAgMCAwIC44MTggMEE1LjQ5IDUuNDkgMCAwIDEgMjIgOS41YTUuMiA1LjIgMCAwIDEtLjIxOSAxLjQ5Ii8+PHBhdGggZD0iTTE1IDE1aDYiLz48cGF0aCBkPSJNMTggMTJ2NiIvPjwvc3ZnPg==" />
+                    </span>
+                    <span class="fav-state state-added" aria-hidden="true">
+                      <!-- Favorito: corazón − -->
+                      <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1oZWFydC1taW51cy1pY29uIGx1Y2lkZS1oZWFydC1taW51cyI+PHBhdGggZD0ibTE0Ljg3NiAxOC45OS0xLjM2OCAxLjMyM2EyIDIgMCAwIDEtMyAuMDE5TDUgMTVjLTEuNS0xLjUtMy0zLjItMy01LjVhNS41IDUuNSAwIDAgMSA5LjU5MS0zLjY3Ni41Ni41NiAwIDAgMCAuODE4IDBBNS40OSA1LjQ5IDAgMCAxIDIyIDkuNWE1LjIgNS4yIDAgMCAxLS4yNDQgMS41NzIiLz48cGF0aCBkPSJNMTUgMTVoNiIvPjwvc3ZnPg==" />
+                      <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1oZWFydC1taW51cy1pY29uIGx1Y2lkZS1oZWFydC1taW51cyI+PHBhdGggZD0ibTE0Ljg3NiAxOC45OS0xLjM2OCAxLjMyM2EyIDIgMCAwIDEtMyAuMDE5TDUgMTVjLTEuNS0xLjUtMy0zLjItMy01LjVhNS41IDUuNSAwIDAgMSA5LjU5MS0zLjY3Ni41Ni41NiAwIDAgMCAuODE4IDBBNS40OSA1LjQ5IDAgMCAxIDIyIDkuNWE1LjIgNS4yIDAgMCAxLS4yNDQgMS41NzIiLz48cGF0aCBkPSJNMTUgMTVoNiIvPjwvc3ZnPg==" />
+                    </span>
+                  </button>
+                </div>
                     <h2 id="bs-title">Contenido</h2>
                 </div>
                 <div class="bottom-sheet-content" id="bs-content">
@@ -399,11 +934,17 @@
         </main>
         <footer>
             <div class="search-bar-container">
-                <input type="text" id="search-input" class="search-bar" placeholder="🔍 Buscar..." oninput="buscarLugaresEnTiempoReal()" onkeydown="if(event.key==='Escape') cerrarModalBusqueda()">
+              <input type="text" id="search-input" class="search-bar" placeholder="Buscar..." oninput="buscarLugaresEnTiempoReal()" onkeydown="if(event.key==='Escape') cerrarModalBusqueda()">
             </div>
             <div class="footer-buttons">
-                <button id="btn-centrar" class="btn-floating" title="Recentrar ubicación" onclick="CentrarYOferécerGuardar()">📍</button>
-                <button id="btn-favs" class="btn-floating" title="Ver favoritos" onclick="abrirBottomSheetFavoritos()">⭐</button>
+            <button id="btn-centrar" class="btn-floating" title="Recentrar ubicación" onclick="CentrarYOferécerGuardar()" aria-label="Recentrar ubicación">
+              <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1sb2NhdGUtZml4ZWQtaWNvbiBsdWNpZGUtbG9jYXRlLWZpeGVkIj48bGluZSB4MT0iMiIgeDI9IjUiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjE5IiB4Mj0iMjIiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjEyIiB4Mj0iMTIiIHkxPSIyIiB5Mj0iNSIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyIiB5MT0iMTkiIHkyPSIyMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjciLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIi8+PC9zdmc+" />
+              <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1sb2NhdGUtZml4ZWQtaWNvbiBsdWNpZGUtbG9jYXRlLWZpeGVkIj48bGluZSB4MT0iMiIgeDI9IjUiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjE5IiB4Mj0iMjIiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjEyIiB4Mj0iMTIiIHkxPSIyIiB5Mj0iNSIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyIiB5MT0iMTkiIHkyPSIyMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjciLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIi8+PC9zdmc+" />
+            </button>
+              <button id="btn-favs" class="btn-floating" title="Ver favoritos" onclick="abrirBottomSheetFavoritos()" aria-label="Ver favoritos">
+                <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1ib29rLWhlYXJ0LWljb24gbHVjaWRlLWJvb2staGVhcnQiPjxwYXRoIGQ9Ik00IDE5LjV2LTE1QTIuNSAyLjUgMCAwIDEgNi41IDJIMTlhMSAxIDAgMCAxIDEgMXYxOGExIDEgMCAwIDEtMSAxSDYuNWExIDEgMCAwIDEgMC01SDIwIi8+PHBhdGggZD0iTTguNjIgOS44QTIuMjUgMi4yNSAwIDEgMSAxMiA2LjgzNmEyLjI1IDIuMjUgMCAxIDEgMy4zOCAyLjk2NmwtMi42MjYgMi44NTZhLjk5OC45OTggMCAwIDEtMS41MDcgMHoiLz48L3N2Zz4=" />
+                <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1ib29rLWhlYXJ0LWljb24gbHVjaWRlLWJvb2staGVhcnQiPjxwYXRoIGQ9Ik00IDE5LjV2LTE1QTIuNSAyLjUgMCAwIDEgNi41IDJIMTlhMSAxIDAgMCAxIDEgMXYxOGExIDEgMCAwIDEtMSAxSDYuNWExIDEgMCAwIDEgMC01SDIwIi8+PHBhdGggZD0iTTguNjIgOS44QTIuMjUgMi4yNSAwIDEgMSAxMiA2LjgzNmEyLjI1IDIuMjUgMCAxIDEgMy4zOCAyLjk2NmwtMi42MjYgMi44NTZhLjk5OC45OTggMCAwIDEtMS41MDcgMHoiLz48L3N2Zz4=" />
+              </button>
             </div>
         </footer>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

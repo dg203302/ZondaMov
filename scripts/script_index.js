@@ -26,6 +26,7 @@ const STORAGE_LINEAS_FAVS_KEY = 'transitsj_lineas_favs_v1';
 const STORAGE_PARADAS_FAVS_KEY = 'transitsj_paradas_favs_v1';
 const MAX_PARADAS_FAVS = 5;
 const MAX_PARADAS_RECORRIDO = 3;
+const STORAGE_DARK_MODE_KEY = 'transitsj_dark_mode_v1';
 
 const GEO_OPTIONS = {
   enableHighAccuracy: true,
@@ -36,7 +37,7 @@ const GEO_OPTIONS = {
 function actualizarEstadoBotonFavoritos() {
   const favBtn = document.getElementById('bs-fav-btn');
   if (!favBtn) return;
-  
+
   let esFavorita = false;
   
   if (favBtn.dataset.tipo === 'parada') {
@@ -51,14 +52,11 @@ function actualizarEstadoBotonFavoritos() {
     const favs = obtenerLineasFavs();
     esFavorita = favs.some((f) => f?.ref === ref);
   }
-  
-  if (esFavorita) {
-    favBtn.style.opacity = '0.5';
-    favBtn.style.cursor = 'default';
-  } else {
-    favBtn.style.opacity = '1';
-    favBtn.style.cursor = 'pointer';
-  }
+
+  favBtn.classList.toggle('is-fav', esFavorita);
+  favBtn.style.opacity = '1';
+  favBtn.style.cursor = 'pointer';
+  favBtn.setAttribute('aria-label', esFavorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
 }
 
 function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
@@ -105,6 +103,9 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
       actualizarEstadoBotonFavoritos();
     } else {
       favBtn.style.display = 'none';
+      favBtn.classList.remove('is-fav');
+      favBtn.removeAttribute('data-tipo');
+      favBtn.setAttribute('aria-label', 'Agregar a favoritos');
     }
   }
 }
@@ -229,9 +230,13 @@ function setupBottomSheetDrag() {
 
 // Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', setupBottomSheetDrag);
+  document.addEventListener('DOMContentLoaded', () => {
+    setupBottomSheetDrag();
+    setupSidepanelConfiguracion();
+  });
 } else {
   setupBottomSheetDrag();
+  setupSidepanelConfiguracion();
 }
 
 function obtenerPosicionActual() {
@@ -288,14 +293,21 @@ function abrirGuardadoDesdeMarcadorUbicacion() {
 
 function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng) {
   // Abrir bottom-sheet para confirmar guardado
+  const iconSaveDark = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zYXZlLWljb24gbHVjaWRlLXNhdmUiPjxwYXRoIGQ9Ik0xNS4yIDNhMiAyIDAgMCAxIDEuNC42bDMuOCAzLjhhMiAyIDAgMCAxIC42IDEuNFYxOWEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJ6Ii8+PHBhdGggZD0iTTE3IDIxdi03YTEgMSAwIDAgMC0xLTFIOGExIDEgMCAwIDAtMSAxdjciLz48cGF0aCBkPSJNNyAzdjRhMSAxIDAgMCAwIDEgMWg3Ii8+PC9zdmc+';
+  const iconSaveLight = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zYXZlLWljb24gbHVjaWRlLXNhdmUiPjxwYXRoIGQ9Ik0xNS4yIDNhMiAyIDAgMCAxIDEuNC42bDMuOCAzLjhhMiAyIDAgMCAxIC42IDEuNFYxOWEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJ6Ii8+PHBhdGggZD0iTTE3IDIxdi03YTEgMSAwIDAgMC0xLTFIOGExIDEgMCAwIDAtMSAxdjciLz48cGF0aCBkPSJNNyAzdjRhMSAxIDAgMCAwIDEgMWg3Ii8+PC9zdmc+';
+
   const html = `
-    <div style="text-align: center; padding: 24px;">
-      <p style="font-size: 14px; color: #666; margin-bottom: 16px;">Coordenadas:</p>
-      <p style="font-size: 12px; color: #999; margin-bottom: 24px; font-family: monospace;">
+    <div class="save-location-sheet">
+      <p class="save-location-label">Coordenadas:</p>
+      <p class="save-location-coords">
         ${lat.toFixed(6)}, ${lng.toFixed(6)}
       </p>
       <div>
-        <button type="button" style="width: 100%; padding: 12px; background: #007BFF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="guardarUbicacionActualDesdeBottomSheet('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng})">Guardar</button>
+        <button type="button" class="btn-save-location" onclick="guardarUbicacionActualDesdeBottomSheet('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng})">
+          <img class="icon light" alt="" src="${iconSaveLight}" />
+          <img class="icon dark" alt="" src="${iconSaveDark}" />
+          <span>Guardar</span>
+        </button>
       </div>
     </div>
   `;
@@ -364,6 +376,70 @@ function guardarJsonLocalStorage(key, value) {
   }
 }
 
+function leerBoolLocalStorage(key, fallback = false) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw == null) return fallback;
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'boolean' ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function guardarBoolLocalStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(Boolean(value)));
+  } catch {
+    // noop
+  }
+}
+
+function aplicarModoOscuro(enabled) {
+  document.documentElement.classList.toggle('dark-mode', Boolean(enabled));
+  guardarBoolLocalStorage(STORAGE_DARK_MODE_KEY, Boolean(enabled));
+}
+
+function abrirSidepanelConfiguracion() {
+  const overlay = document.getElementById('settings-overlay');
+  const panel = document.getElementById('settings-panel');
+  overlay?.classList.add('active');
+  panel?.classList.add('active');
+  overlay?.setAttribute('aria-hidden', 'false');
+  panel?.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarSidepanelConfiguracion() {
+  const overlay = document.getElementById('settings-overlay');
+  const panel = document.getElementById('settings-panel');
+  overlay?.classList.remove('active');
+  panel?.classList.remove('active');
+  overlay?.setAttribute('aria-hidden', 'true');
+  panel?.setAttribute('aria-hidden', 'true');
+}
+
+function setupSidepanelConfiguracion() {
+  const btn = document.getElementById('btn-settings');
+  const overlay = document.getElementById('settings-overlay');
+  const closeBtn = document.getElementById('settings-close');
+  const toggle = document.getElementById('toggle-darkmode');
+
+  btn?.addEventListener('click', abrirSidepanelConfiguracion);
+  overlay?.addEventListener('click', cerrarSidepanelConfiguracion);
+  closeBtn?.addEventListener('click', cerrarSidepanelConfiguracion);
+
+  const enabled = leerBoolLocalStorage(STORAGE_DARK_MODE_KEY, false);
+  if (toggle instanceof HTMLInputElement) {
+    toggle.checked = enabled;
+    toggle.addEventListener('change', () => aplicarModoOscuro(toggle.checked));
+  }
+  aplicarModoOscuro(enabled);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarSidepanelConfiguracion();
+  });
+}
+
 function obtenerLineasFavs() {
   const arr = leerJsonLocalStorage(STORAGE_LINEAS_FAVS_KEY, []);
   return Array.isArray(arr) ? arr : [];
@@ -387,7 +463,7 @@ function renderLineasFavs() {
   const favs = obtenerLineasFavs();
   contLineasFavs.innerHTML = '';
   if (favs.length === 0) {
-    contLineasFavs.innerHTML = '<p style="color: #999; font-size: 14px; text-align: center; margin: 16px 0;">Sin líneas favoritas</p>';
+    contLineasFavs.innerHTML = '<p class="fav-empty">Sin líneas favoritas</p>';
     return;
   }
   for (const f of favs) {
@@ -395,26 +471,21 @@ function renderLineasFavs() {
     const name = typeof f?.name === 'string' ? f.name.trim() : '';
     
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;';
+    wrapper.className = 'fav-row';
     
     const item = document.createElement('button');
     item.type = 'button';
+    item.className = 'fav-main';
     item.dataset.lineaKey = ref || name;
     item.dataset.lineaRef = ref;
     item.dataset.lineaName = name;
     item.textContent = ref ? `Línea ${ref}${name ? ` — ${name}` : ''}` : name;
-    item.style.cssText = 'flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
-    item.onmouseover = () => { item.style.background = '#f0f0f0'; item.style.borderColor = '#007BFF'; };
-    item.onmouseout = () => { item.style.background = 'white'; item.style.borderColor = '#ddd'; };
     
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
     btnEliminar.textContent = '✕';
     btnEliminar.title = 'Eliminar de favoritos';
     btnEliminar.className = 'btn-eliminar-fav';
-    btnEliminar.style.cssText = 'width: 40px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; color: #999; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;';
-    btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
-    btnEliminar.onmouseout = () => { btnEliminar.style.background = 'white'; btnEliminar.style.borderColor = '#ddd'; btnEliminar.style.color = '#999'; };
     btnEliminar.dataset.lineaRef = ref;
     btnEliminar.dataset.lineaName = name;
     
@@ -498,8 +569,6 @@ if (bsContent) {
         if (found) {
           leafletMap?.setView([found.lat, found.lng], leafletMap.getZoom());
           mostrarLineasEnContenedorParadas(found.feature);
-          const marker = paradasRecorridoMarkers?.get(paradaId);
-          marker?.openPopup();
         }
       }
       return;
@@ -565,7 +634,7 @@ function renderParadasFavs() {
   const favs = obtenerParadasFavs();
   contParadasFavs.innerHTML = '';
   if (favs.length === 0) {
-    contParadasFavs.innerHTML = '<p style="color: #999; font-size: 14px; text-align: center; margin: 16px 0;">Sin paradas favoritas</p>';
+    contParadasFavs.innerHTML = '<p class="fav-empty">Sin paradas favoritas</p>';
     return;
   }
   for (const f of favs) {
@@ -575,27 +644,21 @@ function renderParadasFavs() {
     const lng = typeof f?.lng === 'number' && Number.isFinite(f.lng) ? f.lng : null;
     
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;';
-    wrapper.dataset.paradaContainer = 'true';
+    wrapper.className = 'fav-row';
     
     const item = document.createElement('button');
     item.type = 'button';
+    item.className = 'fav-main';
     item.dataset.paradaId = id;
     if (lat !== null) item.dataset.lat = String(lat);
     if (lng !== null) item.dataset.lng = String(lng);
     item.textContent = label;
-    item.style.cssText = 'flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
-    item.onmouseover = () => { item.style.background = '#f0f0f0'; item.style.borderColor = '#007BFF'; };
-    item.onmouseout = () => { item.style.background = 'white'; item.style.borderColor = '#ddd'; };
     
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
     btnEliminar.textContent = '✕';
     btnEliminar.title = 'Eliminar de favoritos';
     btnEliminar.className = 'btn-eliminar-fav';
-    btnEliminar.style.cssText = 'width: 40px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; color: #999; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;';
-    btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
-    btnEliminar.onmouseout = () => { btnEliminar.style.background = 'white'; btnEliminar.style.borderColor = '#ddd'; btnEliminar.style.color = '#999'; };
     btnEliminar.dataset.paradaId = id;
     if (lat !== null) btnEliminar.dataset.paradaLat = String(lat);
     if (lng !== null) btnEliminar.dataset.paradaLng = String(lng);
@@ -623,10 +686,9 @@ async function centrarEnParadaFavorita({ id, label, lat, lng }) {
   layerSel?.clearLayers();
 
   if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-    const marker = L.marker([latNum, lngNum]).bindPopup(escapeHtml(label || 'Parada favorita')).addTo(layerSel);
     const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
     leafletMap.setView([latNum, lngNum], Number.isFinite(z) ? z : ZOOM_CALLE);
-    marker.openPopup();
+    L.marker([latNum, lngNum]).addTo(layerSel);
   }
 
   try {
@@ -804,8 +866,7 @@ async function dibujarParadasDelRecorrido(relIds) {
   paradasRecorrido = seleccion;
 
   for (const item of seleccion) {
-    const etiqueta = obtenerEtiquetaParada(item.feature);
-    const marker = L.marker([item.lat, item.lng]).bindPopup(escapeHtml(etiqueta)).addTo(layerParadas);
+    const marker = L.marker([item.lat, item.lng]).addTo(layerParadas);
     marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
     if (paradasRecorridoMarkers && item.paradaId) {
       paradasRecorridoMarkers.set(item.paradaId, marker);
@@ -1057,9 +1118,7 @@ async function dibujarParadasEnVista() {
   }
 
   for (const item of enVista) {
-    const lineas = obtenerLineasDesdeRelations(item.feature);
-    const lineasTxt = lineas.length ? `Líneas: ${lineas.join(', ')}` : 'Líneas: (sin datos)';
-    const marker = L.marker([item.lat, item.lng]).bindPopup(lineasTxt).addTo(layer);
+    const marker = L.marker([item.lat, item.lng]).addTo(layer);
     marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
   }
 }
@@ -1090,13 +1149,7 @@ async function dibujarParadasCercanas(userCoords) {
   const seleccion = cercanas.slice(0, MAX_PARADAS_MOSTRAR);
 
   for (const item of seleccion) {
-    const lineas = obtenerLineasDesdeRelations(item.feature);
-    const lineasTxt = lineas.length ? `Líneas: ${lineas.join(', ')}` : 'Líneas: (sin datos)';
-    const distTxt = `Distancia: ${Math.round(item.d)} m`;
-
-    const marker = L.marker([item.lat, item.lng])
-      .bindPopup(`${lineasTxt}<br>${distTxt}`)
-      .addTo(layer);
+    const marker = L.marker([item.lat, item.lng]).addTo(layer);
     marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
   }
 }
@@ -1470,7 +1523,7 @@ function renderLugaresFavs() {
   contLugares.innerHTML = '';
   
   if (favs.length === 0) {
-    contLugares.innerHTML = '<p style="color: #999; font-size: 14px; text-align: center; margin: 16px 0;">Sin lugares guardados</p>';
+    contLugares.innerHTML = '<p class="fav-empty">Sin lugares guardados</p>';
     return;
   }
   
@@ -1480,26 +1533,21 @@ function renderLugaresFavs() {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;';
+    wrapper.className = 'fav-row';
     
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.className = 'fav-main';
     btn.dataset.lugarNombre = String(lugar?.nombre || 'Lugar guardado');
     btn.dataset.lat = String(lat);
     btn.dataset.lng = String(lng);
     btn.textContent = lugar.nombre;
-    btn.style.cssText = 'flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s ease;';
-    btn.onmouseover = () => { btn.style.background = '#f0f0f0'; btn.style.borderColor = '#007BFF'; };
-    btn.onmouseout = () => { btn.style.background = 'white'; btn.style.borderColor = '#ddd'; };
     
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
     btnEliminar.textContent = '✕';
     btnEliminar.title = 'Eliminar lugar guardado';
     btnEliminar.className = 'btn-eliminar-fav';
-    btnEliminar.style.cssText = 'width: 40px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; color: #999; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;';
-    btnEliminar.onmouseover = () => { btnEliminar.style.background = '#ffebee'; btnEliminar.style.borderColor = '#c00'; btnEliminar.style.color = '#c00'; };
-    btnEliminar.onmouseout = () => { btnEliminar.style.background = 'white'; btnEliminar.style.borderColor = '#ddd'; btnEliminar.style.color = '#999'; };
     btnEliminar.dataset.lugarNombre = lugar.nombre;
     btnEliminar.dataset.lugarLat = String(lat);
     btnEliminar.dataset.lugarLng = String(lng);
