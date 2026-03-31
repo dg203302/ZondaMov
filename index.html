@@ -501,11 +501,26 @@
             align-items: center;
             justify-content: center;
           }
+          .bs-top-row #bs-plan-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+          }
           .bs-top-row #bs-fav-btn {
             position: absolute;
             right: 0;
             top: 50%;
             transform: translateY(-50%);
+          }
+          #bs-plan-btn {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            box-sizing: border-box;
           }
           #bs-fav-btn {
             width: 40px;
@@ -622,6 +637,20 @@
             border-color: transparent;
           }
           .bottom-sheet-content .btn-save-location .icon {
+            width: 22px;
+            height: 22px;
+          }
+
+          .bottom-sheet-content .btn-nearest-line {
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-align: center;
+            font-weight: 600;
+          }
+          .bottom-sheet-content .btn-nearest-line .icon {
             width: 22px;
             height: 22px;
           }
@@ -836,6 +865,69 @@
             margin: 0 auto;
             pointer-events: auto;
           }
+
+          .search-results {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          .search-results-hint,
+          .search-results-loading {
+            color: #6b7280;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            font-size: 14px;
+          }
+          .search-results-error {
+            color: #c00;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            font-size: 14px;
+          }
+
+          .search-result-item {
+            width: 100%;
+            text-align: left;
+            padding: 12px 14px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+          }
+          .search-result-item:hover {
+            background: rgba(0, 0, 0, 0.03);
+          }
+          .search-results .search-result-item:last-child {
+            border-bottom: none;
+          }
+          .search-result-item-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #111827;
+          }
+          .search-result-item-info {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+          }
+
+          .dark-mode .search-results-hint,
+          .dark-mode .search-results-loading {
+            color: rgba(229, 231, 235, 0.70);
+          }
+          .dark-mode .search-result-item {
+            border-bottom-color: rgba(255, 255, 255, 0.10);
+          }
+          .dark-mode .search-result-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+          }
+          .dark-mode .search-result-item-title {
+            color: #e5e7eb;
+          }
+          .dark-mode .search-result-item-info {
+            color: rgba(229, 231, 235, 0.70);
+          }
           @keyframes slideUp {
             from {
               opacity: 0;
@@ -896,7 +988,7 @@
             <div id="search-modal" class="search-modal" onclick="if(event.target.id === 'search-modal') cerrarModalBusqueda()">
                 <div class="search-modal-content" onclick="event.stopPropagation()">
                     <div class="search-results" id="search-results">
-                        <p style="color: #999; text-align: center; padding: 20px;">Escribe para buscar</p>
+                      <p class="search-results-hint">Escribe para buscar</p>
                     </div>
                 </div>
             </div>
@@ -905,6 +997,10 @@
             <div id="bottom-sheet" class="bottom-sheet">
                 <div class="bottom-sheet-header">
                 <div class="bs-top-row">
+                  <button id="bs-plan-btn" type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: none;" aria-label="Planear ruta">
+                    <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+" />
+                    <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+" />
+                  </button>
                   <div class="bottom-sheet-handle" id="bs-handle"></div>
                   <button id="bs-fav-btn" type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: none;" aria-label="Agregar a favoritos">
                     <span class="fav-state state-add" aria-hidden="true">

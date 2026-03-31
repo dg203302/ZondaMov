@@ -28,6 +28,36 @@ const MAX_PARADAS_FAVS = 5;
 const MAX_PARADAS_RECORRIDO = 3;
 const STORAGE_DARK_MODE_KEY = 'transitsj_dark_mode_v1';
 
+const PARADA_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS43NSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1idXMtZnJvbnQtaWNvbiBsdWNpZGUtYnVzLWZyb250Ij48cGF0aCBkPSJNNCA2IDIgNyIvPjxwYXRoIGQ9Ik0xMCA2aDQiLz48cGF0aCBkPSJtMjIgNy0yLTEiLz48cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHg9IjQiIHk9IjMiIHJ4PSIyIi8+PHBhdGggZD0iTTQgMTFoMTYiLz48cGF0aCBkPSJNOCAxNWguMDEiLz48cGF0aCBkPSJNMTYgMTVoLjAxIi8+PHBhdGggZD0iTTYgMTl2MiIvPjxwYXRoIGQ9Ik0xOCAyMXYtMiIvPjwvc3ZnPg==';
+const USER_WAYPOINT_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGluLWljb24gbHVjaWRlLW1hcC1waW4iPjxwYXRoIGQ9Ik0yMCAxMGMwIDQuOTkzLTUuNTM5IDEwLjE5My03LjM5OSAxMS43OTlhMSAxIDAgMCAxLTEuMjAyIDBDOS41MzkgMjAuMTkzIDQgMTQuOTkzIDQgMTBhOCA4IDAgMCAxIDE2IDAiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSIzIi8+PC9zdmc+';
+let _iconoParadaLeaflet = null;
+let _iconoUserWaypointLeaflet = null;
+
+function obtenerIconoParadaLeaflet() {
+  if (!leafletMap || typeof L === 'undefined') return null;
+  if (_iconoParadaLeaflet) return _iconoParadaLeaflet;
+
+  _iconoParadaLeaflet = L.icon({
+    iconUrl: PARADA_ICON_URL,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -28],
+  });
+  return _iconoParadaLeaflet;
+}
+
+function obtenerIconoUserWaypointLeaflet() {
+  if (!leafletMap || typeof L === 'undefined') return null;
+  if (_iconoUserWaypointLeaflet) return _iconoUserWaypointLeaflet;
+
+  _iconoUserWaypointLeaflet = L.icon({
+    iconUrl: USER_WAYPOINT_ICON_URL,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+  });
+  return _iconoUserWaypointLeaflet;
+}
+
 const GEO_OPTIONS = {
   enableHighAccuracy: true,
   timeout: 10000,
@@ -65,13 +95,16 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
   const bsContent = document.getElementById('bs-content');
   const overlay = document.getElementById('bottom-sheet-overlay');
   const favBtn = document.getElementById('bs-fav-btn');
+  const planBtn = document.getElementById('bs-plan-btn');
   
-  bsTitle.textContent = titulo;
-  bsContent.innerHTML = contenidoHtml;
+  if (bsTitle) bsTitle.textContent = titulo;
+  if (bsContent) bsContent.innerHTML = contenidoHtml;
   
   // Limpiar estilos transform previos
-  bs.style.transform = '';
-  bs.style.transition = '';
+  if (bs) {
+    bs.style.transform = '';
+    bs.style.transition = '';
+  }
   
   bs?.classList.add('active');
   overlay?.classList.add('active');
@@ -106,6 +139,20 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
       favBtn.classList.remove('is-fav');
       favBtn.removeAttribute('data-tipo');
       favBtn.setAttribute('aria-label', 'Agregar a favoritos');
+      favBtn.onclick = null;
+    }
+  }
+
+  // Botón Planear ruta: solo para paradas (ubicado a la izquierda del handle)
+  if (planBtn) {
+    if (tipo === 'parada') {
+      planBtn.style.display = '';
+      planBtn.onclick = () => {
+        void verLineaMasCercanaHastaParadaSeleccionada(window._currentFeature || null);
+      };
+    } else {
+      planBtn.style.display = 'none';
+      planBtn.onclick = null;
     }
   }
 }
@@ -113,6 +160,8 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
 function cerrarBottomSheet() {
   const bs = document.getElementById('bottom-sheet');
   const overlay = document.getElementById('bottom-sheet-overlay');
+  const favBtn = document.getElementById('bs-fav-btn');
+  const planBtn = document.getElementById('bs-plan-btn');
   
   // Limpiar estilos y clases
   if (bs) {
@@ -123,6 +172,14 @@ function cerrarBottomSheet() {
   }
   
   overlay?.classList.remove('active');
+
+  if (favBtn) {
+    favBtn.onclick = null;
+  }
+  if (planBtn) {
+    planBtn.onclick = null;
+    planBtn.style.display = 'none';
+  }
   
   // Limpiar recorrido activo al cerrar
   limpiarRecorrido();
@@ -272,6 +329,7 @@ async function Centrar() {
 
 async function CentrarYOferécerGuardar() {
   await Centrar();
+
 }
 
 function abrirGuardadoDesdeMarcadorUbicacion() {
@@ -288,13 +346,25 @@ function abrirGuardadoDesdeMarcadorUbicacion() {
   const opciones = { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' };
   const fechaHora = ahora.toLocaleDateString('es-AR', opciones).replace(/\//g, '/');
   const nombreLugar = `Mi ubicación - ${fechaHora}`;
-  abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng);
+  abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, 'current');
 }
 
-function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng) {
+function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'current') {
   // Abrir bottom-sheet para confirmar guardado
   const iconSaveDark = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zYXZlLWljb24gbHVjaWRlLXNhdmUiPjxwYXRoIGQ9Ik0xNS4yIDNhMiAyIDAgMCAxIDEuNC42bDMuOCAzLjhhMiAyIDAgMCAxIC42IDEuNFYxOWEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJ6Ii8+PHBhdGggZD0iTTE3IDIxdi03YTEgMSAwIDAgMC0xLTFIOGExIDEgMCAwIDAtMSAxdjciLz48cGF0aCBkPSJNNyAzdjRhMSAxIDAgMCAwIDEgMWg3Ii8+PC9zdmc+';
   const iconSaveLight = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zYXZlLWljb24gbHVjaWRlLXNhdmUiPjxwYXRoIGQ9Ik0xNS4yIDNhMiAyIDAgMCAxIDEuNC42bDMuOCAzLjhhMiAyIDAgMCAxIC42IDEuNFYxOWEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJ6Ii8+PHBhdGggZD0iTTE3IDIxdi03YTEgMSAwIDAgMC0xLTFIOGExIDEgMCAwIDAtMSAxdjciLz48cGF0aCBkPSJNNyAzdjRhMSAxIDAgMCAwIDEgMWg3Ii8+PC9zdmc+';
+  const iconPlanDark = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+';
+  const iconPlanLight = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+';
+  const mostrarBtnLinea = String(contexto || '').toLowerCase() === 'search';
+  const btnLineaHtml = mostrarBtnLinea
+    ? `
+        <button type="button" class="btn-nearest-line" onclick="verLineaMasCercanaDesdeActualHastaDestino(${lat}, ${lng}, '${String(nombreLugar).replace(/'/g, "\\'")}')">
+          <img class="icon light" alt="" src="${iconPlanLight}" />
+          <img class="icon dark" alt="" src="${iconPlanDark}" />
+          <span>Planear ruta</span>
+        </button>
+      `
+    : '';
 
   const html = `
     <div class="save-location-sheet">
@@ -308,11 +378,12 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng) {
           <img class="icon dark" alt="" src="${iconSaveDark}" />
           <span>Guardar</span>
         </button>
+        ${btnLineaHtml}
       </div>
     </div>
   `;
   
-  abrirBottomSheet('¿Guardar ubicación?', html);
+  abrirBottomSheet('Opciones', html);
 }
 
 function guardarUbicacionActualDesdeBottomSheet(nombreLugar, lat, lng) {
@@ -688,7 +759,8 @@ async function centrarEnParadaFavorita({ id, label, lat, lng }) {
   if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
     const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
     leafletMap.setView([latNum, lngNum], Number.isFinite(z) ? z : ZOOM_CALLE);
-    L.marker([latNum, lngNum]).addTo(layerSel);
+    const icon = obtenerIconoParadaLeaflet();
+    L.marker([latNum, lngNum], icon ? { icon } : undefined).addTo(layerSel);
   }
 
   try {
@@ -866,7 +938,51 @@ async function dibujarParadasDelRecorrido(relIds) {
   paradasRecorrido = seleccion;
 
   for (const item of seleccion) {
-    const marker = L.marker([item.lat, item.lng]).addTo(layerParadas);
+    const icon = obtenerIconoParadaLeaflet();
+    const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layerParadas);
+    marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
+    if (paradasRecorridoMarkers && item.paradaId) {
+      paradasRecorridoMarkers.set(item.paradaId, marker);
+    }
+  }
+}
+
+async function dibujarParadasDelRecorridoRecortadas(relIds, latLngsRuta, startIndex, endIndex) {
+  if (!leafletMap || typeof L === 'undefined') return;
+  const layerParadas = asegurarParadasLayer();
+  if (!layerParadas) return;
+
+  const start = Number(startIndex);
+  const end = Number(endIndex);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end < 0 || start > end) {
+    await dibujarParadasDelRecorrido(relIds);
+    return;
+  }
+  if (!Array.isArray(latLngsRuta) || latLngsRuta.length < 2) {
+    await dibujarParadasDelRecorrido(relIds);
+    return;
+  }
+
+  layerParadas.clearLayers();
+  paradasRecorridoMarkers = new Map();
+
+  const puntos = await cargarParadasPuntos();
+  if (!puntos) return;
+
+  const seleccion = [];
+  for (const p of puntos) {
+    if (!featurePerteneceAAlgunaRelacion(p.feature, relIds)) continue;
+    const idx = indiceMasCercanoEnCamino(p.lat, p.lng, latLngsRuta);
+    if (idx < start || idx > end) continue;
+    const paradaId = obtenerIdParada(p.feature);
+    seleccion.push({ ...p, paradaId });
+  }
+
+  paradasRecorrido = seleccion;
+
+  for (const item of seleccion) {
+    const icon = obtenerIconoParadaLeaflet();
+    const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layerParadas);
     marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
     if (paradasRecorridoMarkers && item.paradaId) {
       paradasRecorridoMarkers.set(item.paradaId, marker);
@@ -1118,7 +1234,8 @@ async function dibujarParadasEnVista() {
   }
 
   for (const item of enVista) {
-    const marker = L.marker([item.lat, item.lng]).addTo(layer);
+    const icon = obtenerIconoParadaLeaflet();
+    const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layer);
     marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
   }
 }
@@ -1149,7 +1266,8 @@ async function dibujarParadasCercanas(userCoords) {
   const seleccion = cercanas.slice(0, MAX_PARADAS_MOSTRAR);
 
   for (const item of seleccion) {
-    const marker = L.marker([item.lat, item.lng]).addTo(layer);
+    const icon = obtenerIconoParadaLeaflet();
+    const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layer);
     marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
   }
 }
@@ -1179,7 +1297,10 @@ function cargarLF(coords, zoomObjetivo = null){
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(leafletMap);
 
-    userMarker = L.marker([coords.lat, coords.lng]).addTo(leafletMap);
+    {
+      const icon = obtenerIconoUserWaypointLeaflet();
+      userMarker = L.marker([coords.lat, coords.lng], icon ? { icon } : undefined).addTo(leafletMap);
+    }
     try {
       userMarker.off('click');
       userMarker.on('click', () => {
@@ -1238,7 +1359,7 @@ function cerrarModalBusqueda() {
     modal.classList.remove('active');
   }
   document.getElementById('search-input').value = '';
-  document.getElementById('search-results').innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Escribe para buscar</p>';
+  document.getElementById('search-results').innerHTML = '<p class="search-results-hint">Escribe para buscar</p>';
 
   if (searchTimeout) {
     clearTimeout(searchTimeout);
@@ -1277,7 +1398,7 @@ async function buscarLugaresEnTiempoReal() {
   // Si está vacío, cerrar modal y cancelar búsquedas
   if (!query) {
     modal?.classList.remove('active');
-    resultsDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Escribe para buscar</p>';
+    resultsDiv.innerHTML = '<p class="search-results-hint">Escribe para buscar</p>';
     if (searchAbortController) {
       try { searchAbortController.abort(); } catch { /* noop */ }
       searchAbortController = null;
@@ -1293,7 +1414,7 @@ async function buscarLugaresEnTiempoReal() {
   
   // Evitar pedir demasiadas veces: exigir un mínimo de letras
   if (query.length < SEARCH_MIN_CHARS) {
-    resultsDiv.innerHTML = `<p style="color: #999; text-align: center; padding: 20px;">Escribe al menos ${SEARCH_MIN_CHARS} letras</p>`;
+    resultsDiv.innerHTML = `<p class="search-results-hint">Escribe al menos ${SEARCH_MIN_CHARS} letras</p>`;
     if (searchAbortController) {
       try { searchAbortController.abort(); } catch { /* noop */ }
       searchAbortController = null;
@@ -1303,7 +1424,7 @@ async function buscarLugaresEnTiempoReal() {
   }
 
   // Mostrar estado de búsqueda
-  resultsDiv.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Buscando...</p>';
+  resultsDiv.innerHTML = '<p class="search-results-loading">Buscando...</p>';
   
   // Hacer búsqueda con debounce
   searchTimeout = setTimeout(() => buscarLugares(query), SEARCH_DEBOUNCE_MS);
@@ -1369,7 +1490,7 @@ async function buscarLugares(queryOverride = '') {
     });
 
     if (lugares.length === 0) {
-      resultsDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No se encontraron resultados en San Juan</p>';
+      resultsDiv.innerHTML = '<p class="search-results-hint">No se encontraron resultados en San Juan</p>';
       return;
     }
 
@@ -1388,33 +1509,25 @@ async function buscarLugares(queryOverride = '') {
       btn.dataset.lat = String(lat);
       btn.dataset.lng = String(lng);
       btn.dataset.nombre = nombreLugar;
-      btn.style.cssText = 'width: 100%; text-align: left; padding: 12px 14px; border: none; background: transparent; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.06);';
 
       const title = document.createElement('div');
       title.className = 'search-result-item-title';
       title.textContent = nombreLugar;
-      title.style.cssText = 'font-weight: 600; font-size: 14px; color: #222;';
 
       const info = document.createElement('div');
       info.className = 'search-result-item-info';
       info.textContent = tipoLugar;
-      info.style.cssText = 'font-size: 12px; color: #666; margin-top: 4px;';
 
       btn.appendChild(title);
       btn.appendChild(info);
       resultsDiv.appendChild(btn);
     }
 
-    // Quitar borde del último
-    const last = resultsDiv.lastElementChild;
-    if (last instanceof HTMLElement) {
-      last.style.borderBottom = 'none';
-    }
   } catch (error) {
     // Abort es normal cuando el usuario sigue tipeando
     if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') return;
     console.error('Error en búsqueda:', error);
-    resultsDiv.innerHTML = '<p style="color: #c00; text-align: center; padding: 20px;">Error al buscar. Intenta de nuevo.</p>';
+    resultsDiv.innerHTML = '<p class="search-results-error">Error al buscar. Intenta de nuevo.</p>';
   }
 }
 
@@ -1441,7 +1554,7 @@ function centrarEnLugar(lat, lng, nombreLugar) {
   centrarEnCoordenadas(lat, lng, ZOOM_CALLE);
   
   // Abrir bottom-sheet para ofrecer guardar la ubicación
-  abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng);
+  abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, 'search');
 }
 
 function centrarEnCoordenadas(lat, lng, zoom = ZOOM_CALLE) {
@@ -1464,6 +1577,231 @@ function calcularDistancia(lat1, lng1, lat2, lng2) {
             Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+function extraerLatLngsDeGeometria(geom) {
+  if (!geom) return [];
+  const type = geom.type;
+  const coords = geom.coordinates;
+  if (!Array.isArray(coords)) return [];
+
+  const out = [];
+  const pushCoord = (c) => {
+    if (!Array.isArray(c) || c.length < 2) return;
+    const lng = Number(c[0]);
+    const lat = Number(c[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    out.push([lat, lng]);
+  };
+
+  if (type === 'LineString') {
+    for (const c of coords) pushCoord(c);
+  } else if (type === 'MultiLineString') {
+    for (const line of coords) {
+      if (!Array.isArray(line)) continue;
+      for (const c of line) pushCoord(c);
+    }
+  }
+  return out;
+}
+
+function distanciaMinimaPuntoACamino(lat, lng, latLngs) {
+  if (!Array.isArray(latLngs) || latLngs.length === 0) return Infinity;
+
+  // Muestreo para performance: límite ~250 puntos por geometría
+  const maxSamples = 250;
+  const step = Math.max(1, Math.ceil(latLngs.length / maxSamples));
+
+  let min = Infinity;
+  for (let i = 0; i < latLngs.length; i += step) {
+    const p = latLngs[i];
+    const d = calcularDistancia(lat, lng, p[0], p[1]);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
+function indiceMasCercanoEnCamino(lat, lng, latLngs) {
+  if (!Array.isArray(latLngs) || latLngs.length === 0) return -1;
+
+  const maxSamples = 500;
+  const step = Math.max(1, Math.ceil(latLngs.length / maxSamples));
+
+  let min = Infinity;
+  let bestIndex = -1;
+  for (let i = 0; i < latLngs.length; i += step) {
+    const p = latLngs[i];
+    const d = calcularDistancia(lat, lng, p[0], p[1]);
+    if (d < min) {
+      min = d;
+      bestIndex = i;
+    }
+  }
+  return bestIndex;
+}
+
+async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino, nombreDestino = '', allowedRefs = null) {
+  if (!leafletMap || typeof L === 'undefined') return;
+
+  const latD = Number(latDestino);
+  const lngD = Number(lngDestino);
+  if (!Number.isFinite(latD) || !Number.isFinite(lngD)) return;
+
+  // Asegurar ubicación actual
+  if (!ubicacion || !Number.isFinite(ubicacion.lat) || !Number.isFinite(ubicacion.lng)) {
+    try {
+      const position = await obtenerPosicionActual();
+      ubicacion = { lat: position.coords.latitude, lng: position.coords.longitude };
+    } catch {
+      alert('No se pudo obtener tu ubicación actual.');
+      return;
+    }
+  }
+
+  const latO = Number(ubicacion.lat);
+  const lngO = Number(ubicacion.lng);
+  if (!Number.isFinite(latO) || !Number.isFinite(lngO)) return;
+
+  const data = await cargarParadasGeojson();
+  if (!data || !Array.isArray(data.features)) return;
+
+  const allowedSet = Array.isArray(allowedRefs) && allowedRefs.length
+    ? new Set(allowedRefs.map((r) => String(r)))
+    : null;
+
+  // Buscar la ruta (línea) con menor distancia combinada a origen + destino
+  let mejor = null;
+  let mejorFeature = null;
+  for (const f of data.features) {
+    const props = f?.properties;
+    if (!props) continue;
+    if (props.type !== 'route') continue;
+    if (props.route !== 'bus') continue;
+    const ref = typeof props.ref === 'string' ? props.ref.trim() : '';
+    if (!ref) continue;
+    if (allowedSet && !allowedSet.has(ref)) continue;
+
+    const latLngs = extraerLatLngsDeGeometria(f.geometry);
+    if (latLngs.length === 0) continue;
+
+    const dO = distanciaMinimaPuntoACamino(latO, lngO, latLngs);
+    const dD = distanciaMinimaPuntoACamino(latD, lngD, latLngs);
+    const score = dO + dD;
+
+    if (!mejor || score < mejor.score) {
+      const name = typeof props.name === 'string' ? props.name.trim() : '';
+      mejor = { ref, name, score, dO, dD };
+      mejorFeature = f;
+    }
+  }
+
+  if (!mejor) {
+    alert('No se encontró una línea cercana.');
+    return;
+  }
+
+  const colorLinea = (typeof colorPorLinea === 'object' && colorPorLinea)
+    ? (colorPorLinea[mejor.ref] || '#007BFF')
+    : '#007BFF';
+
+  // Dibujar solo el tramo (ida) del recorrido entre origen y destino.
+  // Importante: NO renderizar la ruta completa ni paradas adicionales.
+  limpiarRecorrido();
+  recorridoActivo = { ref: mejor.ref, name: mejor.name, planned: true };
+
+  const layerRec = asegurarRecorridoLayer();
+  layerRec?.clearLayers();
+
+  // Evitar que se vean paradas (las capas de paradas se usan también para cercanas/en vista)
+  const layerParadas = asegurarParadasLayer();
+  layerParadas?.clearLayers();
+
+  const origen = L.latLng(latO, lngO);
+  const destino = L.latLng(latD, lngD);
+
+  const latLngs = extraerLatLngsDeGeometria(mejorFeature?.geometry);
+  const iO = indiceMasCercanoEnCamino(latO, lngO, latLngs);
+  const iD = indiceMasCercanoEnCamino(latD, lngD, latLngs);
+  let startIndex = null;
+  let endIndex = null;
+  if (iO >= 0 && iD >= 0 && latLngs.length >= 2) {
+    startIndex = Math.min(iO, iD);
+    endIndex = Math.max(iO, iD);
+    const tramo = latLngs.slice(startIndex, endIndex + 1);
+    const tramoDir = iO <= iD ? tramo : tramo.slice().reverse();
+    if (tramoDir.length >= 2) {
+      L.polyline(tramoDir, { color: colorLinea, weight: 4, opacity: 0.95 }).addTo(layerRec);
+    }
+  }
+
+  // Dibujar paradas de la línea seleccionada (por relación)
+  try {
+    const relIds = obtenerRelIdsDeRutas([mejorFeature]);
+    if (relIds && relIds.size > 0) {
+      if (startIndex != null && endIndex != null) {
+        await dibujarParadasDelRecorridoRecortadas(relIds, latLngs, startIndex, endIndex);
+      } else {
+        await dibujarParadasDelRecorrido(relIds);
+      }
+    }
+  } catch {
+    // noop
+  }
+
+  // Marcadores origen/destino y conexión directa (opcional) en una capa separada.
+  const layerSel = asegurarSeleccionParadaLayer();
+  if (layerSel) {
+    layerSel.clearLayers();
+    L.circleMarker(origen, { radius: 6, weight: 2, color: colorLinea, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+    L.circleMarker(destino, { radius: 6, weight: 2, color: colorLinea, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+  }
+
+  try {
+    const bounds = L.latLngBounds([origen, destino]);
+    const recBounds = layerRec?.getBounds?.();
+    if (recBounds && recBounds.isValid && recBounds.isValid()) bounds.extend(recBounds);
+    leafletMap.fitBounds(bounds, { padding: [20, 20] });
+  } catch {
+    // noop
+  }
+
+  if (nombreDestino) {
+    // Mantener el nombre en memoria si luego se quiere reusar
+    window._ultimoDestinoBusqueda = { nombre: String(nombreDestino), lat: latD, lng: lngD };
+  }
+}
+
+async function verLineaMasCercanaHastaParadaSeleccionada(featureParada) {
+  if (!featureParada || !featureParada.geometry || !Array.isArray(featureParada.geometry.coordinates)) {
+    alert('No se pudo obtener la ubicación de la parada.');
+    return;
+  }
+
+  const coords = featureParada.geometry.coordinates;
+  const lng = Number(coords[0]);
+  const lat = Number(coords[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    alert('No se pudo obtener la ubicación de la parada.');
+    return;
+  }
+
+  let allowedRefs = null;
+  try {
+    const lineas = obtenerLineasDetalleDesdeRelations(featureParada);
+    if (Array.isArray(lineas) && lineas.length) {
+      allowedRefs = lineas
+        .map((l) => (l && l.ref != null ? String(l.ref).trim() : ''))
+        .filter(Boolean);
+    }
+  } catch {
+    // noop
+  }
+
+  const nombre = typeof obtenerEtiquetaParada === 'function'
+    ? obtenerEtiquetaParada(featureParada)
+    : ((featureParada.properties && (featureParada.properties.name || featureParada.properties.ref)) || 'la parada');
+
+  return verLineaMasCercanaDesdeActualHastaDestino(lat, lng, nombre, allowedRefs);
 }
 
 async function irAParadaDelLugar(lat, lng, nombreLugar, paradaLat, paradaLng) {
