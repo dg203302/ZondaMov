@@ -15,6 +15,14 @@
           button, a {
             -webkit-tap-highlight-color: transparent;
           }
+
+          a,
+          a:visited,
+          a:hover,
+          a:active {
+            color: inherit;
+            text-decoration: none;
+          }
           html, body {
             height: 100%;
             width: 100%;
@@ -200,8 +208,16 @@
             margin: 0;
           }
 
-          .sidepanel-credits-link {
+          .sidepanel-footer {
             margin-top: auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+          }
+
+          .sidepanel-credits-link {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -212,6 +228,15 @@
             padding: 10px 12px;
             border-radius: 10px;
             border: 1px solid rgba(0, 123, 255, 0.2);
+          }
+
+          .sidepanel-credits-link img {
+            width: 22px;
+            height: 22px;
+            flex: 0 0 22px;
+            object-fit: contain;
+            display: block;
+            border-radius: 6px;
           }
           .sidepanel-credits-link:hover {
             background: rgba(0, 123, 255, 0.08);
@@ -975,13 +1000,15 @@
 
               <div class="sidepanel-sep" role="separator" aria-hidden="true"></div>
 
-              <div class="sidepanel-credits">
-                <p>Créditos a OpenStreetMap</p>
-                <p>Créditos a Leaflet</p>
-                <p>Creditos a Lucide</p>
-              </div>
+              <div class="sidepanel-footer">
+                <div class="sidepanel-credits">
+                  <p>Créditos a <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a></p>
+                  <p>Créditos a <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a></p>
+                  <p>Creditos a <a href="https://lucide.dev/" target="_blank" rel="noopener">Lucide</a></p>
+                </div>
 
-              <a class="sidepanel-credits-link" href="https://djsolutionss.netlify.app" target="_blank" rel="noopener">Créditos</a>
+                <a class="sidepanel-credits-link" href="https://djsolutionss.netlify.app" target="_blank" rel="noopener"><img src="Datos/logo_djsolutions.png" alt="DJSolutions">Desarrollado por DJ Solutions</a>
+              </div>
             </div>
           </aside>
             
