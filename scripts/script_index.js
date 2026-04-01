@@ -14,8 +14,10 @@ let recorridoActivo = null;
 let paradasRecorrido = null;
 let paradasRecorridoMarkers = null;
 let seleccionParadaLayer = null;
+let _frequenciesData = null; // Cache de datos de frequencies.txt
 
 const PARADAS_GEOJSON_URL = encodeURI('Datos/DATOS SAN JUAN.geojson');
+const FREQUENCIES_URL = 'Datos/frequencies.txt';
 const RADIO_PARADAS_METROS = 700;
 const MAX_PARADAS_MOSTRAR = 40;
 const MAX_PARADAS_MOSTRAR_EN_VISTA = 200;
@@ -26,9 +28,10 @@ const STORAGE_LINEAS_FAVS_KEY = 'transitsj_lineas_favs_v1';
 const STORAGE_PARADAS_FAVS_KEY = 'transitsj_paradas_favs_v1';
 const MAX_PARADAS_FAVS = 5;
 const MAX_PARADAS_RECORRIDO = 3;
+const MAX_HORARIOS_MOSTRAR = 3;
 const STORAGE_DARK_MODE_KEY = 'transitsj_dark_mode_v1';
 
-const PARADA_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS43NSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1idXMtZnJvbnQtaWNvbiBsdWNpZGUtYnVzLWZyb250Ij48cGF0aCBkPSJNNCA2IDIgNyIvPjxwYXRoIGQ9Ik0xMCA2aDQiLz48cGF0aCBkPSJtMjIgNy0yLTEiLz48cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHg9IjQiIHk9IjMiIHJ4PSIyIi8+PHBhdGggZD0iTTQgMTFoMTYiLz48cGF0aCBkPSJNOCAxNWguMDEiLz48cGF0aCBkPSJNMTYgMTVoLjAxIi8+PHBhdGggZD0iTTYgMTl2MiIvPjxwYXRoIGQ9Ik0xOCAyMXYtMiIvPjwvc3ZnPg==';
+const PARADA_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1kb3QtaWNvbiBsdWNpZGUtZG90Ij48Y2lyY2xlIGN4PSIxMi4xIiBjeT0iMTIuMSIgcj0iMSIvPjwvc3ZnPg==';
 const USER_WAYPOINT_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGluLWljb24gbHVjaWRlLW1hcC1waW4iPjxwYXRoIGQ9Ik0yMCAxMGMwIDQuOTkzLTUuNTM5IDEwLjE5My03LjM5OSAxMS43OTlhMSAxIDAgMCAxLTEuMjAyIDBDOS41MzkgMjAuMTkzIDQgMTQuOTkzIDQgMTBhOCA4IDAgMCAxIDE2IDAiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSIzIi8+PC9zdmc+';
 let _iconoParadaLeaflet = null;
 let _iconoUserWaypointLeaflet = null;
@@ -397,7 +400,11 @@ function esFeatureParada(feature) {
 
   const rels = feature.properties?.['@relations'];
   if (Array.isArray(rels) && rels.length > 0) {
-    return rels.some((r) => (r?.role ?? '').toLowerCase() === 'stop');
+    // Aceptar tanto 'stop' como 'platform' (OSM PTv2: ambos son parte de la parada física)
+    return rels.some((r) => {
+      const role = (r?.role ?? '').toLowerCase();
+      return role === 'stop' || role === 'platform';
+    });
   }
 
   const highway = feature.properties?.highway;
@@ -844,6 +851,171 @@ function renderListaParadasRecorrido() {
   return `<h4>Paradas del recorrido</h4><ul>${items}</ul>`;
 }
 
+// ─── Frequencies / Horarios ───────────────────────────────────────────────────
+
+/** Carga y parsea frequencies.txt (CSV). Retorna array de objetos. */
+async function cargarFrequencies() {
+  if (_frequenciesData) return _frequenciesData;
+  try {
+    const resp = await fetch(FREQUENCIES_URL, { cache: 'force-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    const lines = text.trim().split(/\r?\n/);
+    const header = lines[0].split(',').map((h) => h.trim());
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map((c) => c.trim());
+      if (cols.length < 4) continue;
+      const row = {};
+      for (let j = 0; j < header.length; j++) row[header[j]] = cols[j] || '';
+      rows.push(row);
+    }
+    _frequenciesData = rows;
+    return _frequenciesData;
+  } catch (err) {
+    console.warn('No se pudo cargar frequencies.txt:', err);
+    return [];
+  }
+}
+
+/**
+ * Convierte "HH:MM:SS" a segundos desde medianoche.
+ * Soporta horas > 24 (GTFS permite eso).
+ */
+function horaASegundos(horaStr) {
+  if (!horaStr) return NaN;
+  const partes = String(horaStr).split(':').map(Number);
+  if (partes.length < 3) return NaN;
+  return partes[0] * 3600 + partes[1] * 60 + partes[2];
+}
+
+/**
+ * Formatea segundos desde medianoche a "HH:MM".
+ */
+function segundosAHora(segs) {
+  const h = Math.floor(segs / 3600) % 24;
+  const m = Math.floor((segs % 3600) / 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Retorna segundos desde medianoche para la hora local actual.
+ */
+function segundosActuales() {
+  const now = new Date();
+  return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+}
+
+/**
+ * Busca en frequencies.txt la entrada para una línea (por ref).
+ * El trip_id suele ser "trip_<ref>" pero también puede ser variante.
+ */
+function buscarFrequencyDeLinea(frequencies, ref) {
+  if (!Array.isArray(frequencies) || !ref) return null;
+  const refNorm = String(ref).trim().toUpperCase();
+
+  // Búsqueda exacta: trip_<ref> (insensible a mayúsculas)
+  let match = frequencies.find((r) => {
+    const tid = String(r.trip_id || '').trim().toUpperCase();
+    return tid === `TRIP_${refNorm}`;
+  });
+  if (match) return match;
+
+  // Búsqueda parcial: trip_id contiene el ref
+  match = frequencies.find((r) => {
+    const tid = String(r.trip_id || '').trim().toUpperCase();
+    return tid.includes(refNorm);
+  });
+  return match || null;
+}
+
+/**
+ * Calcula los próximos N horarios de llegada aproximados.
+ * Basado en headway_secs: los colectivos pasan cada headway_secs segundos.
+ * Retorna array de hasta N strings "HH:MM".
+ */
+function calcularProximosHorarios(frequencyRow, n = MAX_HORARIOS_MOSTRAR) {
+  if (!frequencyRow) return [];
+
+  const inicio = horaASegundos(frequencyRow.start_time);
+  const fin = horaASegundos(frequencyRow.end_time);
+  const headway = Number(frequencyRow.headway_secs);
+
+  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || !Number.isFinite(headway) || headway <= 0) return [];
+
+  const ahora = segundosActuales();
+
+  // Si estamos fuera del rango de servicio
+  if (ahora > fin) return [];
+
+  // Calcular el primer colectivo a partir de ahora
+  let primero;
+  if (ahora < inicio) {
+    // El servicio aún no empezó: primer colectivo es el de inicio
+    primero = inicio;
+  } else {
+    // Dentro del rango: próximo múltiplo de headway desde inicio
+    const transcurrido = ahora - inicio;
+    const cicloActual = Math.floor(transcurrido / headway);
+    primero = inicio + (cicloActual + 1) * headway;
+  }
+
+  const horarios = [];
+  for (let i = 0; i < n; i++) {
+    const t = primero + i * headway;
+    if (t > fin) break;
+    horarios.push(segundosAHora(t));
+  }
+  return horarios;
+}
+
+/**
+ * Genera el HTML con los próximos horarios para mostrar en el bottom-sheet.
+ */
+function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0) {
+  const titulo = lineaRef ? `Línea ${escapeHtml(lineaRef)}` : 'Línea';
+  const detalle = lineaNombre ? ` — ${escapeHtml(lineaNombre)}` : '';
+  const headwayMins = headwaySecs > 0 ? Math.round(headwaySecs / 60) : 0;
+
+  if (!horarios || horarios.length === 0) {
+    return `
+      <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+      <p style="font-size: 13px; color: #999; text-align: center; padding: 12px 0;">Sin servicio disponible en este momento.</p>
+    `;
+  }
+
+  const items = horarios.map((h, i) => {
+    const esProximo = i === 0;
+    const subtitulo = esProximo
+      ? '⏱ Próximo colectivo'
+      : headwayMins > 0
+        ? `En ~${headwayMins * i} min`
+        : '';
+    return `
+      <li style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: ${esProximo ? 'rgba(0,123,255,0.08)' : 'transparent'};
+        border: 1px solid ${esProximo ? 'rgba(0,123,255,0.25)' : 'rgba(0,0,0,0.07)'};
+        margin-bottom: 8px;
+      ">
+        <span style="font-size: 22px; font-weight: 700; color: ${esProximo ? '#007BFF' : '#333'}; min-width: 52px;">${escapeHtml(h)}</span>
+        <span style="font-size: 12px; color: #888;">${subtitulo}</span>
+      </li>
+    `;
+  }).join('');
+
+  return `
+    <p style="margin: 0 0 12px 0; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+    <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
+    <ul style="list-style: none; padding: 0; margin: 0;">${items}</ul>
+    <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">Horarios aproximados según frecuencia del servicio</p>
+  `;
+}
+
 function obtenerLineasDetalleDesdeRelations(feature) {
   const rels = feature.properties?.['@relations'];
   if (!Array.isArray(rels)) return [];
@@ -1058,6 +1230,9 @@ function agregarParadaAFavoritos(feature) {
 async function mostrarRecorridoDeLinea(ref, name = '') {
   if (!leafletMap || typeof L === 'undefined') return;
 
+  // Verificar si venimos desde una parada seleccionada
+  const paradaOrigen = window._currentFeature || null;
+
   if (seleccionParadaLayer) seleccionParadaLayer.clearLayers();
 
   const data = await cargarParadasGeojson();
@@ -1093,16 +1268,28 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
     // noop
   }
 
-  const titulo = ref ? `Línea ${escapeHtml(ref)}` : 'Línea';
-  const detalle = name ? ` — ${escapeHtml(name)}` : '';
-  const listaParadasHtml = renderListaParadasRecorrido();
-  const html = `
-    <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
-    ${listaParadasHtml}
-  `;
   window._currentLineaRef = ref;
   window._currentLineaName = name;
-  abrirBottomSheet('Recorrido', html, 'linea');
+
+  // Si venimos desde una parada, mostrar horarios de llegada
+  if (paradaOrigen) {
+    const frequencies = await cargarFrequencies();
+    const freqRow = buscarFrequencyDeLinea(frequencies, ref);
+    const horarios = calcularProximosHorarios(freqRow);
+    const headwaySecs = Number(freqRow?.headway_secs || 0);
+    const html = renderHorariosLlegada(horarios, ref, name, headwaySecs);
+    abrirBottomSheet(`Línea ${escapeHtml(ref)}`, html, 'linea');
+  } else {
+    // Sin parada de origen: mostrar recorrido con paradas (comportamiento anterior)
+    const titulo = ref ? `Línea ${escapeHtml(ref)}` : 'Línea';
+    const detalle = name ? ` — ${escapeHtml(name)}` : '';
+    const listaParadasHtml = renderListaParadasRecorrido();
+    const html = `
+      <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+      ${listaParadasHtml}
+    `;
+    abrirBottomSheet('Recorrido', html, 'linea');
+  }
 }
 
 function mostrarLineasEnContenedorParadas(feature) {
@@ -1168,7 +1355,10 @@ async function cargarParadasPuntos() {
   const data = await cargarParadasGeojson();
   if (!data) return null;
 
-  const puntos = [];
+  // Separar stops y platforms para poder fusionar pares cercanos
+  const stops = [];
+  const platforms = [];
+
   for (const feature of data.features) {
     if (!esFeatureParada(feature)) continue;
     const coords = feature.geometry?.coordinates;
@@ -1177,10 +1367,84 @@ async function cargarParadasPuntos() {
     const lng = Number(coords[0]);
     const lat = Number(coords[1]);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-    puntos.push({ feature, lat, lng });
+
+    const rels = feature.properties?.['@relations'];
+    const roles = Array.isArray(rels) ? new Set(rels.map((r) => (r?.role ?? '').toLowerCase())) : new Set();
+    const isPlatform = roles.has('platform') && !roles.has('stop');
+
+    if (isPlatform) {
+      platforms.push({ feature, lat, lng });
+    } else {
+      stops.push({ feature, lat, lng });
+    }
   }
 
-  paradasPuntos = puntos;
+  // Deduplicar: fusionar stop con su platform gemelo cercano (<15m)
+  // El platform absorbe las líneas del stop (suma de @relations de ambos)
+  // y el stop se descarta para evitar duplicados en el mapa.
+  const UMBRAL_FUSION_M = 15;
+  const stopUsado = new Set(); // índices de stops absorbidos
+
+  // Índice espacial sencillo para stops: bucket por lat/lng redondeado a 4 decimales (~11m)
+  const stopBucket = new Map();
+  for (let i = 0; i < stops.length; i++) {
+    const s = stops[i];
+    const key = `${Math.round(s.lat * 1000)},${Math.round(s.lng * 1000)}`;
+    if (!stopBucket.has(key)) stopBucket.set(key, []);
+    stopBucket.get(key).push(i);
+  }
+
+  const puntosFinales = [];
+
+  for (const plat of platforms) {
+    // Buscar stop cercano en buckets adyacentes
+    let stopGemelo = null;
+    outer: for (let dlat = -1; dlat <= 1; dlat++) {
+      for (let dlng = -1; dlng <= 1; dlng++) {
+        const key = `${Math.round(plat.lat * 1000) + dlat},${Math.round(plat.lng * 1000) + dlng}`;
+        const candidatos = stopBucket.get(key) || [];
+        for (const idx of candidatos) {
+          if (stopUsado.has(idx)) continue;
+          const s = stops[idx];
+          const dist = calcularDistancia(plat.lat, plat.lng, s.lat, s.lng);
+          if (dist <= UMBRAL_FUSION_M) {
+            stopGemelo = { idx, stop: s };
+            break outer;
+          }
+        }
+      }
+    }
+
+    if (stopGemelo) {
+      // Fusionar: combinar @relations de platform + stop en el feature del platform
+      stopUsado.add(stopGemelo.idx);
+      const relsPlat = plat.feature.properties?.['@relations'] ?? [];
+      const relsStop = stopGemelo.stop.feature.properties?.['@relations'] ?? [];
+      // Unión por rel id para no duplicar
+      const relIds = new Set(relsPlat.map((r) => r?.rel));
+      const relsExtra = relsStop.filter((r) => r?.rel && !relIds.has(r.rel));
+      if (relsExtra.length > 0) {
+        // Clonar feature y añadir relations faltantes
+        const featClone = JSON.parse(JSON.stringify(plat.feature));
+        featClone.properties['@relations'] = [...relsPlat, ...relsExtra];
+        puntosFinales.push({ feature: featClone, lat: plat.lat, lng: plat.lng });
+      } else {
+        puntosFinales.push(plat);
+      }
+    } else {
+      // Platform sin stop gemelo: agregar directamente
+      puntosFinales.push(plat);
+    }
+  }
+
+  // Stops que no fueron absorbidos por ningún platform
+  for (let i = 0; i < stops.length; i++) {
+    if (!stopUsado.has(i)) {
+      puntosFinales.push(stops[i]);
+    }
+  }
+
+  paradasPuntos = puntosFinales;
   return paradasPuntos;
 }
 
