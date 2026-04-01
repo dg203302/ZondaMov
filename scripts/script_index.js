@@ -40,6 +40,11 @@ const DESTINO_UMBRAL_CORTE_M = 90; // cortar tramo si pasa a <= 90m del destino
 const WAIT_FALLBACK_SECS = 12 * 60; // si no hay frecuencia disponible, penaliza ~12 min
 const DEFAULT_HEADWAY_SECS = 15 * 60; // si no hay datos de frequencies, asumir cada ~15 min
 
+// Long press en mapa para guardar ubicación
+const MAP_LONG_PRESS_MS = 650;
+const MAP_LONG_PRESS_MOVE_TOL_M = 25;
+let _longPressMapSetupDone = false;
+
 const PARADA_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1kb3QtaWNvbiBsdWNpZGUtZG90Ij48Y2lyY2xlIGN4PSIxMi4xIiBjeT0iMTIuMSIgcj0iMSIvPjwvc3ZnPg==';
 const USER_WAYPOINT_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGluLWljb24gbHVjaWRlLW1hcC1waW4iPjxwYXRoIGQ9Ik0yMCAxMGMwIDQuOTkzLTUuNTM5IDEwLjE5My03LjM5OSAxMS43OTlhMSAxIDAgMCAxLTEuMjAyIDBDOS41MzkgMjAuMTkzIDQgMTQuOTkzIDQgMTBhOCA4IDAgMCAxIDE2IDAiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSIzIi8+PC9zdmc+';
 let _iconoParadaLeaflet = null;
@@ -1709,6 +1714,8 @@ function cargarLF(coords, zoomObjetivo = null){
 
     leafletMap.on('moveend', agendarActualizacionParadas);
     leafletMap.on('zoomend', agendarActualizacionParadas);
+
+    setupLongPressGuardarUbicacionEnMapa();
   }
 
   if (userMarker) {
@@ -1720,6 +1727,97 @@ function cargarLF(coords, zoomObjetivo = null){
   } else {
     leafletMap.setView([coords.lat, coords.lng], leafletMap.getZoom());
   }
+}
+
+function setupLongPressGuardarUbicacionEnMapa() {
+  if (_longPressMapSetupDone) return;
+  if (!leafletMap || typeof L === 'undefined') return;
+
+  _longPressMapSetupDone = true;
+
+  let timerId = null;
+  let startLatLng = null;
+  let fired = false;
+
+  const clear = () => {
+    if (timerId != null) {
+      clearTimeout(timerId);
+      timerId = null;
+    }
+    startLatLng = null;
+    fired = false;
+  };
+
+  const makeNombre = () => {
+    const ahora = new Date();
+    const opciones = { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' };
+    const fechaHora = ahora.toLocaleString('es-AR', opciones);
+    return `Ubicación seleccionada - ${fechaHora}`;
+  };
+
+  const start = (e) => {
+    // Ignorar si el usuario está interactuando con controles del mapa (o si ya está arrastrando)
+    if (!leafletMap) return;
+    fired = false;
+
+    const latlng = e?.latlng;
+    if (!latlng || !Number.isFinite(latlng.lat) || !Number.isFinite(latlng.lng)) return;
+
+    startLatLng = L.latLng(latlng.lat, latlng.lng);
+    if (timerId != null) clearTimeout(timerId);
+
+    timerId = setTimeout(() => {
+      if (!leafletMap || !startLatLng) return;
+      // Si el mapa se está arrastrando, no dispares
+      if (leafletMap.dragging && leafletMap.dragging.enabled && leafletMap.dragging.enabled() && leafletMap.dragging._draggable?._moving) {
+        return;
+      }
+      fired = true;
+
+      // Marcador temporal en el punto presionado
+      try {
+        const layerSel = asegurarSeleccionParadaLayer();
+        if (layerSel) {
+          layerSel.clearLayers();
+          L.circleMarker(startLatLng, { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+        }
+      } catch {
+        // noop
+      }
+
+      const nombre = makeNombre();
+      abrirBottomSheetGuardarUbicacion(nombre, startLatLng.lat, startLatLng.lng, 'longpress');
+    }, MAP_LONG_PRESS_MS);
+  };
+
+  const move = (e) => {
+    if (!startLatLng || timerId == null || fired) return;
+    const latlng = e?.latlng;
+    if (!latlng || !Number.isFinite(latlng.lat) || !Number.isFinite(latlng.lng)) return;
+    const current = L.latLng(latlng.lat, latlng.lng);
+    const d = leafletMap.distance(startLatLng, current);
+    if (Number.isFinite(d) && d > MAP_LONG_PRESS_MOVE_TOL_M) {
+      clear();
+    }
+  };
+
+  const end = () => {
+    // Si ya disparó, dejamos que el usuario siga (no cerramos nada)
+    if (timerId != null) {
+      clearTimeout(timerId);
+      timerId = null;
+    }
+    startLatLng = null;
+  };
+
+  leafletMap.on('mousedown', start);
+  leafletMap.on('touchstart', start);
+  leafletMap.on('mousemove', move);
+  leafletMap.on('touchmove', move);
+  leafletMap.on('mouseup', end);
+  leafletMap.on('touchend', end);
+  leafletMap.on('dragstart', clear);
+  leafletMap.on('zoomstart', clear);
 }
 function MostrarFavs(){
   abrirBottomSheetFavoritos();
