@@ -29,6 +29,45 @@
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
           }
+
+          /*
+            Glass / transparencia estilo iOS (2026):
+            - Por defecto: superficies tipo vidrio con blur + saturate.
+            - Al desactivar (clase .no-transparency en <html>): fondos opacos y sin blur.
+          */
+          :root {
+            --glass-blur: 30px;
+            --glass-saturate: 185%;
+            --glass-border: rgba(255, 255, 255, 0.22);
+            --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+            --glass-bg: rgba(255, 255, 255, 0.30);
+            --glass-bg-strong: rgba(255, 255, 255, 0.42);
+
+            --glass-fg: #111;
+          }
+          .dark-mode {
+            --glass-border: rgba(255, 255, 255, 0.14);
+            --glass-shadow: 0 12px 38px rgba(0, 0, 0, 0.55);
+            --glass-bg: rgba(17, 24, 39, 0.26);
+            --glass-bg-strong: rgba(17, 24, 39, 0.38);
+            --glass-fg: #e5e7eb;
+          }
+
+          /* Si se desactiva la transparencia, se elimina blur y se vuelve opaco */
+          .no-transparency {
+            --glass-blur: 0px;
+            --glass-saturate: 100%;
+            --glass-border: rgba(0, 0, 0, 0.08);
+            --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --glass-bg: rgba(255, 255, 255, 0.98);
+            --glass-bg-strong: rgba(255, 255, 255, 1);
+          }
+          .dark-mode.no-transparency {
+            --glass-border: rgba(255, 255, 255, 0.10);
+            --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+            --glass-bg: rgba(17, 24, 39, 0.96);
+            --glass-bg-strong: rgba(17, 24, 39, 0.98);
+          }
           header {
             display: none;
           }
@@ -81,14 +120,14 @@
             height: 48px;
             border-radius: 50%;
             border: none;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: #333;
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            color: var(--glass-fg);
             font-size: 20px;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
@@ -97,7 +136,7 @@
             line-height: 0;
           }
           .btn-settings:hover {
-            background: rgba(255, 255, 255, 1);
+            background: var(--glass-bg-strong);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
             transform: scale(1.05);
           }
@@ -115,12 +154,12 @@
             height: 40px;
             padding: 0 14px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            color: #111;
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            color: var(--glass-fg);
             font-size: 15px;
             font-weight: 800;
             letter-spacing: 0.6px;
@@ -147,13 +186,16 @@
             width: fit-content;
             min-width: 240px;
             max-width: 84vw;
-            background: white;
+            background: var(--glass-bg-strong);
             z-index: 1201;
             transform: translateX(100%);
             transition: transform 0.25s ease;
             box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            border-left: 1px solid var(--glass-border);
           }
           .sidepanel.active {
             transform: translateX(0);
@@ -164,7 +206,9 @@
             justify-content: space-between;
             padding: 16px;
             border-bottom: 1px solid #e0e0e0;
-            background: #f8f9fa;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
           }
           .sidepanel-header h2 {
             margin: 0;
@@ -250,7 +294,9 @@
             padding: 12px 12px;
             border: 1px solid #ddd;
             border-radius: 12px;
-            background: white;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
           }
           .toggle-row span {
             font-size: 14px;
@@ -313,19 +359,19 @@
             color: #e5e7eb;
           }
           .dark-mode .btn-settings {
-            background: rgba(17, 24, 39, 0.92);
-            border-color: rgba(255, 255, 255, 0.12);
-            color: #e5e7eb;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            background: var(--glass-bg-strong);
+            border-color: var(--glass-border);
+            color: var(--glass-fg);
+            box-shadow: var(--glass-shadow);
           }
           .dark-mode .brand-pill {
-            background: rgba(17, 24, 39, 0.92);
-            border-color: rgba(255, 255, 255, 0.12);
-            color: #e5e7eb;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            background: var(--glass-bg-strong);
+            border-color: var(--glass-border);
+            color: var(--glass-fg);
+            box-shadow: var(--glass-shadow);
           }
           .dark-mode .bottom-sheet {
-            background: rgba(17, 24, 39, 0.98);
+            background: var(--glass-bg-strong);
           }
           .dark-mode .bottom-sheet-header {
             background: rgba(31, 41, 55, 0.95);
@@ -345,9 +391,9 @@
             border-color: rgba(255, 255, 255, 0.22);
           }
           .dark-mode .search-bar-container {
-            background: rgba(17, 24, 39, 0.92);
-            border-color: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            background: var(--glass-bg-strong);
+            border-color: var(--glass-border);
+            box-shadow: var(--glass-shadow);
           }
           .dark-mode .search-bar {
             color: #e5e7eb;
@@ -356,28 +402,28 @@
             color: rgba(229, 231, 235, 0.65);
           }
           .dark-mode .search-modal-content {
-            background: rgba(17, 24, 39, 0.92);
-            border-color: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+            background: var(--glass-bg-strong);
+            border-color: var(--glass-border);
+            box-shadow: var(--glass-shadow);
           }
           .dark-mode footer .btn-floating {
-            background: rgba(17, 24, 39, 0.92);
-            border-color: rgba(255, 255, 255, 0.12);
-            color: #e5e7eb;
+            background: var(--glass-bg-strong);
+            border-color: var(--glass-border);
+            color: var(--glass-fg);
           }
           .dark-mode .sidepanel {
-            background: rgba(17, 24, 39, 0.98);
+            background: var(--glass-bg-strong);
           }
           .dark-mode .sidepanel-header {
-            background: rgba(31, 41, 55, 0.95);
-            border-bottom-color: rgba(255, 255, 255, 0.08);
+            background: var(--glass-bg);
+            border-bottom-color: rgba(255, 255, 255, 0.10);
           }
           .dark-mode .sidepanel-header h2 {
             color: #e5e7eb;
           }
           .dark-mode .toggle-row {
-            background: rgba(31, 41, 55, 0.65);
-            border-color: rgba(255, 255, 255, 0.12);
+            background: var(--glass-bg);
+            border-color: rgba(255, 255, 255, 0.14);
           }
           .dark-mode .toggle-row span {
             color: #e5e7eb;
@@ -436,11 +482,11 @@
             font-size: 20px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
             border: none;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: #333;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            color: var(--glass-fg);
+            border: 1px solid var(--glass-border);
             transition: all 0.3s ease;
           }
           
@@ -491,7 +537,7 @@
             left: 0;
             width: 100%;
             height: 40vh;
-            background: white;
+            background: var(--glass-bg-strong);
             border-radius: 16px 16px 0 0;
             z-index: 1101;
             display: flex;
@@ -500,6 +546,10 @@
             transition: transform 0.3s ease;
             box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
             pointer-events: auto;
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
           }
           .bottom-sheet.active {
             transform: translateY(0);
@@ -825,13 +875,13 @@
             gap: 8px;
             min-width: 250px;
             margin-bottom: 16px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             padding: 8px;
             border-radius: 28px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
           }
           
           .search-bar {
@@ -874,17 +924,17 @@
             pointer-events: auto;
           }
           .search-modal-content {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             width: 90%;
             max-width: 500px;
             max-height: calc(70vh);
             display: flex;
             flex-direction: column;
             border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
             animation: slideUp 0.3s ease;
             align-self: center;
             margin: 0 auto;
@@ -950,6 +1000,20 @@
           .dark-mode .search-result-item-title {
             color: #e5e7eb;
           }
+
+          /* Ajustes extra para modo sin transparencia: quita blur explícitamente */
+          .no-transparency .btn-settings,
+          .no-transparency .brand-pill,
+          .no-transparency footer .btn-floating,
+          .no-transparency .search-bar-container,
+          .no-transparency .search-modal-content,
+          .no-transparency .bottom-sheet,
+          .no-transparency .sidepanel,
+          .no-transparency .sidepanel-header,
+          .no-transparency .toggle-row {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
           .dark-mode .search-result-item-info {
             color: rgba(229, 231, 235, 0.70);
           }
@@ -994,6 +1058,14 @@
                 <span>Modo oscuro</span>
                 <span class="ios-switch">
                   <input id="toggle-darkmode" type="checkbox" />
+                  <span class="track" aria-hidden="true"></span>
+                </span>
+              </label>
+
+              <label class="toggle-row" for="toggle-transparency">
+                <span>Transparencia</span>
+                <span class="ios-switch">
+                  <input id="toggle-transparency" type="checkbox" />
                   <span class="track" aria-hidden="true"></span>
                 </span>
               </label>

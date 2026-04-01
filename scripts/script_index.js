@@ -30,6 +30,15 @@ const MAX_PARADAS_FAVS = 5;
 const MAX_PARADAS_RECORRIDO = 3;
 const MAX_HORARIOS_MOSTRAR = 3;
 const STORAGE_DARK_MODE_KEY = 'transitsj_dark_mode_v1';
+const STORAGE_TRANSPARENCY_KEY = 'transitsj_transparency_v1';
+
+// ─── Planeación de ruta (estimaciones) ───────────────────────────────────────
+// Velocidades aproximadas (m/s). Se usan para puntuar por tiempo en lugar de solo distancia.
+const WALKING_SPEED_M_S = 1.35; // ~4.9 km/h
+const BUS_SPEED_M_S = 5.0; // ~18 km/h (estimación conservadora)
+const DESTINO_UMBRAL_CORTE_M = 90; // cortar tramo si pasa a <= 90m del destino
+const WAIT_FALLBACK_SECS = 12 * 60; // si no hay frecuencia disponible, penaliza ~12 min
+const DEFAULT_HEADWAY_SECS = 15 * 60; // si no hay datos de frequencies, asumir cada ~15 min
 
 const PARADA_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1kb3QtaWNvbiBsdWNpZGUtZG90Ij48Y2lyY2xlIGN4PSIxMi4xIiBjeT0iMTIuMSIgcj0iMSIvPjwvc3ZnPg==';
 const USER_WAYPOINT_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGluLWljb24gbHVjaWRlLW1hcC1waW4iPjxwYXRoIGQ9Ik0yMCAxMGMwIDQuOTkzLTUuNTM5IDEwLjE5My03LjM5OSAxMS43OTlhMSAxIDAgMCAxLTEuMjAyIDBDOS41MzkgMjAuMTkzIDQgMTQuOTkzIDQgMTBhOCA4IDAgMCAxIDE2IDAiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSIzIi8+PC9zdmc+';
@@ -478,6 +487,13 @@ function aplicarModoOscuro(enabled) {
   guardarBoolLocalStorage(STORAGE_DARK_MODE_KEY, Boolean(enabled));
 }
 
+function aplicarTransparencia(enabled) {
+  // enabled=true => superficies con blur/alpha (sin clase)
+  // enabled=false => modo opaco y sin blur (clase .no-transparency)
+  document.documentElement.classList.toggle('no-transparency', !Boolean(enabled));
+  guardarBoolLocalStorage(STORAGE_TRANSPARENCY_KEY, Boolean(enabled));
+}
+
 function abrirSidepanelConfiguracion() {
   const overlay = document.getElementById('settings-overlay');
   const panel = document.getElementById('settings-panel');
@@ -501,6 +517,7 @@ function setupSidepanelConfiguracion() {
   const overlay = document.getElementById('settings-overlay');
   const closeBtn = document.getElementById('settings-close');
   const toggle = document.getElementById('toggle-darkmode');
+  const toggleTransparency = document.getElementById('toggle-transparency');
 
   btn?.addEventListener('click', abrirSidepanelConfiguracion);
   overlay?.addEventListener('click', cerrarSidepanelConfiguracion);
@@ -512,6 +529,13 @@ function setupSidepanelConfiguracion() {
     toggle.addEventListener('change', () => aplicarModoOscuro(toggle.checked));
   }
   aplicarModoOscuro(enabled);
+
+  const transparencyEnabled = leerBoolLocalStorage(STORAGE_TRANSPARENCY_KEY, true);
+  if (toggleTransparency instanceof HTMLInputElement) {
+    toggleTransparency.checked = transparencyEnabled;
+    toggleTransparency.addEventListener('change', () => aplicarTransparencia(toggleTransparency.checked));
+  }
+  aplicarTransparencia(transparencyEnabled);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarSidepanelConfiguracion();
@@ -898,6 +922,19 @@ function segundosAHora(segs) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+function generarHorariosAproximadosDesdeAhora({ n = MAX_HORARIOS_MOSTRAR, headwaySecs = DEFAULT_HEADWAY_SECS, delaySecs = 0 }) {
+  const headway = Number(headwaySecs);
+  if (!Number.isFinite(headway) || headway <= 0) return [];
+
+  const ahora = segundosActuales();
+  const base = ahora + Math.max(0, Number(delaySecs) || 0);
+  const horarios = [];
+  for (let i = 0; i < n; i++) {
+    horarios.push(segundosAHora(base + i * headway));
+  }
+  return horarios;
+}
+
 /**
  * Retorna segundos desde medianoche para la hora local actual.
  */
@@ -970,6 +1007,85 @@ function calcularProximosHorarios(frequencyRow, n = MAX_HORARIOS_MOSTRAR) {
 }
 
 /**
+ * Calcula próximos arribos a una PARADA, ajustando por un offset de viaje
+ * (estimado en base a distancia sobre el recorrido de la línea).
+ *
+ * - start_time/end_time se interpretan como el rango de salida del servicio
+ * - headway_secs es el intervalo entre salidas
+ * - offsetSecs es el tiempo estimado desde el inicio del recorrido hasta la parada
+ */
+function calcularProximosArribosEnParada(frequencyRow, offsetSecs = 0, n = MAX_HORARIOS_MOSTRAR) {
+  if (!frequencyRow) return [];
+
+  const inicio = horaASegundos(frequencyRow.start_time);
+  const fin = horaASegundos(frequencyRow.end_time);
+  const headway = Number(frequencyRow.headway_secs);
+  const offset = Math.max(0, Number(offsetSecs) || 0);
+
+  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || !Number.isFinite(headway) || headway <= 0) return [];
+
+  const ahora = segundosActuales();
+  // Último arribo posible aproximado en esta parada
+  const finArribo = fin + offset;
+  if (ahora > finArribo) return [];
+
+  // Buscamos el primer k tal que (inicio + k*headway + offset) >= ahora
+  const target = ahora - offset;
+  let k;
+  if (target <= inicio) {
+    k = 0;
+  } else {
+    k = Math.ceil((target - inicio) / headway);
+    if (!Number.isFinite(k) || k < 0) k = 0;
+  }
+
+  const horarios = [];
+  for (let i = 0; i < n; i++) {
+    const salida = inicio + (k + i) * headway;
+    const arribo = salida + offset;
+    if (arribo > finArribo) break;
+    horarios.push(segundosAHora(arribo));
+  }
+  return horarios;
+}
+
+function estimarOffsetArriboParadaSegsDesdeRutas(rutas, paradaLat, paradaLng) {
+  // Estima cuánto tarda el bus desde el “inicio” del recorrido hasta la parada,
+  // usando distancia acumulada sobre la geometría y una velocidad promedio.
+  if (!Array.isArray(rutas) || rutas.length === 0) return 0;
+  const latP = Number(paradaLat);
+  const lngP = Number(paradaLng);
+  if (!Number.isFinite(latP) || !Number.isFinite(lngP)) return 0;
+
+  let best = null;
+  for (const f of rutas) {
+    const latLngs = extraerLatLngsDeGeometria(f?.geometry);
+    if (!Array.isArray(latLngs) || latLngs.length < 2) continue;
+
+    const idx = indiceMasCercanoEnCaminoPreciso(latP, lngP, latLngs);
+    if (idx < 0) continue;
+
+    const p = latLngs[idx];
+    const dToLine = calcularDistancia(latP, lngP, p[0], p[1]);
+    // Si la parada queda demasiado lejos del trazado, evitamos offsets basura
+    if (!Number.isFinite(dToLine) || dToLine > 350) continue;
+
+    const totalLen = distanciaAcumuladaEnCamino(latLngs, 0, latLngs.length - 1);
+    const fromStart = distanciaAcumuladaEnCamino(latLngs, 0, idx);
+    // Como no sabemos si start_time corresponde al extremo A o B, tomamos el menor
+    // (equivale a asumir que el servicio puede iniciar en cualquiera de los extremos).
+    const along = Math.min(fromStart, Math.max(0, totalLen - fromStart));
+    const offsetSecs = along / BUS_SPEED_M_S;
+
+    if (!best || dToLine < best.dToLine) {
+      best = { offsetSecs, dToLine };
+    }
+  }
+
+  return best && Number.isFinite(best.offsetSecs) ? Math.max(0, Math.round(best.offsetSecs)) : 0;
+}
+
+/**
  * Genera el HTML con los próximos horarios para mostrar en el bottom-sheet.
  */
 function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0) {
@@ -978,10 +1094,14 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0)
   const headwayMins = headwaySecs > 0 ? Math.round(headwaySecs / 60) : 0;
 
   if (!horarios || horarios.length === 0) {
-    return `
-      <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
-      <p style="font-size: 13px; color: #999; text-align: center; padding: 12px 0;">Sin servicio disponible en este momento.</p>
-    `;
+    const approx = generarHorariosAproximadosDesdeAhora({ n: MAX_HORARIOS_MOSTRAR, headwaySecs: headwaySecs > 0 ? headwaySecs : DEFAULT_HEADWAY_SECS, delaySecs: WAIT_FALLBACK_SECS });
+    if (!approx || approx.length === 0) {
+      return `
+        <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+        <p style="font-size: 13px; color: #999; text-align: center; padding: 12px 0;">Sin datos de horarios disponibles.</p>
+      `;
+    }
+    horarios = approx;
   }
 
   const items = horarios.map((h, i) => {
@@ -1012,7 +1132,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0)
     <p style="margin: 0 0 12px 0; font-size: 14px; color: #666;">${titulo}${detalle}</p>
     <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
     <ul style="list-style: none; padding: 0; margin: 0;">${items}</ul>
-    <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">Horarios aproximados según frecuencia del servicio</p>
+    <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">Horarios aproximados según frecuencia y distancia estimada hasta la parada</p>
   `;
 }
 
@@ -1275,8 +1395,21 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
   if (paradaOrigen) {
     const frequencies = await cargarFrequencies();
     const freqRow = buscarFrequencyDeLinea(frequencies, ref);
-    const horarios = calcularProximosHorarios(freqRow);
-    const headwaySecs = Number(freqRow?.headway_secs || 0);
+    const coords = paradaOrigen?.geometry?.coordinates;
+    const paradaLng = Array.isArray(coords) && coords.length >= 2 ? Number(coords[0]) : NaN;
+    const paradaLat = Array.isArray(coords) && coords.length >= 2 ? Number(coords[1]) : NaN;
+    const offsetSegs = estimarOffsetArriboParadaSegsDesdeRutas(rutas, paradaLat, paradaLng);
+    let horarios = calcularProximosArribosEnParada(freqRow, offsetSegs);
+    let headwaySecs = Number(freqRow?.headway_secs || 0);
+
+    // Si no hay datos de frequency o estamos fuera de servicio, igual mostrar aproximado.
+    if (!horarios || horarios.length === 0) {
+      const fallbackHeadway = headwaySecs > 0 ? headwaySecs : DEFAULT_HEADWAY_SECS;
+      // Incorporar el offset de la parada (tiempo de viaje) en el delay inicial
+      horarios = generarHorariosAproximadosDesdeAhora({ n: MAX_HORARIOS_MOSTRAR, headwaySecs: fallbackHeadway, delaySecs: Math.max(0, WAIT_FALLBACK_SECS + offsetSegs) });
+      headwaySecs = fallbackHeadway;
+    }
+
     const html = renderHorariosLlegada(horarios, ref, name, headwaySecs);
     abrirBottomSheet(`Línea ${escapeHtml(ref)}`, html, 'linea');
   } else {
@@ -1904,6 +2037,98 @@ function indiceMasCercanoEnCamino(lat, lng, latLngs) {
   return bestIndex;
 }
 
+function indiceMasCercanoEnCaminoPreciso(lat, lng, latLngs) {
+  if (!Array.isArray(latLngs) || latLngs.length === 0) return -1;
+
+  // 1) pasada gruesa (similar a indiceMasCercanoEnCamino)
+  const maxSamples = 600;
+  const step = Math.max(1, Math.ceil(latLngs.length / maxSamples));
+  let min = Infinity;
+  let approxIndex = -1;
+  for (let i = 0; i < latLngs.length; i += step) {
+    const p = latLngs[i];
+    const d = calcularDistancia(lat, lng, p[0], p[1]);
+    if (d < min) {
+      min = d;
+      approxIndex = i;
+    }
+  }
+  if (approxIndex < 0) return -1;
+
+  // 2) refinamiento local: busca alrededor del índice aproximado
+  const window = Math.max(20, step * 4);
+  const start = Math.max(0, approxIndex - window);
+  const end = Math.min(latLngs.length - 1, approxIndex + window);
+  let bestIndex = approxIndex;
+  let bestDist = min;
+  for (let i = start; i <= end; i++) {
+    const p = latLngs[i];
+    const d = calcularDistancia(lat, lng, p[0], p[1]);
+    if (d < bestDist) {
+      bestDist = d;
+      bestIndex = i;
+    }
+  }
+  return bestIndex;
+}
+
+function distanciaAcumuladaEnCamino(latLngs, startIndex, endIndex) {
+  if (!Array.isArray(latLngs) || latLngs.length < 2) return 0;
+  const s = Number(startIndex);
+  const e = Number(endIndex);
+  if (!Number.isFinite(s) || !Number.isFinite(e)) return 0;
+  if (s === e) return 0;
+
+  const from = Math.min(s, e);
+  const to = Math.max(s, e);
+  let total = 0;
+  for (let i = from; i < to; i++) {
+    const a = latLngs[i];
+    const b = latLngs[i + 1];
+    if (!a || !b) continue;
+    total += calcularDistancia(a[0], a[1], b[0], b[1]);
+  }
+  return total;
+}
+
+function estimarEsperaSegundos(frequencyRow) {
+  // Mejor que headway/2: usa el próximo arribo estimado.
+  if (!frequencyRow) return WAIT_FALLBACK_SECS;
+
+  const inicio = horaASegundos(frequencyRow.start_time);
+  const fin = horaASegundos(frequencyRow.end_time);
+  const headway = Number(frequencyRow.headway_secs);
+  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || !Number.isFinite(headway) || headway <= 0) {
+    return WAIT_FALLBACK_SECS;
+  }
+
+  const ahora = segundosActuales();
+  if (ahora > fin) return WAIT_FALLBACK_SECS;
+
+  let proximo;
+  if (ahora < inicio) {
+    proximo = inicio;
+  } else {
+    const transcurrido = ahora - inicio;
+    const cicloActual = Math.floor(transcurrido / headway);
+    proximo = inicio + (cicloActual + 1) * headway;
+  }
+  const espera = Math.max(0, proximo - ahora);
+  // Si la espera queda absurda por datos raros, cae a headway/2.
+  if (!Number.isFinite(espera) || espera < 0 || espera > 4 * 3600) {
+    return Math.max(0, Math.round(headway / 2));
+  }
+  return espera;
+}
+
+function estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs }) {
+  const walkSecs = (Number(dO) + Number(dD)) / WALKING_SPEED_M_S;
+  const rideSecs = Number(rideDist) / BUS_SPEED_M_S;
+  const wait = Number(waitSecs);
+  const total = walkSecs + rideSecs + (Number.isFinite(wait) ? wait : WAIT_FALLBACK_SECS);
+  return Number.isFinite(total) ? total : Infinity;
+}
+
 async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino, nombreDestino = '', allowedRefs = null) {
   if (!leafletMap || typeof L === 'undefined') return;
 
@@ -1929,11 +2154,14 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
   const data = await cargarParadasGeojson();
   if (!data || !Array.isArray(data.features)) return;
 
+  // Cargar frequencies una sola vez para puntuar por tiempo (espera estimada)
+  const frequencies = await cargarFrequencies();
+
   const allowedSet = Array.isArray(allowedRefs) && allowedRefs.length
     ? new Set(allowedRefs.map((r) => String(r)))
     : null;
 
-  // Buscar la ruta (línea) con menor distancia combinada a origen + destino
+  // Buscar la ruta (línea) con menor TIEMPO estimado (caminar + espera + viaje)
   let mejor = null;
   let mejorFeature = null;
   for (const f of data.features) {
@@ -1950,11 +2178,18 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
 
     const dO = distanciaMinimaPuntoACamino(latO, lngO, latLngs);
     const dD = distanciaMinimaPuntoACamino(latD, lngD, latLngs);
-    const score = dO + dD;
 
-    if (!mejor || score < mejor.score) {
+    const iO = indiceMasCercanoEnCaminoPreciso(latO, lngO, latLngs);
+    const iD = indiceMasCercanoEnCaminoPreciso(latD, lngD, latLngs);
+    const rideDist = (iO >= 0 && iD >= 0) ? distanciaAcumuladaEnCamino(latLngs, iO, iD) : Infinity;
+
+    const freqRow = buscarFrequencyDeLinea(frequencies, ref);
+    const waitSecs = estimarEsperaSegundos(freqRow);
+    const scoreSecs = estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs });
+
+    if (!mejor || scoreSecs < mejor.scoreSecs) {
       const name = typeof props.name === 'string' ? props.name.trim() : '';
-      mejor = { ref, name, score, dO, dD };
+      mejor = { ref, name, scoreSecs, dO, dD, iO, iD, rideDist, waitSecs };
       mejorFeature = f;
     }
   }
@@ -1984,15 +2219,40 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
   const destino = L.latLng(latD, lngD);
 
   const latLngs = extraerLatLngsDeGeometria(mejorFeature?.geometry);
-  const iO = indiceMasCercanoEnCamino(latO, lngO, latLngs);
-  const iD = indiceMasCercanoEnCamino(latD, lngD, latLngs);
+  const iO = Number.isFinite(mejor?.iO) ? mejor.iO : indiceMasCercanoEnCaminoPreciso(latO, lngO, latLngs);
+  const iDMin = indiceMasCercanoEnCaminoPreciso(latD, lngD, latLngs);
   let startIndex = null;
   let endIndex = null;
-  if (iO >= 0 && iD >= 0 && latLngs.length >= 2) {
-    startIndex = Math.min(iO, iD);
-    endIndex = Math.max(iO, iD);
+
+  if (iO >= 0 && iDMin >= 0 && latLngs.length >= 2) {
+    // Recorte “bien cortado”: termina en el punto más cercano al destino.
+    // Si además se alcanza el umbral de cercanía, intentamos cortar en el primer punto que entra al umbral
+    // y luego no sigue acercándose (evita que el trazado pase de largo).
+    const forward = iO <= iDMin;
+    const step = forward ? 1 : -1;
+    let end = iDMin;
+
+    // Buscar un punto de corte “suficientemente cerca” del destino
+    let bestSeen = Infinity;
+    let cutCandidate = null;
+    for (let i = iO; forward ? i <= iDMin : i >= iDMin; i += step) {
+      const p = latLngs[i];
+      if (!p) continue;
+      const d = calcularDistancia(latD, lngD, p[0], p[1]);
+      if (d < bestSeen) bestSeen = d;
+      // Si entramos al umbral, marcamos un candidato y seguimos un poco
+      if (d <= DESTINO_UMBRAL_CORTE_M) {
+        cutCandidate = i;
+        // Si ya estamos prácticamente en el mínimo local, podemos cortar acá
+        if (bestSeen <= DESTINO_UMBRAL_CORTE_M * 0.6) break;
+      }
+    }
+    if (cutCandidate != null) end = cutCandidate;
+
+    startIndex = Math.min(iO, end);
+    endIndex = Math.max(iO, end);
     const tramo = latLngs.slice(startIndex, endIndex + 1);
-    const tramoDir = iO <= iD ? tramo : tramo.slice().reverse();
+    const tramoDir = forward ? tramo : tramo.slice().reverse();
     if (tramoDir.length >= 2) {
       L.polyline(tramoDir, { color: colorLinea, weight: 4, opacity: 0.95 }).addTo(layerRec);
     }
