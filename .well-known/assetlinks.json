@@ -1,0 +1,11 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.netlify.transitsj.twa",
+      "sha256_cert_fingerprints":
+        ["60:7F:D2:B6:19:71:8F:F6:9C:6F:23:43:25:8C:E1:EB:71:83:96:05:2F:B5:93:E5:3F:CC:00:F7:8E:0A:D0:8B"]
+    }
+  }
+]
