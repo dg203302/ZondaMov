@@ -40,16 +40,16 @@
             --glass-saturate: 185%;
             --glass-border: rgba(255, 255, 255, 0.22);
             --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
-            --glass-bg: rgba(255, 255, 255, 0.30);
-            --glass-bg-strong: rgba(255, 255, 255, 0.42);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-bg-strong: rgba(255, 255, 255, 0.28);
 
             --glass-fg: #111;
           }
           .dark-mode {
             --glass-border: rgba(255, 255, 255, 0.14);
             --glass-shadow: 0 12px 38px rgba(0, 0, 0, 0.55);
-            --glass-bg: rgba(17, 24, 39, 0.26);
-            --glass-bg-strong: rgba(17, 24, 39, 0.38);
+            --glass-bg: rgba(17, 24, 39, 0.1);
+            --glass-bg-strong: rgba(17, 24, 39, 0.28);
             --glass-fg: #e5e7eb;
           }
 
@@ -102,13 +102,13 @@
           }
           .page-shade.top {
             top: 0;
-            height: 88px;
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0));
+            height: 140px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
           }
           .page-shade.bottom {
             bottom: 0;
-            height: 170px;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0));
+            height: 260px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
           }
 
           .btn-settings {
@@ -116,15 +116,15 @@
             top: 16px;
             right: 16px;
             z-index: 1002;
-            width: 48px;
-            height: 48px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             border: none;
             background: var(--glass-bg-strong);
             backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             color: var(--glass-fg);
-            font-size: 20px;
+            font-size: 24px;
             cursor: pointer;
             box-shadow: var(--glass-shadow);
             border: 1px solid var(--glass-border);
@@ -151,8 +151,8 @@
             z-index: 1002;
             display: inline-flex;
             align-items: center;
-            height: 40px;
-            padding: 0 14px;
+            height: 56px;
+            padding: 0 18px;
             border-radius: 999px;
             background: var(--glass-bg-strong);
             backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -160,12 +160,17 @@
             border: 1px solid var(--glass-border);
             box-shadow: var(--glass-shadow);
             color: var(--glass-fg);
-            font-size: 15px;
+            font-size: 18px;
             font-weight: 800;
             letter-spacing: 0.6px;
             font-variant: small-caps;
             pointer-events: none;
             user-select: none;
+          }
+
+          /* Ocultar píldora de saludo (configuración) */
+          .hide-greeting-pill #pill_bienv {
+            display: none !important;
           }
 
           .sidepanel-overlay {
@@ -253,7 +258,7 @@
           }
 
           .sidepanel-footer {
-            margin-top: auto;
+            margin-top: 0;
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -477,9 +482,9 @@
           
           footer .btn-floating {
             position: static;
-            width: 48px;
-            height: 48px;
-            font-size: 20px;
+            width: 64px;
+            height: 64px;
+            font-size: 24px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
             border: none;
             background: var(--glass-bg-strong);
@@ -501,8 +506,8 @@
           }
 
           .icon {
-            width: 22px;
-            height: 22px;
+            width: 28px;
+            height: 28px;
             display: block;
             pointer-events: none;
           }
@@ -864,6 +869,34 @@
             flex-wrap: wrap;
             pointer-events: none;
           }
+
+          /* Escritorio: la barra de búsqueda + botones van arriba en fila */
+          @media (min-width: 900px) {
+            footer {
+              top: 16px;
+              bottom: auto;
+              left: 50%;
+              transform: translateX(-50%);
+              width: min(980px, calc(100% - 220px));
+              align-items: center;
+              justify-content: center;
+              flex-wrap: nowrap;
+              gap: 16px;
+              padding: 12px 16px;
+              z-index: 1003;
+            }
+
+            .search-bar-container {
+              margin-bottom: 0;
+              min-width: 420px;
+            }
+
+            .footer-buttons {
+              flex-direction: row;
+              gap: 12px;
+              margin-bottom: 0;
+            }
+          }
           
           footer > * {
             pointer-events: auto;
@@ -878,18 +911,18 @@
             background: var(--glass-bg-strong);
             backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-            padding: 8px;
-            border-radius: 28px;
+            padding: 12px;
+            border-radius: 34px;
             box-shadow: var(--glass-shadow);
             border: 1px solid var(--glass-border);
           }
           
           .search-bar {
             flex: 1;
-            padding: 10px 14px;
+            padding: 14px 18px;
             border: none;
             border-radius: 20px;
-            font-size: 14px;
+            font-size: 16px;
             background: transparent;
             box-shadow: none;
             outline: none;
@@ -1028,8 +1061,9 @@
             }
           }
 
-        </style>
-    </head>
+          </style>
+          <link rel="manifest" href="manifest.json" />   
+        </head>
     <body>
         <header>
             <button>Inicio</button>
@@ -1041,7 +1075,7 @@
           <div class="page-shade top"></div>
           <div class="page-shade bottom"></div>
 
-            <div class="brand-pill" aria-hidden="true">TransitSJ</div>
+            <div class="brand-pill" aria-hidden="true" id="pill_bienv">...</div>
 
           <button id="btn-settings" class="btn-settings" type="button" title="Configuración" aria-label="Configuración">
             <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
@@ -1051,9 +1085,10 @@
           <div id="settings-overlay" class="sidepanel-overlay" aria-hidden="true"></div>
           <aside id="settings-panel" class="sidepanel" aria-hidden="true">
             <div class="sidepanel-header">
-              <h2>Configuración</h2>
+              <h1>TransitSJ</h1>
             </div>
             <div class="sidepanel-content">
+              <h1>Configuración</h1>
               <label class="toggle-row" for="toggle-darkmode">
                 <span>Modo oscuro</span>
                 <span class="ios-switch">
@@ -1070,9 +1105,18 @@
                 </span>
               </label>
 
+              <label class="toggle-row" for="toggle-greeting-pill">
+                <span>Píldora de saludo</span>
+                <span class="ios-switch">
+                  <input id="toggle-greeting-pill" type="checkbox" />
+                  <span class="track" aria-hidden="true"></span>
+                </span>
+              </label>
+
               <div class="sidepanel-sep" role="separator" aria-hidden="true"></div>
 
               <div class="sidepanel-footer">
+                <h1>Creditos</h1>
                 <div class="sidepanel-credits">
                   <p>Créditos a <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a></p>
                   <p>Créditos a <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a></p>

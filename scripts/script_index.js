@@ -31,6 +31,7 @@ const MAX_PARADAS_RECORRIDO = 3;
 const MAX_HORARIOS_MOSTRAR = 3;
 const STORAGE_DARK_MODE_KEY = 'transitsj_dark_mode_v1';
 const STORAGE_TRANSPARENCY_KEY = 'transitsj_transparency_v1';
+const STORAGE_GREETING_PILL_KEY = 'transitsj_greeting_pill_v1';
 
 // ─── Planeación de ruta (estimaciones) ───────────────────────────────────────
 // Velocidades aproximadas (m/s). Se usan para puntuar por tiempo en lugar de solo distancia.
@@ -499,6 +500,13 @@ function aplicarTransparencia(enabled) {
   guardarBoolLocalStorage(STORAGE_TRANSPARENCY_KEY, Boolean(enabled));
 }
 
+function aplicarPildoraSaludo(enabled) {
+  // enabled=true => se muestra la píldora
+  // enabled=false => se oculta (clase en <html>)
+  document.documentElement.classList.toggle('hide-greeting-pill', !Boolean(enabled));
+  guardarBoolLocalStorage(STORAGE_GREETING_PILL_KEY, Boolean(enabled));
+}
+
 function abrirSidepanelConfiguracion() {
   const overlay = document.getElementById('settings-overlay');
   const panel = document.getElementById('settings-panel');
@@ -523,6 +531,7 @@ function setupSidepanelConfiguracion() {
   const closeBtn = document.getElementById('settings-close');
   const toggle = document.getElementById('toggle-darkmode');
   const toggleTransparency = document.getElementById('toggle-transparency');
+  const toggleGreetingPill = document.getElementById('toggle-greeting-pill');
 
   btn?.addEventListener('click', abrirSidepanelConfiguracion);
   overlay?.addEventListener('click', cerrarSidepanelConfiguracion);
@@ -541,6 +550,13 @@ function setupSidepanelConfiguracion() {
     toggleTransparency.addEventListener('change', () => aplicarTransparencia(toggleTransparency.checked));
   }
   aplicarTransparencia(transparencyEnabled);
+
+  const greetingPillEnabled = leerBoolLocalStorage(STORAGE_GREETING_PILL_KEY, true);
+  if (toggleGreetingPill instanceof HTMLInputElement) {
+    toggleGreetingPill.checked = greetingPillEnabled;
+    toggleGreetingPill.addEventListener('change', () => aplicarPildoraSaludo(toggleGreetingPill.checked));
+  }
+  aplicarPildoraSaludo(greetingPillEnabled);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarSidepanelConfiguracion();
@@ -611,6 +627,20 @@ if (bsContent) {
   bsContent.addEventListener('click', (ev) => {
     const target = ev.target;
     if (!(target instanceof HTMLElement)) return;
+
+    // Volver a la lista de líneas de la parada (si la línea se abrió desde una parada)
+    const btnVolverParada = target.closest('button[data-volver-parada="1"]');
+    if (btnVolverParada instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const paradaOrigen = window._lineaDesdeParadaFeature || null;
+      if (paradaOrigen) {
+        // Descargar/limpiar la línea previa (recorrido + paradas del recorrido)
+        limpiarRecorrido();
+        asegurarParadasLayer()?.clearLayers();
+        mostrarLineasEnContenedorParadas(paradaOrigen);
+      }
+      return;
+    }
     
     // Manejar botones de eliminar de favoritos
     const btnDeleteLugar = target.closest('.btn-eliminar-fav[data-lugar-nombre]');
@@ -686,6 +716,11 @@ if (bsContent) {
     const ref = btn.dataset.lineaRef || '';
     const name = btn.dataset.lineaName || '';
     if (!ref && !name) return;
+
+    // Marcar si esta línea se abrió desde una parada (para mostrar botón volver)
+    const currentTipo = document.getElementById('bs-fav-btn')?.dataset?.tipo || '';
+    window._lineaDesdeParadaFeature = currentTipo === 'parada' ? (window._currentFeature || null) : null;
+
     void mostrarRecorridoDeLinea(ref, name);
   });
 }
@@ -1093,15 +1128,35 @@ function estimarOffsetArriboParadaSegsDesdeRutas(rutas, paradaLat, paradaLng) {
 /**
  * Genera el HTML con los próximos horarios para mostrar en el bottom-sheet.
  */
-function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0) {
+function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0, mostrarVolverParada = false) {
   const titulo = lineaRef ? `Línea ${escapeHtml(lineaRef)}` : 'Línea';
   const detalle = lineaNombre ? ` — ${escapeHtml(lineaNombre)}` : '';
   const headwayMins = headwaySecs > 0 ? Math.round(headwaySecs / 60) : 0;
+
+  const volverHtml = mostrarVolverParada
+    ? `
+      <button type="button" data-volver-parada="1" style="
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(0,0,0,0.12);
+        background: rgba(0,0,0,0.03);
+        color: #333;
+        font-weight: 600;
+        font-size: 13px;
+        margin: 0 0 10px 0;
+        cursor: pointer;
+      ">
+        ← Volver a líneas de la parada
+      </button>
+    `
+    : '';
 
   if (!horarios || horarios.length === 0) {
     const approx = generarHorariosAproximadosDesdeAhora({ n: MAX_HORARIOS_MOSTRAR, headwaySecs: headwaySecs > 0 ? headwaySecs : DEFAULT_HEADWAY_SECS, delaySecs: WAIT_FALLBACK_SECS });
     if (!approx || approx.length === 0) {
       return `
+        ${volverHtml}
         <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
         <p style="font-size: 13px; color: #999; text-align: center; padding: 12px 0;">Sin datos de horarios disponibles.</p>
       `;
@@ -1134,6 +1189,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0)
   }).join('');
 
   return `
+    ${volverHtml}
     <p style="margin: 0 0 12px 0; font-size: 14px; color: #666;">${titulo}${detalle}</p>
     <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
     <ul style="list-style: none; padding: 0; margin: 0;">${items}</ul>
@@ -1356,7 +1412,7 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
   if (!leafletMap || typeof L === 'undefined') return;
 
   // Verificar si venimos desde una parada seleccionada
-  const paradaOrigen = window._currentFeature || null;
+  const paradaOrigen = window._lineaDesdeParadaFeature || null;
 
   if (seleccionParadaLayer) seleccionParadaLayer.clearLayers();
 
@@ -1415,7 +1471,7 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
       headwaySecs = fallbackHeadway;
     }
 
-    const html = renderHorariosLlegada(horarios, ref, name, headwaySecs);
+    const html = renderHorariosLlegada(horarios, ref, name, headwaySecs, true);
     abrirBottomSheet(`Línea ${escapeHtml(ref)}`, html, 'linea');
   } else {
     // Sin parada de origen: mostrar recorrido con paradas (comportamiento anterior)
@@ -2518,9 +2574,21 @@ function renderLugaresFavs() {
   }
 }
 
-
+async function cargarSalud(){
+  const tiempo_act = new Date();
+  const pildora = document.getElementById('pill_bienv');
+  if (!pildora) return;
+  else if (tiempo_act.getHours() >= 6 && tiempo_act.getHours() < 12) {
+    pildora.textContent = 'Buenos Días';
+  } else if (tiempo_act.getHours() >= 12 && tiempo_act.getHours() < 20) {
+    pildora.textContent = 'Buenas Tardes';
+  } else {
+    pildora.textContent = 'Buenas Noches';
+  }
+}
 window.onload = async () => {
   try {
+    await cargarSalud();
     await Centrar();
     cargarFavos();
   } catch (error) {
