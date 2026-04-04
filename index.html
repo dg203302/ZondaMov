@@ -208,12 +208,28 @@
           .sidepanel-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
             padding: 16px;
             border-bottom: 1px solid #e0e0e0;
             background: var(--glass-bg);
             backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            min-height: 190px;
+            flex-direction: column;
+            gap: 8px;
+            background-image:
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.70)),
+              url("Icons/logo%20transit.png");
+            background-repeat: no-repeat, no-repeat;
+            background-position: center, center;
+            background-size: cover, cover;
+          }
+          .sidepanel-header h1 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
           }
           .sidepanel-header h2 {
             margin: 0;
@@ -422,6 +438,12 @@
           .dark-mode .sidepanel-header {
             background: var(--glass-bg);
             border-bottom-color: rgba(255, 255, 255, 0.10);
+            background-image:
+              linear-gradient(to bottom, rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.55)),
+              url("Icons/logo%20transit.png");
+          }
+          .dark-mode .sidepanel-header h1 {
+            color: #e5e7eb;
           }
           .dark-mode .sidepanel-header h2 {
             color: #e5e7eb;
