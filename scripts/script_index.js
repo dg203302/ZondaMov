@@ -31,7 +31,6 @@ const MAX_PARADAS_RECORRIDO = 3;
 const MAX_HORARIOS_MOSTRAR = 3;
 const STORAGE_DARK_MODE_KEY = 'transitsj_dark_mode_v1';
 const STORAGE_TRANSPARENCY_KEY = 'transitsj_transparency_v1';
-const STORAGE_GREETING_PILL_KEY = 'transitsj_greeting_pill_v1';
 
 // ─── Planeación de ruta (estimaciones) ───────────────────────────────────────
 // Velocidades aproximadas (m/s). Se usan para puntuar por tiempo en lugar de solo distancia.
@@ -500,13 +499,6 @@ function aplicarTransparencia(enabled) {
   guardarBoolLocalStorage(STORAGE_TRANSPARENCY_KEY, Boolean(enabled));
 }
 
-function aplicarPildoraSaludo(enabled) {
-  // enabled=true => se muestra la píldora
-  // enabled=false => se oculta (clase en <html>)
-  document.documentElement.classList.toggle('hide-greeting-pill', !Boolean(enabled));
-  guardarBoolLocalStorage(STORAGE_GREETING_PILL_KEY, Boolean(enabled));
-}
-
 function abrirSidepanelConfiguracion() {
   const overlay = document.getElementById('settings-overlay');
   const panel = document.getElementById('settings-panel');
@@ -531,7 +523,6 @@ function setupSidepanelConfiguracion() {
   const closeBtn = document.getElementById('settings-close');
   const toggle = document.getElementById('toggle-darkmode');
   const toggleTransparency = document.getElementById('toggle-transparency');
-  const toggleGreetingPill = document.getElementById('toggle-greeting-pill');
 
   btn?.addEventListener('click', abrirSidepanelConfiguracion);
   overlay?.addEventListener('click', cerrarSidepanelConfiguracion);
@@ -550,13 +541,6 @@ function setupSidepanelConfiguracion() {
     toggleTransparency.addEventListener('change', () => aplicarTransparencia(toggleTransparency.checked));
   }
   aplicarTransparencia(transparencyEnabled);
-
-  const greetingPillEnabled = leerBoolLocalStorage(STORAGE_GREETING_PILL_KEY, true);
-  if (toggleGreetingPill instanceof HTMLInputElement) {
-    toggleGreetingPill.checked = greetingPillEnabled;
-    toggleGreetingPill.addEventListener('change', () => aplicarPildoraSaludo(toggleGreetingPill.checked));
-  }
-  aplicarPildoraSaludo(greetingPillEnabled);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarSidepanelConfiguracion();
@@ -900,11 +884,14 @@ function obtenerEtiquetaParada(feature) {
   return 'Parada';
 }
 
-function renderListaParadasRecorrido() {
+function renderListaParadasRecorrido({ mostrarTodas = false } = {}) {
   if (!Array.isArray(paradasRecorrido) || paradasRecorrido.length === 0) return '';
 
-  const items = paradasRecorrido
-    .slice(0, MAX_PARADAS_RECORRIDO)
+  const listaParadas = mostrarTodas
+    ? paradasRecorrido
+    : paradasRecorrido.slice(0, MAX_PARADAS_RECORRIDO);
+
+  const items = listaParadas
     .map((p, idx) => {
       const paradaId = p.paradaId || obtenerIdParada(p.feature);
       const etiqueta = obtenerEtiquetaParada(p.feature);
@@ -912,7 +899,12 @@ function renderListaParadasRecorrido() {
     })
     .join('');
 
-  return `<h4>Paradas del recorrido</h4><ul>${items}</ul>`;
+  const total = paradasRecorrido.length;
+  const subtitulo = mostrarTodas
+    ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #666;">${total} paradas en este recorrido</p>`
+    : '';
+
+  return `<h4>Paradas del recorrido</h4>${subtitulo}<ul>${items}</ul>`;
 }
 
 // ─── Frequencies / Horarios ───────────────────────────────────────────────────
@@ -1477,7 +1469,7 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
     // Sin parada de origen: mostrar recorrido con paradas (comportamiento anterior)
     const titulo = ref ? `Línea ${escapeHtml(ref)}` : 'Línea';
     const detalle = name ? ` — ${escapeHtml(name)}` : '';
-    const listaParadasHtml = renderListaParadasRecorrido();
+    const listaParadasHtml = renderListaParadasRecorrido({ mostrarTodas: true });
     const html = `
       <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
       ${listaParadasHtml}
@@ -1900,6 +1892,7 @@ function abrirModalBusqueda() {
   const modal = document.getElementById('search-modal');
   if (modal) {
     modal.classList.add('active');
+    posicionarModalBusqueda();
     document.getElementById('search-input')?.focus();
   }
 }
@@ -1927,6 +1920,7 @@ let searchTimeout;
 let searchAbortController = null;
 let searchSeq = 0;
 let lastSearchIssuedQuery = '';
+let _lineasBusquedaCache = null;
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_MIN_CHARS = 2;
@@ -1936,6 +1930,333 @@ const SAN_JUAN_BOUNDS = {
   minLng: -68.7,
   maxLng: -68.3,
 };
+
+const SEARCH_LINEAS_MAX_RESULTS = 8;
+const SEARCH_CALLES_MAX_RESULTS = 8;
+const SEARCH_NOMINATIM_RAW_LIMIT = 24;
+
+function normalizarTextoBusqueda(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function tokenizarBusqueda(texto) {
+  return normalizarTextoBusqueda(texto)
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2);
+}
+
+function scoreTextoContraQuery(texto, queryNorm, tokens) {
+  const txt = normalizarTextoBusqueda(texto);
+  if (!txt) return 0;
+
+  let score = 0;
+  if (txt === queryNorm) score += 420;
+  if (txt.startsWith(queryNorm)) score += 260;
+  if (txt.includes(queryNorm)) score += 170;
+
+  if (Array.isArray(tokens) && tokens.length > 0) {
+    const words = txt.split(/\s+/).filter(Boolean);
+    let matched = 0;
+    for (const tk of tokens) {
+      if (words.some((w) => w.startsWith(tk))) {
+        score += 34;
+        matched++;
+      } else if (txt.includes(tk)) {
+        score += 16;
+        matched++;
+      }
+    }
+    if (matched === tokens.length) score += 110;
+    else score += matched * 5;
+  }
+
+  return score;
+}
+
+function obtenerCategoriaNominatim(item) {
+  const clazz = normalizarTextoBusqueda(item?.class);
+  const type = normalizarTextoBusqueda(item?.type);
+  if (clazz === 'highway') return 'Calle';
+  if (['road', 'residential', 'service', 'living_street', 'tertiary', 'secondary', 'primary', 'unclassified', 'pedestrian'].includes(type)) {
+    return 'Calle';
+  }
+  if (clazz === 'amenity' || clazz === 'building' || clazz === 'office') return 'Lugar';
+  if (clazz === 'boundary' || clazz === 'place') return 'Zona';
+  return 'Lugar';
+}
+
+function claveUnicaResultadoNominatim(item) {
+  const osm = `${String(item?.osm_type || '')}:${String(item?.osm_id || '')}`;
+  if (osm !== ':') return osm;
+  const lat = Number(item?.lat);
+  const lng = Number(item?.lon);
+  return `${lat.toFixed(6)},${lng.toFixed(6)}`;
+}
+
+function deduplicarResultadosNominatim(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const item of arr) {
+    const key = claveUnicaResultadoNominatim(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+async function fetchNominatimSanJuan(query, signal, bounded = true) {
+  const url = new URL('https://nominatim.openstreetmap.org/search');
+  url.searchParams.set('q', `${query}, San Juan, Argentina`);
+  url.searchParams.set('format', 'jsonv2');
+  url.searchParams.set('limit', String(SEARCH_NOMINATIM_RAW_LIMIT));
+  url.searchParams.set('countrycodes', 'ar');
+  url.searchParams.set('dedupe', '1');
+  url.searchParams.set('addressdetails', '0');
+  if (bounded) {
+    url.searchParams.set('viewbox', `${SAN_JUAN_BOUNDS.minLng},${SAN_JUAN_BOUNDS.maxLat},${SAN_JUAN_BOUNDS.maxLng},${SAN_JUAN_BOUNDS.minLat}`);
+    url.searchParams.set('bounded', '1');
+  }
+
+  const response = await fetch(url.toString(), {
+    signal,
+    headers: {
+      'Accept-Language': 'es',
+    },
+  });
+  if (!response.ok) throw new Error('Error en búsqueda');
+  const raw = await response.json();
+  return Array.isArray(raw) ? raw : [];
+}
+
+function pareceBusquedaLinea(query) {
+  const q = normalizarTextoBusqueda(query);
+  if (!q) return false;
+  if (/\b(linea|lineas|l)\b/.test(q)) return true;
+  return /^\d{1,4}[a-z]?$/.test(q);
+}
+
+function extraerRefLineaDesdeQuery(query) {
+  const q = normalizarTextoBusqueda(query);
+  if (!q) return '';
+
+  const m = q.match(/(?:^|\s)(?:linea|lineas|l)\s*([0-9]{1,4}[a-z]?)(?:\s|$)/);
+  if (m && m[1]) return m[1].trim();
+
+  if (/^[0-9]{1,4}[a-z]?$/.test(q)) return q;
+  return '';
+}
+
+function obtenerCentroAproximadoDeGeometria(geometry) {
+  const latLngs = extraerLatLngsDeGeometria(geometry);
+  if (!Array.isArray(latLngs) || latLngs.length === 0) return null;
+  const mid = latLngs[Math.floor(latLngs.length / 2)];
+  if (!Array.isArray(mid) || mid.length < 2) return null;
+  const lat = Number(mid[0]);
+  const lng = Number(mid[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
+async function obtenerLineasParaBusqueda() {
+  if (_lineasBusquedaCache) return _lineasBusquedaCache;
+
+  const data = await cargarParadasGeojson();
+  if (!data || !Array.isArray(data.features)) {
+    _lineasBusquedaCache = [];
+    return _lineasBusquedaCache;
+  }
+
+  const porRef = new Map();
+  for (const f of data.features) {
+    const props = f?.properties;
+    if (!props) continue;
+    if (props.type !== 'route' || props.route !== 'bus') continue;
+
+    const ref = typeof props.ref === 'string' ? props.ref.trim() : '';
+    if (!ref) continue;
+    const name = typeof props.name === 'string' ? props.name.trim() : '';
+
+    if (!porRef.has(ref)) {
+      porRef.set(ref, { ref, name, centro: obtenerCentroAproximadoDeGeometria(f.geometry) });
+    } else if (!porRef.get(ref).name && name) {
+      porRef.get(ref).name = name;
+    }
+  }
+
+  const arr = Array.from(porRef.values());
+  arr.sort((a, b) => {
+    const aNum = Number.parseInt(a.ref, 10);
+    const bNum = Number.parseInt(b.ref, 10);
+    const aEsNum = Number.isFinite(aNum) && String(aNum) === a.ref;
+    const bEsNum = Number.isFinite(bNum) && String(bNum) === b.ref;
+    if (aEsNum && bEsNum) return aNum - bNum;
+    return a.ref.localeCompare(b.ref, 'es');
+  });
+
+  _lineasBusquedaCache = arr;
+  return _lineasBusquedaCache;
+}
+
+async function buscarLineasLocales(query) {
+  const queryNorm = normalizarTextoBusqueda(query);
+  if (!queryNorm) return [];
+
+  const refQuery = extraerRefLineaDesdeQuery(queryNorm);
+  const lineas = await obtenerLineasParaBusqueda();
+  if (!Array.isArray(lineas) || lineas.length === 0) return [];
+
+  const candidatos = [];
+  for (const linea of lineas) {
+    const refNorm = normalizarTextoBusqueda(linea.ref);
+    const nameNorm = normalizarTextoBusqueda(linea.name);
+    const labelNorm = normalizarTextoBusqueda(`linea ${linea.ref} ${linea.name || ''}`);
+
+    let score = 0;
+    if (refQuery && refNorm === refQuery) score += 400;
+    if (refNorm === queryNorm) score += 300;
+    if (refNorm.startsWith(queryNorm)) score += 200;
+    if (nameNorm && nameNorm.includes(queryNorm)) score += 120;
+    if (labelNorm.includes(queryNorm)) score += 90;
+
+    if (score > 0) {
+      candidatos.push({ ...linea, score });
+    }
+  }
+
+  candidatos.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return String(a.ref).localeCompare(String(b.ref), 'es');
+  });
+
+  return candidatos.slice(0, SEARCH_LINEAS_MAX_RESULTS);
+}
+
+function esResultadoCalleNominatim(item) {
+  const clazz = normalizarTextoBusqueda(item?.class);
+  const type = normalizarTextoBusqueda(item?.type);
+
+  if (clazz === 'highway') return true;
+  if (['road', 'residential', 'service', 'living_street', 'tertiary', 'secondary', 'primary', 'unclassified', 'pedestrian'].includes(type)) {
+    return true;
+  }
+  return false;
+}
+
+async function buscarCallesEnSanJuan(query, signal) {
+  const queryNorm = normalizarTextoBusqueda(query);
+  const tokens = tokenizarBusqueda(queryNorm);
+
+  const baseBounded = await fetchNominatimSanJuan(queryNorm, signal, true);
+  const baseUnbounded = baseBounded.length < 5
+    ? await fetchNominatimSanJuan(queryNorm, signal, false)
+    : [];
+
+  const lugares = deduplicarResultadosNominatim([...baseBounded, ...baseUnbounded]);
+
+  const enBounds = lugares.filter((lugar) => {
+    const lat = Number(lugar?.lat);
+    const lng = Number(lugar?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+    return (
+      lat >= SAN_JUAN_BOUNDS.minLat &&
+      lat <= SAN_JUAN_BOUNDS.maxLat &&
+      lng >= SAN_JUAN_BOUNDS.minLng &&
+      lng <= SAN_JUAN_BOUNDS.maxLng
+    );
+  });
+
+  const scoreados = enBounds
+    .map((lugar) => {
+      const name = String(lugar?.name || '');
+      const display = String(lugar?.display_name || '');
+      const categoria = obtenerCategoriaNominatim(lugar);
+
+      let score = 0;
+      score += scoreTextoContraQuery(name, queryNorm, tokens) * 1.2;
+      score += scoreTextoContraQuery(display, queryNorm, tokens);
+      if (categoria === 'Calle') score += 18;
+
+      return { lugar, score, categoria };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, SEARCH_CALLES_MAX_RESULTS);
+
+  return scoreados.map(({ lugar, categoria }) => {
+    const lat = Number(lugar.lat);
+    const lng = Number(lugar.lon);
+    const nombre = String(lugar.name || lugar.display_name || 'Lugar');
+    const tipo = String(lugar.type || lugar.class || 'Calle');
+    return {
+      tipoResultado: 'calle',
+      lat,
+      lng,
+      nombre,
+      detalle: tipo,
+      categoria,
+    };
+  }).filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng));
+}
+
+function renderResultadosBusqueda(resultados) {
+  const resultsDiv = document.getElementById('search-results');
+  if (!resultsDiv) return;
+
+  resultsDiv.innerHTML = '';
+
+  for (const item of resultados) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'search-result-item';
+
+    if (item.tipoResultado === 'linea') {
+      btn.dataset.resultType = 'linea';
+      btn.dataset.lineaRef = String(item.ref || '');
+      btn.dataset.lineaName = String(item.name || '');
+      if (item.centro && Number.isFinite(item.centro.lat) && Number.isFinite(item.centro.lng)) {
+        btn.dataset.lat = String(item.centro.lat);
+        btn.dataset.lng = String(item.centro.lng);
+      }
+
+      const title = document.createElement('div');
+      title.className = 'search-result-item-title';
+      title.textContent = `Línea ${item.ref}`;
+
+      const info = document.createElement('div');
+      info.className = 'search-result-item-info';
+      info.textContent = item.name ? `${item.name} · Mostrar recorrido` : 'Mostrar recorrido completo';
+
+      btn.appendChild(title);
+      btn.appendChild(info);
+      resultsDiv.appendChild(btn);
+      continue;
+    }
+
+    btn.dataset.resultType = 'calle';
+    btn.dataset.lat = String(item.lat);
+    btn.dataset.lng = String(item.lng);
+    btn.dataset.nombre = String(item.nombre || 'Calle');
+
+    const title = document.createElement('div');
+    title.className = 'search-result-item-title';
+    title.textContent = String(item.nombre || 'Calle');
+
+    const info = document.createElement('div');
+    info.className = 'search-result-item-info';
+    const categoria = String(item.categoria || 'Calle');
+    info.textContent = `${categoria} · ${String(item.detalle || 'San Juan')}`;
+
+    btn.appendChild(title);
+    btn.appendChild(info);
+    resultsDiv.appendChild(btn);
+  }
+}
 
 async function buscarLugaresEnTiempoReal() {
   const input = document.getElementById('search-input');
@@ -1962,6 +2283,7 @@ async function buscarLugaresEnTiempoReal() {
   if (!modal.classList.contains('active')) {
     modal.classList.add('active');
   }
+  posicionarModalBusqueda();
   
   // Evitar pedir demasiadas veces: exigir un mínimo de letras
   if (query.length < SEARCH_MIN_CHARS) {
@@ -1975,7 +2297,7 @@ async function buscarLugaresEnTiempoReal() {
   }
 
   // Mostrar estado de búsqueda
-  resultsDiv.innerHTML = '<p class="search-results-loading">Buscando...</p>';
+  resultsDiv.innerHTML = '<p class="search-results-loading">Buscando calles y líneas...</p>';
   
   // Hacer búsqueda con debounce
   searchTimeout = setTimeout(() => buscarLugares(query), SEARCH_DEBOUNCE_MS);
@@ -1985,13 +2307,14 @@ async function buscarLugares(queryOverride = '') {
   const input = document.getElementById('search-input');
   const query = (queryOverride || input?.value?.trim() || '').trim();
   if (!query || query.length < SEARCH_MIN_CHARS) return;
+  const queryNorm = normalizarTextoBusqueda(query);
 
   const resultsDiv = document.getElementById('search-results');
   if (!resultsDiv) return;
 
   // Evitar repetir la misma consulta
-  if (query === lastSearchIssuedQuery) return;
-  lastSearchIssuedQuery = query;
+  if (queryNorm === lastSearchIssuedQuery) return;
+  lastSearchIssuedQuery = queryNorm;
 
   // Cancelar request anterior
   if (searchAbortController) {
@@ -2001,78 +2324,30 @@ async function buscarLugares(queryOverride = '') {
   const mySeq = ++searchSeq;
 
   try {
-    const url = new URL('https://nominatim.openstreetmap.org/search');
-    url.searchParams.set('q', query);
-    url.searchParams.set('format', 'jsonv2');
-    url.searchParams.set('limit', '10');
-    url.searchParams.set('countrycodes', 'ar');
-    url.searchParams.set('dedupe', '1');
-    url.searchParams.set('addressdetails', '0');
-    // Restringir la búsqueda a San Juan por viewbox (mejora mucho el autocompletado)
-    url.searchParams.set(
-      'viewbox',
-      `${SAN_JUAN_BOUNDS.minLng},${SAN_JUAN_BOUNDS.maxLat},${SAN_JUAN_BOUNDS.maxLng},${SAN_JUAN_BOUNDS.minLat}`
-    );
-    url.searchParams.set('bounded', '1');
+    const [lineas, calles] = await Promise.all([
+      buscarLineasLocales(query),
+      buscarCallesEnSanJuan(query, searchAbortController.signal),
+    ]);
 
-    const response = await fetch(url.toString(), {
-      signal: searchAbortController.signal,
-      headers: {
-        'Accept-Language': 'es',
-      },
-    });
-
-    if (!response.ok) throw new Error('Error en búsqueda');
-    const lugaresRaw = await response.json();
     if (mySeq !== searchSeq) return; // llegó tarde
 
-    let lugares = Array.isArray(lugaresRaw) ? lugaresRaw : [];
-    // Filtro de seguridad por bounds (por si Nominatim devuelve algo fuera del viewbox)
-    lugares = lugares.filter((lugar) => {
-      const lat = Number(lugar?.lat);
-      const lng = Number(lugar?.lon);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
-      return (
-        lat >= SAN_JUAN_BOUNDS.minLat &&
-        lat <= SAN_JUAN_BOUNDS.maxLat &&
-        lng >= SAN_JUAN_BOUNDS.minLng &&
-        lng <= SAN_JUAN_BOUNDS.maxLng
-      );
-    });
+    const primeroLineas = pareceBusquedaLinea(query);
+    const resultados = primeroLineas
+      ? [
+          ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
+          ...calles,
+        ]
+      : [
+          ...calles,
+          ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
+        ];
 
-    if (lugares.length === 0) {
-      resultsDiv.innerHTML = '<p class="search-results-hint">No se encontraron resultados en San Juan</p>';
+    if (resultados.length === 0) {
+      resultsDiv.innerHTML = '<p class="search-results-hint">No se encontraron calles ni líneas en San Juan</p>';
       return;
     }
 
-    // Render seguro (sin onclick inline)
-    resultsDiv.innerHTML = '';
-    for (const lugar of lugares) {
-      const lat = Number(lugar.lat);
-      const lng = Number(lugar.lon);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-      const nombreLugar = String(lugar.name || lugar.display_name || 'Lugar');
-      const tipoLugar = String(lugar.type || lugar.class || 'Lugar');
-
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'search-result-item';
-      btn.dataset.lat = String(lat);
-      btn.dataset.lng = String(lng);
-      btn.dataset.nombre = nombreLugar;
-
-      const title = document.createElement('div');
-      title.className = 'search-result-item-title';
-      title.textContent = nombreLugar;
-
-      const info = document.createElement('div');
-      info.className = 'search-result-item-info';
-      info.textContent = tipoLugar;
-
-      btn.appendChild(title);
-      btn.appendChild(info);
-      resultsDiv.appendChild(btn);
-    }
+    renderResultadosBusqueda(resultados);
 
   } catch (error) {
     // Abort es normal cuando el usuario sigue tipeando
@@ -2088,17 +2363,41 @@ if (searchResultsEl) {
   searchResultsEl.addEventListener('click', (ev) => {
     const target = ev.target;
     if (!(target instanceof HTMLElement)) return;
-    const btn = target.closest('button.search-result-item[data-lat][data-lng]');
+    const btn = target.closest('button.search-result-item');
     if (!(btn instanceof HTMLButtonElement)) return;
+
+    const resultType = btn.dataset.resultType || 'calle';
+    if (resultType === 'linea') {
+      const ref = String(btn.dataset.lineaRef || '').trim();
+      const name = String(btn.dataset.lineaName || '').trim();
+      if (!ref) return;
+
+      cerrarModalBusqueda();
+
+      const lat = Number(btn.dataset.lat);
+      const lng = Number(btn.dataset.lng);
+      if (!leafletMap && Number.isFinite(lat) && Number.isFinite(lng)) {
+        cargarLF({ lat, lng }, ZOOM_PARADAS_EN_VISTA);
+      }
+
+      void mostrarRecorridoDeLinea(ref, name);
+      return;
+    }
+
     const lat = Number(btn.dataset.lat);
     const lng = Number(btn.dataset.lng);
-    const nombre = btn.dataset.nombre || btn.textContent || 'Lugar';
+    const nombre = btn.dataset.nombre || btn.textContent || 'Calle';
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     centrarEnLugar(lat, lng, nombre);
   });
 }
 
 function centrarEnLugar(lat, lng, nombreLugar) {
+  if (!leafletMap) {
+    if (Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
+      cargarLF({ lat: Number(lat), lng: Number(lng) }, ZOOM_CALLE);
+    }
+  }
   if (!leafletMap) return;
   
   cerrarModalBusqueda();
@@ -2107,6 +2406,34 @@ function centrarEnLugar(lat, lng, nombreLugar) {
   // Abrir bottom-sheet para ofrecer guardar la ubicación
   abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, 'search');
 }
+
+function posicionarModalBusqueda() {
+  const modal = document.getElementById('search-modal');
+  const content = modal?.querySelector('.search-modal-content');
+  const bar = document.querySelector('.search-bar-container');
+  if (!modal || !content || !bar) return;
+
+  const rect = bar.getBoundingClientRect();
+  const viewportMargin = 8;
+  const top = Math.max(viewportMargin, rect.bottom + 8);
+  const width = Math.max(220, Math.min(rect.width, window.innerWidth - viewportMargin * 2));
+  const left = Math.min(
+    Math.max(viewportMargin, rect.left),
+    Math.max(viewportMargin, window.innerWidth - viewportMargin - width)
+  );
+  const maxHeight = Math.max(220, Math.floor(window.innerHeight - top - 24));
+
+  content.style.position = 'fixed';
+  content.style.top = `${top}px`;
+  content.style.left = `${left}px`;
+  content.style.width = `${width}px`;
+  content.style.maxWidth = `${width}px`;
+  content.style.maxHeight = `${maxHeight}px`;
+  content.style.margin = '0';
+  content.style.transform = 'none';
+}
+
+window.addEventListener('resize', posicionarModalBusqueda);
 
 function centrarEnCoordenadas(lat, lng, zoom = ZOOM_CALLE) {
   if (!leafletMap) return;
@@ -2574,21 +2901,8 @@ function renderLugaresFavs() {
   }
 }
 
-async function cargarSalud(){
-  const tiempo_act = new Date();
-  const pildora = document.getElementById('pill_bienv');
-  if (!pildora) return;
-  else if (tiempo_act.getHours() >= 6 && tiempo_act.getHours() < 12) {
-    pildora.textContent = 'Buenos Días';
-  } else if (tiempo_act.getHours() >= 12 && tiempo_act.getHours() < 20) {
-    pildora.textContent = 'Buenas Tardes';
-  } else {
-    pildora.textContent = 'Buenas Noches';
-  }
-}
 window.onload = async () => {
   try {
-    await cargarSalud();
     await Centrar();
     cargarFavos();
   } catch (error) {

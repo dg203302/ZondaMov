@@ -144,35 +144,6 @@
             transform: scale(0.95);
           }
 
-          .brand-pill {
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 1002;
-            display: inline-flex;
-            align-items: center;
-            height: 56px;
-            padding: 0 18px;
-            border-radius: 999px;
-            background: var(--glass-bg-strong);
-            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow);
-            color: var(--glass-fg);
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: 0.6px;
-            font-variant: small-caps;
-            pointer-events: none;
-            user-select: none;
-          }
-
-          /* Ocultar píldora de saludo (configuración) */
-          .hide-greeting-pill #pill_bienv {
-            display: none !important;
-          }
-
           .sidepanel-overlay {
             display: none;
             position: fixed;
@@ -186,21 +157,21 @@
           .sidepanel {
             position: fixed;
             top: 0;
-            right: 0;
+            left: 0;
             height: 100vh;
             width: fit-content;
             min-width: 240px;
             max-width: 84vw;
             background: var(--glass-bg-strong);
             z-index: 1201;
-            transform: translateX(100%);
+            transform: translateX(-100%);
             transition: transform 0.25s ease;
-            box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+            box-shadow: 8px 0 24px rgba(0, 0, 0, 0.18);
             display: flex;
             flex-direction: column;
             backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-            border-left: 1px solid var(--glass-border);
+            border-right: 1px solid var(--glass-border);
           }
           .sidepanel.active {
             transform: translateX(0);
@@ -217,12 +188,16 @@
             min-height: 190px;
             flex-direction: column;
             gap: 8px;
-            background-image:
-              linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.70)),
-              url("Icons/logo%20transit.png");
-            background-repeat: no-repeat, no-repeat;
-            background-position: center, center;
-            background-size: cover, cover;
+            background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.70));
+          }
+          .transit-logo {
+            width: 132px;
+            max-width: 70%;
+            height: auto;
+            object-fit: contain;
+            display: block;
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
           }
           .sidepanel-header h1 {
             margin: 0;
@@ -385,12 +360,6 @@
             color: var(--glass-fg);
             box-shadow: var(--glass-shadow);
           }
-          .dark-mode .brand-pill {
-            background: var(--glass-bg-strong);
-            border-color: var(--glass-border);
-            color: var(--glass-fg);
-            box-shadow: var(--glass-shadow);
-          }
           .dark-mode .bottom-sheet {
             background: var(--glass-bg-strong);
           }
@@ -438,9 +407,7 @@
           .dark-mode .sidepanel-header {
             background: var(--glass-bg);
             border-bottom-color: rgba(255, 255, 255, 0.10);
-            background-image:
-              linear-gradient(to bottom, rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.55)),
-              url("Icons/logo%20transit.png");
+            background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.70));
           }
           .dark-mode .sidepanel-header h1 {
             color: #e5e7eb;
@@ -894,6 +861,22 @@
 
           /* Escritorio: la barra de búsqueda + botones van arriba en fila */
           @media (min-width: 900px) {
+            .btn-settings {
+              left: auto;
+              right: 16px;
+              top: 16px;
+              bottom: auto;
+            }
+
+            .sidepanel {
+              left: auto;
+              right: 0;
+              transform: translateX(100%);
+              box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+              border-right: none;
+              border-left: 1px solid var(--glass-border);
+            }
+
             footer {
               top: 16px;
               bottom: auto;
@@ -917,6 +900,33 @@
               flex-direction: row;
               gap: 12px;
               margin-bottom: 0;
+            }
+          }
+
+          @media (max-width: 899px) {
+            .btn-settings {
+              left: 16px;
+              right: auto;
+              top: auto;
+              bottom: 16px;
+            }
+
+            .search-bar-container {
+              position: fixed;
+              top: 16px;
+              left: 16px;
+              right: 16px;
+              min-width: 0;
+              margin: 0;
+              z-index: 1003;
+            }
+
+            .footer-buttons {
+              position: fixed;
+              right: 16px;
+              bottom: 16px;
+              margin-bottom: 0;
+              z-index: 1003;
             }
           }
           
@@ -971,8 +981,8 @@
             z-index: 1050;
             pointer-events: none;
             flex-direction: column;
-            justify-content: flex-end;
-            padding-bottom: 100px;
+            justify-content: flex-start;
+            padding-bottom: 0;
           }
           .search-modal.active {
             display: flex;
@@ -1058,7 +1068,6 @@
 
           /* Ajustes extra para modo sin transparencia: quita blur explícitamente */
           .no-transparency .btn-settings,
-          .no-transparency .brand-pill,
           .no-transparency footer .btn-floating,
           .no-transparency .search-bar-container,
           .no-transparency .search-modal-content,
@@ -1097,8 +1106,6 @@
           <div class="page-shade top"></div>
           <div class="page-shade bottom"></div>
 
-            <div class="brand-pill" aria-hidden="true" id="pill_bienv">...</div>
-
           <button id="btn-settings" class="btn-settings" type="button" title="Configuración" aria-label="Configuración">
             <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
             <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
@@ -1107,6 +1114,7 @@
           <div id="settings-overlay" class="sidepanel-overlay" aria-hidden="true"></div>
           <aside id="settings-panel" class="sidepanel" aria-hidden="true">
             <div class="sidepanel-header">
+              <img class="transit-logo" src="Icons/logo%20transit.png" alt="Logo TransitSJ" />
               <h1>TransitSJ</h1>
             </div>
             <div class="sidepanel-content">
@@ -1123,14 +1131,6 @@
                 <span>Transparencia</span>
                 <span class="ios-switch">
                   <input id="toggle-transparency" type="checkbox" />
-                  <span class="track" aria-hidden="true"></span>
-                </span>
-              </label>
-
-              <label class="toggle-row" for="toggle-greeting-pill">
-                <span>Píldora de saludo</span>
-                <span class="ios-switch">
-                  <input id="toggle-greeting-pill" type="checkbox" />
                   <span class="track" aria-hidden="true"></span>
                 </span>
               </label>
