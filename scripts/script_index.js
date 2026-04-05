@@ -359,11 +359,20 @@ function abrirGuardadoDesdeMarcadorUbicacion() {
     return;
   }
 
-  const ahora = new Date();
-  const opciones = { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' };
-  const fechaHora = ahora.toLocaleDateString('es-AR', opciones).replace(/\//g, '/');
-  const nombreLugar = `Mi ubicación - ${fechaHora}`;
+  const nombreLugar = generarNombreUbicacionGuardada();
   abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, 'current');
+}
+
+function generarNombreUbicacionGuardada() {
+  const ahora = new Date();
+  const fechaHora = ahora.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return `ubicacion guardada, ${fechaHora}`;
 }
 
 function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'current') {
@@ -390,7 +399,14 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'cur
         ${lat.toFixed(6)}, ${lng.toFixed(6)}
       </p>
       <div>
-        <button type="button" class="btn-save-location" onclick="guardarUbicacionActualDesdeBottomSheet('${nombreLugar.replace(/'/g, "\\'")}', ${lat}, ${lng})">
+        <button
+          type="button"
+          class="btn-save-location"
+          data-save-lugar="1"
+          data-lugar-nombre="${escapeHtml(nombreLugar)}"
+          data-lat="${String(lat)}"
+          data-lng="${String(lng)}"
+        >
           <img class="icon light" alt="" src="${iconSaveLight}" />
           <img class="icon dark" alt="" src="${iconSaveDark}" />
           <span>Guardar</span>
@@ -612,6 +628,17 @@ if (bsContent) {
     const target = ev.target;
     if (!(target instanceof HTMLElement)) return;
 
+    const btnGuardarLugar = target.closest('button[data-save-lugar="1"][data-lugar-nombre][data-lat][data-lng]');
+    if (btnGuardarLugar instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const nombre = btnGuardarLugar.dataset.lugarNombre || '';
+      const lat = Number(btnGuardarLugar.dataset.lat);
+      const lng = Number(btnGuardarLugar.dataset.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      guardarUbicacionActualDesdeBottomSheet(nombre, lat, lng);
+      return;
+    }
+
     // Volver a la lista de líneas de la parada (si la línea se abrió desde una parada)
     const btnVolverParada = target.closest('button[data-volver-parada="1"]');
     if (btnVolverParada instanceof HTMLButtonElement) {
@@ -633,7 +660,7 @@ if (bsContent) {
       const nombre = btnDeleteLugar.dataset.lugarNombre || '';
       const lat = btnDeleteLugar.dataset.lugarLat ? Number(btnDeleteLugar.dataset.lugarLat) : 0;
       const lng = btnDeleteLugar.dataset.lugarLng ? Number(btnDeleteLugar.dataset.lugarLng) : 0;
-      agregarLugarAFavoritos(nombre, lat, lng);
+      eliminarLugarGuardado(nombre, lat, lng);
       abrirBottomSheetFavoritos(); // Actualizar vista
       return;
     }
@@ -1786,6 +1813,29 @@ function setupLongPressGuardarUbicacionEnMapa() {
   let timerId = null;
   let startLatLng = null;
   let fired = false;
+  let lastOpenMs = 0;
+
+  const abrirGuardadoEn = (latlng) => {
+    if (!latlng || !Number.isFinite(latlng.lat) || !Number.isFinite(latlng.lng)) return;
+
+    const nowMs = Date.now();
+    // Evita dobles aperturas cuando coincide timer propio + contextmenu móvil.
+    if (nowMs - lastOpenMs < 650) return;
+    lastOpenMs = nowMs;
+
+    try {
+      const layerSel = asegurarSeleccionParadaLayer();
+      if (layerSel) {
+        layerSel.clearLayers();
+        L.circleMarker(latlng, { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+      }
+    } catch {
+      // noop
+    }
+
+    const nombre = makeNombre();
+    abrirBottomSheetGuardarUbicacion(nombre, latlng.lat, latlng.lng, 'longpress');
+  };
 
   const clear = () => {
     if (timerId != null) {
@@ -1797,10 +1847,7 @@ function setupLongPressGuardarUbicacionEnMapa() {
   };
 
   const makeNombre = () => {
-    const ahora = new Date();
-    const opciones = { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' };
-    const fechaHora = ahora.toLocaleString('es-AR', opciones);
-    return `Ubicación seleccionada - ${fechaHora}`;
+    return generarNombreUbicacionGuardada();
   };
 
   const start = (e) => {
@@ -1821,20 +1868,7 @@ function setupLongPressGuardarUbicacionEnMapa() {
         return;
       }
       fired = true;
-
-      // Marcador temporal en el punto presionado
-      try {
-        const layerSel = asegurarSeleccionParadaLayer();
-        if (layerSel) {
-          layerSel.clearLayers();
-          L.circleMarker(startLatLng, { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
-        }
-      } catch {
-        // noop
-      }
-
-      const nombre = makeNombre();
-      abrirBottomSheetGuardarUbicacion(nombre, startLatLng.lat, startLatLng.lng, 'longpress');
+      abrirGuardadoEn(startLatLng);
     }, MAP_LONG_PRESS_MS);
   };
 
@@ -1866,6 +1900,14 @@ function setupLongPressGuardarUbicacionEnMapa() {
   leafletMap.on('touchend', end);
   leafletMap.on('dragstart', clear);
   leafletMap.on('zoomstart', clear);
+
+  // Fallback táctil nativo de Leaflet (en móvil long-press dispara contextmenu).
+  leafletMap.on('contextmenu', (e) => {
+    clear();
+    const latlng = e?.latlng;
+    if (!latlng) return;
+    abrirGuardadoEn(L.latLng(latlng.lat, latlng.lng));
+  });
 }
 function MostrarFavs(){
   abrirBottomSheetFavoritos();
@@ -1886,6 +1928,28 @@ function obtenerLugaresFavs() {
 
 function guardarLugaresFavs(arr) {
   guardarJsonLocalStorage(STORAGE_LUGARES_FAVS_KEY, arr);
+}
+
+function esMismoLugarGuardado(a, b) {
+  if (!a || !b) return false;
+  const latA = Number(a.lat);
+  const lngA = Number(a.lng);
+  const latB = Number(b.lat);
+  const lngB = Number(b.lng);
+  if (!Number.isFinite(latA) || !Number.isFinite(lngA) || !Number.isFinite(latB) || !Number.isFinite(lngB)) return false;
+  const EPS = 0.000001;
+  return Math.abs(latA - latB) <= EPS && Math.abs(lngA - lngB) <= EPS;
+}
+
+function eliminarLugarGuardado(nombre, lat, lng) {
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return;
+
+  const favs = obtenerLugaresFavs();
+  const nextFavs = favs.filter((f) => !esMismoLugarGuardado(f, { nombre, lat: latNum, lng: lngNum }));
+  guardarLugaresFavs(nextFavs);
+  renderLugaresFavs();
 }
 
 function abrirModalBusqueda() {
@@ -2834,14 +2898,18 @@ async function irAParadaDelLugar(lat, lng, nombreLugar, paradaLat, paradaLng) {
 }
 
 function agregarLugarAFavoritos(nombre, lat, lng) {
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return;
+
   const favs = obtenerLugaresFavs();
-  const indice = favs.findIndex(f => f.nombre === nombre);
+  const indice = favs.findIndex((f) => esMismoLugarGuardado(f, { nombre, lat: latNum, lng: lngNum }));
   
   if (indice !== -1) {
     favs.splice(indice, 1);
   } else {
     // Guardar coordenadas como números (evita strings en LocalStorage)
-    favs.push({ nombre, lat: Number(lat), lng: Number(lng) });
+    favs.push({ nombre, lat: latNum, lng: lngNum });
     
     while (favs.length > MAX_LUGARES_FAVS) {
       favs.shift();
