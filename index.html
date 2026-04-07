@@ -530,20 +530,28 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 40vh;
+            height: 50dvh;
             background: var(--glass-bg-strong);
             border-radius: 16px 16px 0 0;
             z-index: 1101;
             display: flex;
             flex-direction: column;
             transform: translateY(100%);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, height 0.25s ease, border-radius 0.25s ease;
             box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
             pointer-events: auto;
             backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
             border: 1px solid var(--glass-border);
             border-bottom: none;
+          }
+          .bottom-sheet[data-sheet-state="half"] {
+            height: 50dvh;
+            border-radius: 16px 16px 0 0;
+          }
+          .bottom-sheet[data-sheet-state="full"] {
+            height: 100dvh;
+            border-radius: 0;
           }
           .bottom-sheet.active {
             transform: translateY(0);

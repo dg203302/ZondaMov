@@ -31,6 +31,12 @@ const MAX_PARADAS_RECORRIDO = 3;
 const MAX_HORARIOS_MOSTRAR = 3;
 const STORAGE_DARK_MODE_KEY = 'transitsj_dark_mode_v1';
 const STORAGE_TRANSPARENCY_KEY = 'transitsj_transparency_v1';
+const BOTTOM_SHEET_STATE_HALF = 'half';
+const BOTTOM_SHEET_STATE_FULL = 'full';
+const SHEET_DRAG_EXPAND_THRESHOLD = 70;
+const SHEET_DRAG_COLLAPSE_THRESHOLD = 90;
+const SHEET_DRAG_CLOSE_THRESHOLD = 90;
+const SHEET_DRAG_CLOSE_FROM_FULL_THRESHOLD = 220;
 
 // ─── Planeación de ruta (estimaciones) ───────────────────────────────────────
 // Velocidades aproximadas (m/s). Se usan para puntuar por tiempo en lugar de solo distancia.
@@ -106,6 +112,18 @@ function actualizarEstadoBotonFavoritos() {
   favBtn.setAttribute('aria-label', esFavorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
 }
 
+function setBottomSheetState(state) {
+  const bs = document.getElementById('bottom-sheet');
+  if (!bs) return;
+  bs.setAttribute('data-sheet-state', state);
+}
+
+function getBottomSheetState() {
+  const bs = document.getElementById('bottom-sheet');
+  const state = bs?.getAttribute('data-sheet-state');
+  return state === BOTTOM_SHEET_STATE_FULL ? BOTTOM_SHEET_STATE_FULL : BOTTOM_SHEET_STATE_HALF;
+}
+
 function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
   const bs = document.getElementById('bottom-sheet');
   const bsTitle = document.getElementById('bs-title');
@@ -119,6 +137,7 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
   
   // Limpiar estilos transform previos
   if (bs) {
+    setBottomSheetState(BOTTOM_SHEET_STATE_HALF);
     bs.style.transform = '';
     bs.style.transition = '';
   }
@@ -184,6 +203,7 @@ function cerrarBottomSheet() {
   if (bs) {
     bs.classList.remove('active');
     bs.classList.remove('dragging');
+    setBottomSheetState(BOTTOM_SHEET_STATE_HALF);
     bs.style.transform = '';
     bs.style.transition = '';
   }
@@ -233,11 +253,25 @@ function setupBottomSheetDrag() {
   let isDragging = false;
   let startY = 0;
   let currentY = 0;
+  let startState = BOTTOM_SHEET_STATE_HALF;
+
+  const resolveTargetState = (initialState, deltaY) => {
+    if (initialState === BOTTOM_SHEET_STATE_FULL) {
+      if (deltaY > 0) return BOTTOM_SHEET_STATE_HALF;
+      return BOTTOM_SHEET_STATE_FULL;
+    }
+
+    if (deltaY <= -SHEET_DRAG_EXPAND_THRESHOLD) return BOTTOM_SHEET_STATE_FULL;
+    if (deltaY >= SHEET_DRAG_CLOSE_THRESHOLD) return 'close';
+    return BOTTOM_SHEET_STATE_HALF;
+  };
 
   const handleDragStart = (e) => {
+    if (!bottomSheet.classList.contains('active')) return;
     isDragging = true;
     startY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
     currentY = 0;
+    startState = getBottomSheetState();
     bottomSheet.classList.add('dragging');
     // Prevenir selección de texto durante el drag
     document.body.style.userSelect = 'none';
@@ -251,9 +285,7 @@ function setupBottomSheetDrag() {
     if (!isDragging) return;
     const clientY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
     currentY = clientY - startY;
-    if (currentY > 0) {
-      bottomSheet.style.transform = `translateY(${currentY}px)`;
-    }
+    bottomSheet.style.transform = `translateY(${currentY}px)`;
   };
 
   const handleDragEnd = () => {
@@ -264,17 +296,17 @@ function setupBottomSheetDrag() {
     if (content) {
       content.style.pointerEvents = '';
     }
-    
-    // Cerrar si se arrastró más de 40px hacia abajo
-    if (currentY > 40) {
+
+    const targetState = resolveTargetState(startState, currentY);
+
+    if (targetState === 'close') {
       bottomSheet.style.transform = '';
       bottomSheet.style.transition = '';
       cerrarBottomSheet();
     } else {
-      // Volver a la posición normal con animación suave
+      setBottomSheetState(targetState);
       bottomSheet.style.transition = 'transform 0.2s ease';
       bottomSheet.style.transform = '';
-      // Restaurar transición después de la animación
       setTimeout(() => {
         bottomSheet.classList.remove('dragging');
       }, 200);
@@ -284,22 +316,31 @@ function setupBottomSheetDrag() {
   };
 
   // Remover listeners previos para evitar duplicados
-  handle.removeEventListener('mousedown', handleDragStart);
-  handle.removeEventListener('touchstart', handleDragStart);
-  document.removeEventListener('mousemove', handleDragMove);
-  document.removeEventListener('mouseup', handleDragEnd);
-  document.removeEventListener('touchmove', handleDragMove);
-  document.removeEventListener('touchend', handleDragEnd);
+  const prevHandlers = handle._bottomSheetDragHandlers;
+  if (prevHandlers) {
+    handle.removeEventListener('mousedown', prevHandlers.handleDragStart);
+    handle.removeEventListener('touchstart', prevHandlers.handleDragStart);
+    document.removeEventListener('mousemove', prevHandlers.handleDragMove);
+    document.removeEventListener('mouseup', prevHandlers.handleDragEnd);
+    document.removeEventListener('touchmove', prevHandlers.handleDragMove);
+    document.removeEventListener('touchend', prevHandlers.handleDragEnd);
+  }
 
   // Listener para el inicio del drag (solo en el handle)
   handle.addEventListener('mousedown', handleDragStart);
-  handle.addEventListener('touchstart', handleDragStart, { passive: true });
+  handle.addEventListener('touchstart', handleDragStart, { passive: false });
 
   // Listeners globales para el movimiento y fin
   document.addEventListener('mousemove', handleDragMove, { passive: true });
   document.addEventListener('mouseup', handleDragEnd);
   document.addEventListener('touchmove', handleDragMove, { passive: true });
   document.addEventListener('touchend', handleDragEnd);
+
+  handle._bottomSheetDragHandlers = {
+    handleDragStart,
+    handleDragMove,
+    handleDragEnd,
+  };
 }
 
 // Inicializar cuando el DOM esté listo
