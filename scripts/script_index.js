@@ -18,6 +18,7 @@ let _frequenciesData = null; // Cache de datos de frequencies.txt
 
 const PARADAS_GEOJSON_URL = encodeURI('Datos/DATOS SAN JUAN.geojson');
 const FREQUENCIES_URL = 'Datos/frequencies.txt';
+const ARRIVALS_API_URL = 'https://proxyrt-production.up.railway.app/arrivals';
 const RADIO_PARADAS_METROS = 700;
 const MAX_PARADAS_MOSTRAR = 40;
 const MAX_PARADAS_MOSTRAR_EN_VISTA = 200;
@@ -975,6 +976,227 @@ function renderListaParadasRecorrido({ mostrarTodas = false } = {}) {
   return `<h4>Paradas del recorrido</h4>${subtitulo}<ul>${items}</ul>`;
 }
 
+function obtenerNombreParadaBase(feature) {
+  const props = feature?.properties || {};
+
+  const name = props.name;
+  if (typeof name === 'string' && name.trim()) return name.trim();
+
+  const street = props['addr:street'];
+  if (typeof street === 'string' && street.trim()) return street.trim();
+
+  const ref = props.ref;
+  if (typeof ref === 'string' && ref.trim()) return ref.trim();
+
+  return obtenerEtiquetaParada(feature);
+}
+
+function extraerVarianteDesdeLinea(linea) {
+  const txt = String(linea || '').trim();
+  const m = txt.match(/([ABC])$/);
+  return m ? m[1] : '';
+}
+
+function normalizarNombreParadaParaApi(nombreParada, linea = '') {
+  let txt = String(nombreParada || '').trim().replace(/\s+/g, ' ');
+  if (!txt) return '';
+
+  // Limpia sufijos de orientación/variante para mejorar matching en backend.
+  txt = txt
+    .replace(/\s+[SNEO]\s*-\s*[ABC]\s*$/i, '')
+    .replace(/\s+[SNEO]\s*$/i, '')
+    .replace(/\s*-\s*[ABC]\s*$/i, '')
+    .trim();
+
+  // Correcciones puntuales de escritura y normalización de nombres frecuentes.
+  txt = txt
+    .replace(/\bconmplejo\b/gi, 'complejo')
+    .replace(/\bcomplejo\s+universitario\b/gi, 'complejo')
+    .replace(/\bavenida\s+ignacio\b/gi, 'Av. Ig.')
+    .replace(/\bavenida\b/gi, 'Av.')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const variante = extraerVarianteDesdeLinea(linea);
+  if (variante) {
+    txt = `${txt} -${variante}`;
+  }
+
+  return txt;
+}
+
+function formatearHoraDesdeEpochMs(epochMs) {
+  const n = Number(epochMs);
+  if (!Number.isFinite(n)) return '';
+  const d = new Date(n);
+  if (Number.isNaN(d.getTime())) return '';
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+function normalizarHoraTexto(valor) {
+  const txt = String(valor || '').trim();
+  if (!txt) return '';
+
+  const hhmmss = txt.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (hhmmss) {
+    const hh = String(Number(hhmmss[1])).padStart(2, '0');
+    const mm = hhmmss[2];
+    return `${hh}:${mm}`;
+  }
+
+  if (/^\d{12,}$/.test(txt)) {
+    return formatearHoraDesdeEpochMs(Number(txt));
+  }
+
+  return '';
+}
+
+function recolectarTiempoRealDesdeNodo(nodo, salida) {
+  if (!nodo) return;
+
+  if (Array.isArray(nodo)) {
+    for (const item of nodo) recolectarTiempoRealDesdeNodo(item, salida);
+    return;
+  }
+
+  if (typeof nodo !== 'object') return;
+
+  const arrivalsDirectas = nodo?.lineArrivals?.arrivals;
+  if (Array.isArray(arrivalsDirectas)) {
+    for (const a of arrivalsDirectas) {
+      const epochMs = Number(a?.rtEtdUTC ?? a?.staticEtdUTC);
+      const hora = formatearHoraDesdeEpochMs(epochMs);
+      if (hora) salida.push({ hora, epochMs });
+    }
+  }
+
+  const arrivalsNodo = nodo?.arrivals;
+  if (Array.isArray(arrivalsNodo)) {
+    for (const a of arrivalsNodo) {
+      const epochMs = Number(a?.rtEtdUTC ?? a?.staticEtdUTC);
+      const hora = formatearHoraDesdeEpochMs(epochMs);
+      if (hora) salida.push({ hora, epochMs });
+    }
+  }
+
+  // Soporta estructuras donde las llegadas vienen dentro de `raw`.
+  if (nodo.raw != null) {
+    recolectarTiempoRealDesdeNodo(nodo.raw, salida);
+  }
+}
+
+function extraerMensajeDesdePayload(payload) {
+  if (payload == null) return '';
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const m = extraerMensajeDesdePayload(item);
+      if (m) return m;
+    }
+    return '';
+  }
+
+  if (typeof payload === 'object') {
+    const message = payload.message;
+    if (typeof message === 'string' && message.trim()) return message.trim();
+    if (payload.raw != null) return extraerMensajeDesdePayload(payload.raw);
+    return '';
+  }
+
+  return '';
+}
+
+function extraerHorariosDesdePayloadArrivals(payload) {
+  const salidaTiempoReal = [];
+  const mensajeApi = extraerMensajeDesdePayload(payload);
+  recolectarTiempoRealDesdeNodo(payload, salidaTiempoReal);
+
+  if (salidaTiempoReal.length > 0) {
+    salidaTiempoReal.sort((a, b) => a.epochMs - b.epochMs);
+    const dedup = [];
+    const seen = new Set();
+    for (const it of salidaTiempoReal) {
+      if (seen.has(it.hora)) continue;
+      seen.add(it.hora);
+      dedup.push(it.hora);
+      if (dedup.length >= MAX_HORARIOS_MOSTRAR) break;
+    }
+    return { horarios: dedup, tipoDatos: 'tiempo_real', mensajeApi };
+  }
+
+  const esperados = [];
+  const pushExpected = (value) => {
+    if (value == null) return;
+
+    if (Array.isArray(value)) {
+      for (const v of value) pushExpected(v);
+      return;
+    }
+
+    if (typeof value === 'object') {
+      pushExpected(value.horario);
+      pushExpected(value.hora);
+      pushExpected(value.message);
+      pushExpected(value.expected);
+      pushExpected(value.arrival);
+      pushExpected(value.arrivals);
+      pushExpected(value.raw);
+      return;
+    }
+
+    const hora = normalizarHoraTexto(value);
+    if (hora) esperados.push(hora);
+  };
+
+  pushExpected(payload);
+
+  if (esperados.length > 0) {
+    const dedup = [];
+    const seen = new Set();
+    for (const h of esperados) {
+      if (seen.has(h)) continue;
+      seen.add(h);
+      dedup.push(h);
+      if (dedup.length >= MAX_HORARIOS_MOSTRAR) break;
+    }
+    return { horarios: dedup, tipoDatos: 'esperado', mensajeApi };
+  }
+
+  return { horarios: [], tipoDatos: 'esperado', mensajeApi };
+}
+
+async function consultarArribosApi(linea, paradaNombre) {
+  const lineaNorm = String(linea || '').trim();
+  const paradaNorm = normalizarNombreParadaParaApi(paradaNombre, lineaNorm);
+  if (!lineaNorm || !paradaNorm) {
+    return { horarios: [], tipoDatos: 'esperado', paradaConsultada: paradaNorm || '' };
+  }
+
+  try {
+    const resp = await fetch(ARRIVALS_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        linea: lineaNorm,
+        parada: paradaNorm,
+      }),
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const payload = await resp.json();
+    const parsed = extraerHorariosDesdePayloadArrivals(payload);
+    return { ...parsed, paradaConsultada: paradaNorm };
+  } catch (err) {
+    console.warn('No se pudo consultar arrivals API:', err);
+    return { horarios: [], tipoDatos: 'esperado', paradaConsultada: paradaNorm };
+  }
+}
+
 // ─── Frequencies / Horarios ───────────────────────────────────────────────────
 
 /** Carga y parsea frequencies.txt (CSV). Retorna array de objetos. */
@@ -1188,10 +1410,18 @@ function estimarOffsetArriboParadaSegsDesdeRutas(rutas, paradaLat, paradaLng) {
 /**
  * Genera el HTML con los próximos horarios para mostrar en el bottom-sheet.
  */
-function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0, mostrarVolverParada = false) {
+function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0, mostrarVolverParada = false, opts = {}) {
   const titulo = lineaRef ? `Línea ${escapeHtml(lineaRef)}` : 'Línea';
   const detalle = lineaNombre ? ` — ${escapeHtml(lineaNombre)}` : '';
   const headwayMins = headwaySecs > 0 ? Math.round(headwaySecs / 60) : 0;
+  const tipoDatos = opts?.tipoDatos === 'tiempo_real' ? 'tiempo_real' : 'esperado';
+  const esTiempoReal = tipoDatos === 'tiempo_real';
+  const colorPrincipal = esTiempoReal ? '#1E8E3E' : '#007BFF';
+  const subtituloProximo = esTiempoReal ? '🟢 Tiempo real' : '⏱ Horario esperado';
+  const textoPie = esTiempoReal
+    ? 'Datos en tiempo real obtenidos desde arrivals API'
+    : 'Horarios esperados obtenidos desde arrivals API';
+  const mensajeApi = typeof opts?.mensajeApi === 'string' ? opts.mensajeApi.trim() : '';
 
   const volverHtml = mostrarVolverParada
     ? `
@@ -1212,22 +1442,70 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
     `
     : '';
 
+  const paradaInfoHtml = opts?.paradaConsultada
+    ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #777;">Parada consultada: ${escapeHtml(opts.paradaConsultada)}</p>`
+    : '';
+
+  const mensajeMinMatch = mensajeApi.match(/^\s*(\d+)\s*min(?:utos?)?\s*$/i);
+  const mensajeHoraMatch = mensajeApi.match(/^\s*(\d{1,2}:\d{2})\s*$/);
+  const mensajeComoLlegadaHtml = mensajeMinMatch
+    ? `
+      <li style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(30,142,62,0.10);
+        border: 1px solid rgba(30,142,62,0.35);
+        margin-bottom: 8px;
+      ">
+        <span style="font-size: 22px; font-weight: 700; color: #1E8E3E; min-width: 52px;">${escapeHtml(mensajeApi)}</span>
+        <span style="font-size: 12px; color: #888;">🟢 Próxima llegada</span>
+      </li>
+    `
+    : (mensajeHoraMatch
+      ? `
+        <li style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          background: rgba(120,120,120,0.10);
+          border: 1px solid rgba(120,120,120,0.35);
+          margin-bottom: 8px;
+        ">
+          <span style="font-size: 22px; font-weight: 700; color: #5f6368; min-width: 52px;">${escapeHtml(mensajeHoraMatch[1])}</span>
+          <span style="font-size: 12px; color: #888;">⏱ Horario esperado</span>
+        </li>
+      `
+      : '');
+
   if (!horarios || horarios.length === 0) {
-    const approx = generarHorariosAproximadosDesdeAhora({ n: MAX_HORARIOS_MOSTRAR, headwaySecs: headwaySecs > 0 ? headwaySecs : DEFAULT_HEADWAY_SECS, delaySecs: WAIT_FALLBACK_SECS });
-    if (!approx || approx.length === 0) {
+    if (mensajeComoLlegadaHtml) {
       return `
         ${volverHtml}
         <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
-        <p style="font-size: 13px; color: #999; text-align: center; padding: 12px 0;">Sin datos de horarios disponibles.</p>
+        ${paradaInfoHtml}
+        <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
+        <ul style="list-style: none; padding: 0; margin: 0;">${mensajeComoLlegadaHtml}</ul>
+        <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">${textoPie}</p>
       `;
     }
-    horarios = approx;
+
+    return `
+      ${volverHtml}
+      <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+      ${paradaInfoHtml}
+      <p style="font-size: 13px; color: #999; text-align: center; padding: 12px 0;">Sin datos de horarios disponibles.</p>
+    `;
   }
 
-  const items = horarios.map((h, i) => {
+  const itemsHorarios = horarios.map((h, i) => {
     const esProximo = i === 0;
     const subtitulo = esProximo
-      ? '⏱ Próximo colectivo'
+      ? subtituloProximo
       : headwayMins > 0
         ? `En ~${headwayMins * i} min`
         : '';
@@ -1238,22 +1516,25 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
         gap: 12px;
         padding: 10px 12px;
         border-radius: 10px;
-        background: ${esProximo ? 'rgba(0,123,255,0.08)' : 'transparent'};
-        border: 1px solid ${esProximo ? 'rgba(0,123,255,0.25)' : 'rgba(0,0,0,0.07)'};
+        background: ${esProximo ? (esTiempoReal ? 'rgba(30,142,62,0.10)' : 'rgba(0,123,255,0.08)') : 'transparent'};
+        border: 1px solid ${esProximo ? (esTiempoReal ? 'rgba(30,142,62,0.35)' : 'rgba(0,123,255,0.25)') : 'rgba(0,0,0,0.07)'};
         margin-bottom: 8px;
       ">
-        <span style="font-size: 22px; font-weight: 700; color: ${esProximo ? '#007BFF' : '#333'}; min-width: 52px;">${escapeHtml(h)}</span>
+        <span style="font-size: 22px; font-weight: 700; color: ${esProximo ? colorPrincipal : '#333'}; min-width: 52px;">${escapeHtml(h)}</span>
         <span style="font-size: 12px; color: #888;">${subtitulo}</span>
       </li>
     `;
   }).join('');
 
+  const items = `${mensajeComoLlegadaHtml}${itemsHorarios}`;
+
   return `
     ${volverHtml}
     <p style="margin: 0 0 12px 0; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+    ${paradaInfoHtml}
     <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
     <ul style="list-style: none; padding: 0; margin: 0;">${items}</ul>
-    <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">Horarios aproximados según frecuencia y distancia estimada hasta la parada</p>
+    <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">${textoPie}</p>
   `;
 }
 
@@ -1514,24 +1795,20 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
 
   // Si venimos desde una parada, mostrar horarios de llegada
   if (paradaOrigen) {
-    const frequencies = await cargarFrequencies();
-    const freqRow = buscarFrequencyDeLinea(frequencies, ref);
-    const coords = paradaOrigen?.geometry?.coordinates;
-    const paradaLng = Array.isArray(coords) && coords.length >= 2 ? Number(coords[0]) : NaN;
-    const paradaLat = Array.isArray(coords) && coords.length >= 2 ? Number(coords[1]) : NaN;
-    const offsetSegs = estimarOffsetArriboParadaSegsDesdeRutas(rutas, paradaLat, paradaLng);
-    let horarios = calcularProximosArribosEnParada(freqRow, offsetSegs);
-    let headwaySecs = Number(freqRow?.headway_secs || 0);
-
-    // Si no hay datos de frequency o estamos fuera de servicio, igual mostrar aproximado.
-    if (!horarios || horarios.length === 0) {
-      const fallbackHeadway = headwaySecs > 0 ? headwaySecs : DEFAULT_HEADWAY_SECS;
-      // Incorporar el offset de la parada (tiempo de viaje) en el delay inicial
-      horarios = generarHorariosAproximadosDesdeAhora({ n: MAX_HORARIOS_MOSTRAR, headwaySecs: fallbackHeadway, delaySecs: Math.max(0, WAIT_FALLBACK_SECS + offsetSegs) });
-      headwaySecs = fallbackHeadway;
-    }
-
-    const html = renderHorariosLlegada(horarios, ref, name, headwaySecs, true);
+    const paradaNombreBase = obtenerNombreParadaBase(paradaOrigen);
+    const arrivalsResp = await consultarArribosApi(ref, paradaNombreBase);
+    const html = renderHorariosLlegada(
+      arrivalsResp.horarios,
+      ref,
+      name,
+      0,
+      true,
+      {
+        tipoDatos: arrivalsResp.tipoDatos,
+        paradaConsultada: arrivalsResp.paradaConsultada,
+        mensajeApi: arrivalsResp.mensajeApi,
+      }
+    );
     abrirBottomSheet(`Línea ${escapeHtml(ref)}`, html, 'linea');
   } else {
     // Sin parada de origen: mostrar recorrido con paradas (comportamiento anterior)
