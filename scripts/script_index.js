@@ -999,8 +999,19 @@ function extraerVarianteDesdeLinea(linea) {
   return m ? m[1] : '';
 }
 
+function extraerDireccionDesdeNombreParada(nombreParada) {
+  const txt = String(nombreParada || '').trim();
+  // Soporta sufijos del estilo: "... S", "... S -A", "... S-A".
+  const m = txt.match(/\s([SNEO])(?:\s*-\s*[ABC])?\s*$/i);
+  return m ? String(m[1]).toUpperCase() : '';
+}
+
 function normalizarLineaParaLookup(linea) {
-  return String(linea || '').trim().toUpperCase().replace(/\s+/g, '');
+  return String(linea || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 function obtenerClavesLineaLookup(linea) {
@@ -1020,15 +1031,36 @@ function crearClaveParadaApi(texto) {
   txt = txt
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    // Conectores típicos en esquinas: unificar para mejorar matching.
+    .replace(/\s*&\s*/g, ' y ')
+    .replace(/\s*\/\s*/g, ' y ')
     .replace(/\bconmplejo\b/g, 'complejo')
     .replace(/\bcomplejo\s+universitario\b/g, 'complejo')
     .replace(/\bavenida\s+ignacio\b/g, 'av ignacio')
     .replace(/\bav\.?\s+ig\.?\b/g, 'av ignacio')
+    // Variantes de apellidos/calles frecuentes en fuentes distintas.
+    .replace(/\birigoyen\b/g, 'yrigoyen')
+    .replace(/\byrigoyen\b/g, 'yrigoyen')
+    // Abreviaturas comunes.
+    .replace(/\bgral\.?\b/g, 'general')
+    .replace(/\bdiag\.?\b/g, 'diagonal')
+    // Algunas fuentes incluyen "Diag. General ..." y otras no.
+    .replace(/\bdiagonal\s+general\s+/g, 'diagonal ')
+    // Normalizar "Ruta Nac." / "RN".
+    .replace(/\bruta\s+nac\.?\b/g, 'ruta nacional')
+    .replace(/\brn\b/g, 'ruta nacional')
+    // Normalizar indicadores de número: N°20, N° 20, Nº20, Nro. 20, etc.
+    .replace(/\bnro\.?\b/g, 'n')
+    .replace(/\bn[°º]\s*/g, 'n ')
     .replace(/\bavenida\b/g, 'av')
     .replace(/\bavda\b/g, 'av')
     .replace(/\bav\./g, 'av')
-    .replace(/[°º]/g, 'o')
+    // Remover símbolos residuales (por ejemplo el signo de número °/º) y
+    // separar letras/dígitos para que "n20" y "n 20" coincidan.
+    .replace(/[°º]/g, '')
     .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/([a-z])(\d)/g, '$1 $2')
+    .replace(/(\d)([a-z])/g, '$1 $2')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -1049,6 +1081,60 @@ function registrarParadaCanonicaEnIndice(indice, nombreParada) {
   }
 }
 
+function tokenizarClaveParadaApi(clave) {
+  const ignorar = new Set([
+    'y',
+    'de',
+    'del',
+    'la',
+    'el',
+    'los',
+    'las',
+    'av',
+    'ruta',
+    'nacional',
+    'diagonal',
+    'general',
+    'n',
+  ]);
+
+  return String(clave || '')
+    .split(' ')
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .filter((t) => t.length > 1)
+    .filter((t) => !ignorar.has(t));
+}
+
+function resolverCanonicoPorTokensEnIndice(indiceLinea, clave) {
+  if (!(indiceLinea instanceof Map)) return '';
+
+  const tokens = tokenizarClaveParadaApi(clave);
+  if (tokens.length === 0) return '';
+
+  let canonica = '';
+  let matches = 0;
+
+  for (const [k, v] of indiceLinea.entries()) {
+    const tset = new Set(tokenizarClaveParadaApi(k));
+
+    let ok = true;
+    for (const t of tokens) {
+      if (!tset.has(t)) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+
+    matches += 1;
+    canonica = v;
+    if (matches > 1) return '';
+  }
+
+  return matches === 1 ? canonica : '';
+}
+
 function construirIndiceParadasApi(payload) {
   const global = new Map();
   const porLinea = new Map();
@@ -1066,6 +1152,15 @@ function construirIndiceParadasApi(payload) {
       const lineaClave = normalizarLineaParaLookup(lineaCodigo);
       if (lineaClave && !porLinea.has(lineaClave)) {
         porLinea.set(lineaClave, new Map());
+      }
+
+      // Alias: permitir resolver con o sin variante (A/B/C) sin mezclar
+      // cuando la base ya existe como línea propia.
+      if (lineaClave) {
+        const sinVariante = lineaClave.replace(/([ABC])$/, '');
+        if (sinVariante && sinVariante !== lineaClave && !porLinea.has(sinVariante)) {
+          porLinea.set(sinVariante, porLinea.get(lineaClave));
+        }
       }
 
       const indiceLinea = lineaClave ? porLinea.get(lineaClave) : null;
@@ -1110,10 +1205,19 @@ async function resolverNombreParadaCanonicoParaApi(nombreParada, linea = '') {
   if (!clave) return txt;
 
   const clavesLinea = obtenerClavesLineaLookup(linea);
+  const indicesLineaCandidatos = [];
   for (const lk of clavesLinea) {
     const idxLinea = indice.porLinea.get(lk);
+    if (idxLinea instanceof Map) indicesLineaCandidatos.push(idxLinea);
     const canonicaLinea = idxLinea?.get(clave);
     if (canonicaLinea) return canonicaLinea;
+  }
+
+  // Fallback: si no hubo match exacto, intentar resolver por tokens dentro
+  // de la línea (ayuda con abreviaturas y variantes leves).
+  for (const idxLinea of indicesLineaCandidatos) {
+    const canonicaTokens = resolverCanonicoPorTokensEnIndice(idxLinea, clave);
+    if (canonicaTokens) return canonicaTokens;
   }
 
   const canonicaGlobal = indice.global.get(clave);
@@ -1123,6 +1227,8 @@ async function resolverNombreParadaCanonicoParaApi(nombreParada, linea = '') {
 async function normalizarNombreParadaParaApi(nombreParada, linea = '') {
   let txt = String(nombreParada || '').trim().replace(/\s+/g, ' ');
   if (!txt) return '';
+
+  const direccion = extraerDireccionDesdeNombreParada(txt);
 
   // Limpia sufijos de orientación/variante para mejorar matching en backend.
   txt = txt
@@ -1143,8 +1249,12 @@ async function normalizarNombreParadaParaApi(nombreParada, linea = '') {
   txt = await resolverNombreParadaCanonicoParaApi(txt, linea);
 
   const variante = extraerVarianteDesdeLinea(linea);
-  if (variante && !new RegExp(`\\s-\\s*${variante}$`, 'i').test(txt)) {
-    txt = `${txt} -${variante}`;
+  if (variante) {
+    const sufijo = direccion ? ` ${direccion} -${variante}` : ` -${variante}`;
+    const re = direccion
+      ? new RegExp(`\\s${direccion}\\s*-\\s*${variante}$`, 'i')
+      : new RegExp(`\\s-\\s*${variante}$`, 'i');
+    if (!re.test(txt)) txt = `${txt}${sufijo}`;
   }
 
   return txt;
