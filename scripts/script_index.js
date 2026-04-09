@@ -15,8 +15,10 @@ let paradasRecorrido = null;
 let paradasRecorridoMarkers = null;
 let seleccionParadaLayer = null;
 let _frequenciesData = null; // Cache de datos de frequencies.txt
+let _indiceParadasApi = null; // Cache de nombres canónicos para arrivals API
 
 const PARADAS_GEOJSON_URL = encodeURI('Datos/DATOS SAN JUAN.geojson');
+const RED_TULUM_PARADAS_URL = encodeURI('Datos/red_tulum_paradas.json');
 const FREQUENCIES_URL = 'Datos/frequencies.txt';
 const ARRIVALS_API_URL = 'https://proxyrt-production.up.railway.app/arrivals';
 const RADIO_PARADAS_METROS = 700;
@@ -997,7 +999,128 @@ function extraerVarianteDesdeLinea(linea) {
   return m ? m[1] : '';
 }
 
-function normalizarNombreParadaParaApi(nombreParada, linea = '') {
+function normalizarLineaParaLookup(linea) {
+  return String(linea || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function obtenerClavesLineaLookup(linea) {
+  const base = normalizarLineaParaLookup(linea);
+  if (!base) return [];
+
+  const claves = [base];
+  const sinVariante = base.replace(/([ABC])$/, '');
+  if (sinVariante && sinVariante !== base) claves.push(sinVariante);
+  return claves;
+}
+
+function crearClaveParadaApi(texto) {
+  let txt = String(texto || '').trim().toLowerCase();
+  if (!txt) return '';
+
+  txt = txt
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\bconmplejo\b/g, 'complejo')
+    .replace(/\bcomplejo\s+universitario\b/g, 'complejo')
+    .replace(/\bavenida\s+ignacio\b/g, 'av ignacio')
+    .replace(/\bav\.?\s+ig\.?\b/g, 'av ignacio')
+    .replace(/\bavenida\b/g, 'av')
+    .replace(/\bavda\b/g, 'av')
+    .replace(/\bav\./g, 'av')
+    .replace(/[°º]/g, 'o')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return txt;
+}
+
+function registrarParadaCanonicaEnIndice(indice, nombreParada) {
+  if (!(indice instanceof Map)) return;
+
+  const canonica = String(nombreParada || '').trim().replace(/\s+/g, ' ');
+  if (!canonica) return;
+
+  const clave = crearClaveParadaApi(canonica);
+  if (!clave) return;
+
+  if (!indice.has(clave)) {
+    indice.set(clave, canonica);
+  }
+}
+
+function construirIndiceParadasApi(payload) {
+  const global = new Map();
+  const porLinea = new Map();
+
+  const departamentos = payload?.red_tulum?.departamentos;
+  if (!departamentos || typeof departamentos !== 'object') {
+    return { global, porLinea };
+  }
+
+  for (const dep of Object.values(departamentos)) {
+    const lineas = dep?.lineas;
+    if (!lineas || typeof lineas !== 'object') continue;
+
+    for (const [lineaCodigo, lineaInfo] of Object.entries(lineas)) {
+      const lineaClave = normalizarLineaParaLookup(lineaCodigo);
+      if (lineaClave && !porLinea.has(lineaClave)) {
+        porLinea.set(lineaClave, new Map());
+      }
+
+      const indiceLinea = lineaClave ? porLinea.get(lineaClave) : null;
+      const recorridos = Array.isArray(lineaInfo?.recorridos) ? lineaInfo.recorridos : [];
+
+      for (const rec of recorridos) {
+        const paradas = Array.isArray(rec?.paradas) ? rec.paradas : [];
+        for (const parada of paradas) {
+          registrarParadaCanonicaEnIndice(global, parada);
+          registrarParadaCanonicaEnIndice(indiceLinea, parada);
+        }
+      }
+    }
+  }
+
+  return { global, porLinea };
+}
+
+async function cargarIndiceParadasApi() {
+  if (_indiceParadasApi) return _indiceParadasApi;
+
+  try {
+    const resp = await fetch(RED_TULUM_PARADAS_URL, { cache: 'force-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const payload = await resp.json();
+    _indiceParadasApi = construirIndiceParadasApi(payload);
+    return _indiceParadasApi;
+  } catch (err) {
+    console.warn('No se pudo cargar red_tulum_paradas.json para normalizar paradas:', err);
+    _indiceParadasApi = { global: new Map(), porLinea: new Map() };
+    return _indiceParadasApi;
+  }
+}
+
+async function resolverNombreParadaCanonicoParaApi(nombreParada, linea = '') {
+  const txt = String(nombreParada || '').trim().replace(/\s+/g, ' ');
+  if (!txt) return '';
+
+  const indice = await cargarIndiceParadasApi();
+  const clave = crearClaveParadaApi(txt);
+  if (!clave) return txt;
+
+  const clavesLinea = obtenerClavesLineaLookup(linea);
+  for (const lk of clavesLinea) {
+    const idxLinea = indice.porLinea.get(lk);
+    const canonicaLinea = idxLinea?.get(clave);
+    if (canonicaLinea) return canonicaLinea;
+  }
+
+  const canonicaGlobal = indice.global.get(clave);
+  return canonicaGlobal || txt;
+}
+
+async function normalizarNombreParadaParaApi(nombreParada, linea = '') {
   let txt = String(nombreParada || '').trim().replace(/\s+/g, ' ');
   if (!txt) return '';
 
@@ -1017,8 +1140,10 @@ function normalizarNombreParadaParaApi(nombreParada, linea = '') {
     .replace(/\s+/g, ' ')
     .trim();
 
+  txt = await resolverNombreParadaCanonicoParaApi(txt, linea);
+
   const variante = extraerVarianteDesdeLinea(linea);
-  if (variante) {
+  if (variante && !new RegExp(`\\s-\\s*${variante}$`, 'i').test(txt)) {
     txt = `${txt} -${variante}`;
   }
 
@@ -1169,7 +1294,7 @@ function extraerHorariosDesdePayloadArrivals(payload) {
 
 async function consultarArribosApi(linea, paradaNombre) {
   const lineaNorm = String(linea || '').trim();
-  const paradaNorm = normalizarNombreParadaParaApi(paradaNombre, lineaNorm);
+  const paradaNorm = await normalizarNombreParadaParaApi(paradaNombre, lineaNorm);
   if (!lineaNorm || !paradaNorm) {
     return { horarios: [], tipoDatos: 'esperado', paradaConsultada: paradaNorm || '' };
   }
@@ -1538,6 +1663,18 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
   `;
 }
 
+function renderEstadoCargaArribos(lineaRef, lineaNombre) {
+  const titulo = lineaRef ? `Línea ${escapeHtml(lineaRef)}` : 'Línea';
+  const detalle = lineaNombre ? ` — ${escapeHtml(lineaNombre)}` : '';
+  return `
+    <div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">
+      <div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>
+      <p class="bottom-sheet-loading-title">Consultando arribos...</p>
+      <p class="bottom-sheet-loading-subtitle">${titulo}${detalle}</p>
+    </div>
+  `;
+}
+
 function obtenerLineasDetalleDesdeRelations(feature) {
   const rels = feature.properties?.['@relations'];
   if (!Array.isArray(rels)) return [];
@@ -1795,6 +1932,8 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
 
   // Si venimos desde una parada, mostrar horarios de llegada
   if (paradaOrigen) {
+    abrirBottomSheet(`Línea ${escapeHtml(ref)}`, renderEstadoCargaArribos(ref, name), 'linea');
+
     const paradaNombreBase = obtenerNombreParadaBase(paradaOrigen);
     const arrivalsResp = await consultarArribosApi(ref, paradaNombreBase);
     const html = renderHorariosLlegada(

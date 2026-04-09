@@ -671,6 +671,56 @@
             border-color: #007BFF;
           }
 
+          .bottom-sheet-loading {
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-align: center;
+            color: #4b5563;
+          }
+          .bottom-sheet-loading-spinner {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 3px solid rgba(0, 123, 255, 0.2);
+            border-top-color: #007BFF;
+            animation: bottom-sheet-spinner 0.85s linear infinite;
+          }
+          .bottom-sheet-loading-title {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+          }
+          .bottom-sheet-loading-subtitle {
+            margin: 0;
+            font-size: 12px;
+            color: #6b7280;
+          }
+
+          @keyframes bottom-sheet-spinner {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          .dark-mode .bottom-sheet-loading {
+            color: rgba(229, 231, 235, 0.88);
+          }
+          .dark-mode .bottom-sheet-loading-spinner {
+            border-color: rgba(96, 165, 250, 0.24);
+            border-top-color: #60a5fa;
+          }
+          .dark-mode .bottom-sheet-loading-title {
+            color: #e5e7eb;
+          }
+          .dark-mode .bottom-sheet-loading-subtitle {
+            color: rgba(229, 231, 235, 0.7);
+          }
+
           /* Bottom-sheet: Guardar ubicación */
           .save-location-sheet {
             text-align: center;
