@@ -44,6 +44,18 @@
             --glass-bg-strong: rgba(255, 255, 255, 0.28);
 
             --glass-fg: #111;
+
+            /* Text colors */
+            --text-primary: #222;
+            --text-secondary: #666;
+            --text-muted: #aaa;
+
+            /* Button styles for "Volver a la parada" */
+            --btn-back-bg: rgba(0, 0, 0, 0.03);
+            --btn-back-text: #333;
+            --btn-back-border: rgba(0, 0, 0, 0.12);
+            --btn-back-bg-hover: rgba(0, 0, 0, 0.06);
+            --btn-back-border-hover: rgba(0, 0, 0, 0.20);
           }
           .dark-mode {
             --glass-border: rgba(255, 255, 255, 0.14);
@@ -51,6 +63,18 @@
             --glass-bg: rgba(17, 24, 39, 0.1);
             --glass-bg-strong: rgba(17, 24, 39, 0.28);
             --glass-fg: #e5e7eb;
+
+            /* Dark mode text colors */
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+
+            /* Dark mode button styles */
+            --btn-back-bg: rgba(255, 255, 255, 0.05);
+            --btn-back-text: #e5e7eb;
+            --btn-back-border: rgba(255, 255, 255, 0.14);
+            --btn-back-bg-hover: rgba(255, 255, 255, 0.10);
+            --btn-back-border-hover: rgba(255, 255, 255, 0.22);
           }
 
           /* Si se desactiva la transparencia, se elimina blur y se vuelve opaco */
@@ -380,6 +404,15 @@
             background: rgba(255, 255, 255, 0.06);
             border-color: rgba(255, 255, 255, 0.22);
           }
+          .dark-mode .btn-volver-parada {
+            background: var(--btn-back-bg) !important;
+            color: var(--btn-back-text) !important;
+            border-color: var(--btn-back-border) !important;
+          }
+          .dark-mode .btn-volver-parada:hover {
+            background: var(--btn-back-bg-hover) !important;
+            border-color: var(--btn-back-border-hover) !important;
+          }
           .dark-mode .search-bar-container {
             background: var(--glass-bg-strong);
             border-color: var(--glass-border);
@@ -569,6 +602,13 @@
             background-color: #f8f9fa;
             flex-direction: column;
             gap: 12px;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+          }
+          
+          .bottom-sheet-header:active {
+            cursor: grabbing;
           }
 
           .bs-top-row {
@@ -645,7 +685,7 @@
           .bottom-sheet-content {
             flex: 1;
             overflow-y: auto;
-            padding: 16px;
+            padding: 20px 14px;
           }
           .bottom-sheet-content ul {
             list-style: none;
@@ -671,38 +711,153 @@
             border-color: #007BFF;
           }
 
-          .bottom-sheet-loading {
-            min-height: 180px;
+          .btn-volver-parada {
+            background: var(--btn-back-bg) !important;
+            color: var(--btn-back-text) !important;
+            border-color: var(--btn-back-border) !important;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 8px;
+            padding: 12px 16px;
+            transition: all 0.2s ease;
+            font-weight: 600;
+          }
+
+          .btn-volver-parada:hover {
+            background: var(--btn-back-bg-hover) !important;
+            border-color: var(--btn-back-border-hover) !important;
+          }
+
+          /* Estilos para lista de líneas mejorada */
+          .lineas-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            padding: 12px 8px;
+            margin: 0 0 16px 0;
+          }
+          
+          .lineas-list .btn-linea {
+            padding: 20px 16px;
+            border-radius: 12px;
+            border: 2px solid #007BFF;
+            background: linear-gradient(135deg, #007BFF 0%, #0056cc 100%);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            min-height: 90px;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+            text-align: center;
+            word-break: break-word;
+            white-space: normal;
+            gap: 6px;
+          }
+          
+          .lineas-list .btn-linea .linea-button-ref {
+            font-size: 26px;
+            font-weight: 800;
+            display: block;
+            line-height: 1;
+          }
+          
+          .lineas-list .btn-linea .linea-button-name {
+            font-size: 13px;
+            font-weight: 600;
+            display: block;
+            opacity: 0.95;
+            line-height: 1.2;
+            max-width: 100%;
+          }
+          
+          .lineas-list .btn-linea:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+            background: linear-gradient(135deg, #0056cc 0%, #003d99 100%);
+            border-color: #003d99;
+          }
+          
+          .lineas-list .btn-linea:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(0, 123, 255, 0.2);
+          }
+          
+          .dark-mode .lineas-list .btn-linea {
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            border-color: #3b82f6;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+          }
+          
+          .dark-mode .lineas-list .btn-linea:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+            border-color: #1e40af;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+          }
+
+          /* Garantizar que los iconos de los botones del header sean mayores */
+          #bs-plan-btn img,
+          #bs-fav-btn img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+          }
+            transition: all 0.2s ease !important;
+          }
+          .btn-volver-parada:hover {
+            background: var(--btn-back-bg-hover) !important;
+            border-color: var(--btn-back-border-hover) !important;
+          }
+
+          .bottom-sheet-loading {
+            min-height: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
             text-align: center;
             color: #4b5563;
+            padding: 40px 20px;
           }
           .bottom-sheet-loading-spinner {
-            width: 38px;
-            height: 38px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
-            border: 3px solid rgba(0, 123, 255, 0.2);
-            border-top-color: #007BFF;
-            animation: bottom-sheet-spinner 0.85s linear infinite;
+            border: 5px solid rgba(0, 123, 255, 0.15);
+            border-top: 5px solid #007BFF;
+            border-right: 5px solid rgba(0, 123, 255, 0.4);
+            animation: bottom-sheet-spinner 1.2s cubic-bezier(0.4, 0.0, 0.6, 1.0) infinite;
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.2), inset 0 0 20px rgba(0, 123, 255, 0.05);
           }
           .bottom-sheet-loading-title {
             margin: 0;
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
             color: #111827;
+            letter-spacing: 0.3px;
           }
           .bottom-sheet-loading-subtitle {
             margin: 0;
-            font-size: 12px;
+            font-size: 16px;
             color: #6b7280;
+            font-weight: 500;
+            line-height: 1.4;
           }
 
           @keyframes bottom-sheet-spinner {
-            to {
+            0% {
+              transform: rotate(0deg);
+            }
+            50% {
+              transform: rotate(180deg);
+              border-top-color: #0056b3;
+            }
+            100% {
               transform: rotate(360deg);
             }
           }
@@ -711,14 +866,16 @@
             color: rgba(229, 231, 235, 0.88);
           }
           .dark-mode .bottom-sheet-loading-spinner {
-            border-color: rgba(96, 165, 250, 0.24);
+            border-color: rgba(96, 165, 250, 0.15);
             border-top-color: #60a5fa;
+            border-right-color: rgba(96, 165, 250, 0.4);
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.25), inset 0 0 20px rgba(96, 165, 250, 0.08);
           }
           .dark-mode .bottom-sheet-loading-title {
-            color: #e5e7eb;
+            color: #f0f4f8;
           }
           .dark-mode .bottom-sheet-loading-subtitle {
-            color: rgba(229, 231, 235, 0.7);
+            color: rgba(229, 231, 235, 0.8);
           }
 
           /* Bottom-sheet: Guardar ubicación */
@@ -742,6 +899,101 @@
           }
           .dark-mode .save-location-coords {
             color: rgba(229, 231, 235, 0.60);
+          }
+          
+          /* Estilos mejorados para guardar ubicación */
+          .save-location-sheet {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding: 8px 0;
+          }
+          
+          .save-location-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary, #222);
+            margin: 0;
+            text-align: center;
+          }
+          
+          .save-location-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #007BFF;
+            margin: 0;
+            text-align: center;
+            word-break: break-word;
+          }
+          
+          .save-location-description {
+            font-size: 14px;
+            color: var(--text-secondary, #666);
+            margin: 0;
+            text-align: center;
+            font-weight: 500;
+          }
+          
+          .save-location-buttonarea {
+            display: flex;
+            gap: 12px;
+            padding: 8px 0;
+          }
+
+          .bottom-sheet-content .btn-save-location-primary {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 24px 20px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #007BFF 0%, #0056cc 100%);
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
+          }
+          
+          .bottom-sheet-content .btn-save-location-primary:hover {
+            background: linear-gradient(135deg, #0056cc 0%, #003d99 100%);
+            box-shadow: 0 6px 16px rgba(0, 123, 255, 0.35);
+            transform: translateY(-2px);
+          }
+          
+          .bottom-sheet-content .btn-save-location-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 123, 255, 0.2);
+          }
+          
+          .bottom-sheet-content .btn-save-location-primary .icon {
+            width: 26px;
+            height: 26px;
+          }
+          
+          .dark-mode .bottom-sheet-content .btn-save-location-primary {
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+          
+          .dark-mode .bottom-sheet-content .btn-save-location-primary:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+          }
+          
+          .dark-mode .save-location-title {
+            color: var(--text-primary, #e5e7eb);
+          }
+          
+          .dark-mode .save-location-name {
+            color: #60a5fa;
+          }
+          
+          .dark-mode .save-location-description {
+            color: var(--text-secondary, #9ca3af);
           }
 
           .bottom-sheet-content .btn-save-location {
@@ -784,27 +1036,36 @@
 
           /* Favoritos (filas con botón X integrado) */
           .bottom-sheet-content .fav-empty {
-            color: #6b7280;
-            font-size: 14px;
+            color: var(--text-muted, #999);
+            font-size: 15px;
             text-align: center;
-            margin: 16px 0;
+            margin: 20px 0;
+            font-weight: 500;
+            padding: 16px;
+            background: rgba(0, 123, 255, 0.06);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 123, 255, 0.1);
           }
           .bottom-sheet-content .fav-row {
             display: flex;
             align-items: stretch;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
             overflow: hidden;
-            margin-bottom: 8px;
-            transition: background 0.2s ease, border-color 0.2s ease;
+            margin-bottom: 12px;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
           }
           .bottom-sheet-content .fav-row:hover {
-            background: #f0f0f0;
+            background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 100%);
             border-color: #007BFF;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+            transform: translateY(-2px);
           }
           .bottom-sheet-content .fav-row:focus-within {
             border-color: #007BFF;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
           }
 
           /* Anula el estilo genérico de botones dentro del bottom-sheet */
@@ -817,47 +1078,67 @@
           }
           .bottom-sheet-content .fav-row .fav-main {
             flex: 1;
-            padding: 12px 16px;
+            padding: 18px 18px;
             cursor: pointer;
             text-align: left;
-            font-size: 14px;
-            color: inherit;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary, #111827);
+            transition: all 0.2s ease;
           }
+          
+          .bottom-sheet-content .fav-row .fav-main:hover {
+            color: #007BFF;
+          }
+          
           .bottom-sheet-content .fav-row .btn-eliminar-fav {
-            flex: 0 0 44px;
+            flex: 0 0 50px;
             padding: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 16px;
-            color: #6b7280;
-            border-left: 1px solid rgba(0, 0, 0, 0.08);
-            transition: background 0.2s ease, color 0.2s ease;
+            font-size: 18px;
+            color: #d1d5db;
+            border-left: 2px solid rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+            background: transparent;
           }
           .bottom-sheet-content .fav-row .btn-eliminar-fav:hover {
-            background: rgba(0, 0, 0, 0.04);
-            color: #111827;
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+            border-left-color: rgba(220, 38, 38, 0.2);
           }
 
           .dark-mode .bottom-sheet-content .fav-empty {
-            color: rgba(229, 231, 235, 0.65);
+            color: rgba(229, 231, 235, 0.8);
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.2);
           }
           .dark-mode .bottom-sheet-content .fav-row {
-            background: rgba(31, 41, 55, 0.65);
-            border-color: rgba(255, 255, 255, 0.12);
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.8) 100%);
+            border-color: rgba(75, 85, 99, 0.4);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
           }
           .dark-mode .bottom-sheet-content .fav-row:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(147, 197, 253, 0.35);
+            background: linear-gradient(135deg, rgba(51, 65, 85, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
+            border-color: rgba(147, 197, 253, 0.5);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+          .dark-mode .bottom-sheet-content .fav-row .fav-main {
+            color: var(--text-primary, #e5e7eb);
+          }
+          .dark-mode .bottom-sheet-content .fav-row .fav-main:hover {
+            color: #60a5fa;
           }
           .dark-mode .bottom-sheet-content .fav-row .btn-eliminar-fav {
-            border-left-color: rgba(255, 255, 255, 0.10);
-            color: rgba(229, 231, 235, 0.70);
+            border-left-color: rgba(255, 255, 255, 0.1);
+            color: rgba(229, 231, 235, 0.6);
           }
           .dark-mode .bottom-sheet-content .fav-row .btn-eliminar-fav:hover {
-            background: rgba(255, 255, 255, 0.06);
-            color: #e5e7eb;
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border-left-color: rgba(239, 68, 68, 0.3);
           }
           .action-buttons {
             display: flex;
@@ -1018,6 +1299,7 @@
             outline: none;
             transition: all 0.2s ease;
             color: #333;
+            text-align: center;
           }
           .search-bar:focus {
             border: none;
@@ -1200,7 +1482,9 @@
                 <div class="sidepanel-credits">
                   <p>Créditos a <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a></p>
                   <p>Créditos a <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a></p>
-                  <p>Creditos a <a href="https://lucide.dev/" target="_blank" rel="noopener">Lucide</a></p>
+                  <p>Créditos a <a href="https://lucide.dev/" target="_blank" rel="noopener">Lucide</a></p>
+                  <p>Créditos a <a href="https://redtulum.gob.ar" target="_blank" rel="noopener">RedTulum</a></p>
+                  <p>Datos de arribos obtenidos desde <a href="https://github.com/dg203302/Proxy_RT" target="_blank" rel="noopener">Proxy_RT</a></p>
                 </div>
 
                 <a class="sidepanel-credits-link" href="https://djsolutionss.netlify.app" target="_blank" rel="noopener"><img src="Datos/logo_djsolutions.png" alt="DJSolutions">Desarrollado por DJ Solutions</a>
@@ -1220,12 +1504,12 @@
             <div id="bottom-sheet" class="bottom-sheet">
                 <div class="bottom-sheet-header">
                 <div class="bs-top-row">
-                  <button id="bs-plan-btn" type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: none;" aria-label="Planear ruta">
+                  <button id="bs-plan-btn" type="button" style="background: none; border: none; cursor: pointer; padding: 8px; display: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" aria-label="Planear ruta">
                     <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+" />
                     <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+" />
                   </button>
                   <div class="bottom-sheet-handle" id="bs-handle"></div>
-                  <button id="bs-fav-btn" type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: none;" aria-label="Agregar a favoritos">
+                  <button id="bs-fav-btn" type="button" style="background: none; border: none; cursor: pointer; padding: 8px; display: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" aria-label="Agregar a favoritos">
                     <span class="fav-state state-add" aria-hidden="true">
                       <!-- No favorito: corazón + -->
                       <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1oZWFydC1wbHVzLWljb24gbHVjaWRlLWhlYXJ0LXBsdXMiPjxwYXRoIGQ9Im0xNC40NzkgMTkuMzc0LS45NzEuOTM5YTIgMiAwIDAgMS0zIC4wMTlMNSAxNWMtMS41LTEuNS0zLTMuMi0zLTUuNWE1LjUgNS41IDAgMCAxIDkuNTkxLTMuNjc2LjU2LjU2IDAgMCAwIC44MTggMEE1LjQ5IDUuNDkgMCAwIDEgMjIgOS41YTUuMiA1LjIgMCAwIDEtLjIxOSAxLjQ5Ii8+PHBhdGggZD0iTTE1IDE1aDYiLz48cGF0aCBkPSJNMTggMTJ2NiIvPjwvc3ZnPg==" />
@@ -1253,7 +1537,7 @@
         </main>
         <footer>
             <div class="search-bar-container">
-              <input type="text" id="search-input" class="search-bar" placeholder="Buscar..." oninput="buscarLugaresEnTiempoReal()" onkeydown="if(event.key==='Escape') cerrarModalBusqueda()">
+              <input type="text" id="search-input" class="search-bar" placeholder="Toca aquí para buscar" oninput="buscarLugaresEnTiempoReal()" onkeydown="if(event.key==='Escape') cerrarModalBusqueda()">
             </div>
             <div class="footer-buttons">
             <button id="btn-centrar" class="btn-floating" title="Recentrar ubicación" onclick="CentrarYOferécerGuardar()" aria-label="Recentrar ubicación">
@@ -1267,6 +1551,6 @@
             </div>
         </footer>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-        <script src="scripts/script_index.js"></script>
+        <script src="scripts/script_index.js?v=2026-04-10-fix1"></script>
     </body>
 </html>

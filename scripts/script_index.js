@@ -14,20 +14,20 @@ let recorridoActivo = null;
 let paradasRecorrido = null;
 let paradasRecorridoMarkers = null;
 let seleccionParadaLayer = null;
-let _frequenciesData = null; // Cache de datos de frequencies.txt
 let _indiceParadasApi = null; // Cache de nombres canónicos para arrivals API
 let _paradasPorLinea = null; // Cache de Datos/paradas_por_linea.json
 let _urlsPorLinea = null; // Cache de Datos/urls_por_linea.json
 let _indicesParadasPorLinea = null; // Cache de índices normalizados por línea
 let arrivalsAbortController = null; // Permite abortar/renovar consultas de arrivals
+let _lastParadasPorLineaError = ''; // Último error al cargar paradas_por_linea.json (para diagnóstico)
+let _lastUrlsPorLineaError = ''; // Último error al cargar urls_por_linea.json (para diagnóstico)
 
 const PARADAS_GEOJSON_URL = encodeURI('Datos/DATOS SAN JUAN.geojson');
 const RED_TULUM_PARADAS_URL = encodeURI('Datos/red_tulum_paradas.json');
 const PARADAS_POR_LINEA_URL = encodeURI('Datos/paradas_por_linea.json');
 const URLS_POR_LINEA_URL = encodeURI('Datos/urls_por_linea.json');
-const FREQUENCIES_URL = 'Datos/frequencies.txt';
 const ARRIVALS_API_URL = 'https://proxyrt-production.up.railway.app/arrivals';
-const ARRIVALS_TIMEOUT_MS = 12000;
+const ARRIVALS_TIMEOUT_MS = 30000;
 const ARRIVALS_MAX_INTENTOS_PARADA = 3; // cuando hay paradas duplicadas por sufijos, probar varias variantes
 const RADIO_PARADAS_METROS = 700;
 const MAX_PARADAS_MOSTRAR = 40;
@@ -55,7 +55,7 @@ const WALKING_SPEED_M_S = 1.35; // ~4.9 km/h
 const BUS_SPEED_M_S = 5.0; // ~18 km/h (estimación conservadora)
 const DESTINO_UMBRAL_CORTE_M = 90; // cortar tramo si pasa a <= 90m del destino
 const WAIT_FALLBACK_SECS = 12 * 60; // si no hay frecuencia disponible, penaliza ~12 min
-const DEFAULT_HEADWAY_SECS = 15 * 60; // si no hay datos de frequencies, asumir cada ~15 min
+const DEFAULT_HEADWAY_SECS = 15 * 60; // horario aproximado por defecto: cada ~15 min
 
 // Long press en mapa para guardar ubicación
 const MAP_LONG_PRESS_MS = 650;
@@ -238,16 +238,16 @@ function abrirBottomSheetFavoritos() {
   const contParadas = document.getElementById('paradas_favs');
   const contLineas = document.getElementById('lineas_favs');
   const contLugares = document.getElementById('lugares_favs');
-  const paradasHtml = contParadas?.innerHTML || '<p>No hay paradas favoritas.</p>';
-  const lineasHtml = contLineas?.innerHTML || '<p>No hay líneas favoritas.</p>';
-  const lugaresHtml = contLugares?.innerHTML || '<p>No hay lugares guardados.</p>';
+  const paradasHtml = contParadas?.innerHTML || '<p class="fav-empty">Sin paradas favoritas</p>';
+  const lineasHtml = contLineas?.innerHTML || '<p class="fav-empty">Sin líneas favoritas</p>';
+  const lugaresHtml = contLugares?.innerHTML || '<p class="fav-empty">Sin lugares guardados</p>';
   
   const html = `
-    <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 16px; font-weight: 600;">Paradas Favoritas</h3>
-    <div style="margin-bottom: 24px;">${paradasHtml}</div>
-    <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Líneas Favoritas</h3>
-    <div style="margin-bottom: 24px;">${lineasHtml}</div>
-    <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Lugares Guardados</h3>
+    <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 20px; font-weight: 700; color: var(--text-primary, #222);">📍 Paradas Favoritas</h3>
+    <div style="margin-bottom: 28px;">${paradasHtml}</div>
+    <h3 style="margin-bottom: 18px; font-size: 20px; font-weight: 700; color: var(--text-primary, #222);">🚌 Líneas Favoritas</h3>
+    <div style="margin-bottom: 28px;">${lineasHtml}</div>
+    <h3 style="margin-bottom: 18px; font-size: 20px; font-weight: 700; color: var(--text-primary, #222);">📌 Lugares Guardados</h3>
     <div>${lugaresHtml}</div>
   `;
   abrirBottomSheet('Favoritos', html);
@@ -255,11 +255,11 @@ function abrirBottomSheetFavoritos() {
 
 // Funcionalidad de drag en el handle del bottom-sheet
 function setupBottomSheetDrag() {
-  const handle = document.getElementById('bs-handle');
+  const header = document.querySelector('.bottom-sheet-header');
   const bottomSheet = document.getElementById('bottom-sheet');
   const content = document.getElementById('bs-content');
   
-  if (!handle || !bottomSheet) return;
+  if (!header || !bottomSheet) return;
   
   let isDragging = false;
   let startY = 0;
@@ -278,6 +278,11 @@ function setupBottomSheetDrag() {
   };
 
   const handleDragStart = (e) => {
+    // No iniciar drag si el click es en un botón
+    if (e.target.closest('button') || e.target.closest('svg') || e.target.closest('img')) {
+      return;
+    }
+    
     if (!bottomSheet.classList.contains('active')) return;
     isDragging = true;
     startY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
@@ -327,19 +332,19 @@ function setupBottomSheetDrag() {
   };
 
   // Remover listeners previos para evitar duplicados
-  const prevHandlers = handle._bottomSheetDragHandlers;
+  const prevHandlers = header._bottomSheetDragHandlers;
   if (prevHandlers) {
-    handle.removeEventListener('mousedown', prevHandlers.handleDragStart);
-    handle.removeEventListener('touchstart', prevHandlers.handleDragStart);
+    header.removeEventListener('mousedown', prevHandlers.handleDragStart);
+    header.removeEventListener('touchstart', prevHandlers.handleDragStart);
     document.removeEventListener('mousemove', prevHandlers.handleDragMove);
     document.removeEventListener('mouseup', prevHandlers.handleDragEnd);
     document.removeEventListener('touchmove', prevHandlers.handleDragMove);
     document.removeEventListener('touchend', prevHandlers.handleDragEnd);
   }
 
-  // Listener para el inicio del drag (solo en el handle)
-  handle.addEventListener('mousedown', handleDragStart);
-  handle.addEventListener('touchstart', handleDragStart, { passive: false });
+  // Listener para el inicio del drag (en toda la cabecera)
+  header.addEventListener('mousedown', handleDragStart);
+  header.addEventListener('touchstart', handleDragStart, { passive: false });
 
   // Listeners globales para el movimiento y fin
   document.addEventListener('mousemove', handleDragMove, { passive: true });
@@ -347,7 +352,7 @@ function setupBottomSheetDrag() {
   document.addEventListener('touchmove', handleDragMove, { passive: true });
   document.addEventListener('touchend', handleDragEnd);
 
-  handle._bottomSheetDragHandlers = {
+  header._bottomSheetDragHandlers = {
     handleDragStart,
     handleDragMove,
     handleDragEnd,
@@ -433,27 +438,15 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'cur
   const iconSaveLight = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zYXZlLWljb24gbHVjaWRlLXNhdmUiPjxwYXRoIGQ9Ik0xNS4yIDNhMiAyIDAgMCAxIDEuNC42bDMuOCAzLjhhMiAyIDAgMCAxIC42IDEuNFYxOWEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJ6Ii8+PHBhdGggZD0iTTE3IDIxdi03YTEgMSAwIDAgMC0xLTFIOGExIDEgMCAwIDAtMSAxdjciLz48cGF0aCBkPSJNNyAzdjRhMSAxIDAgMCAwIDEgMWg3Ii8+PC9zdmc+';
   const iconPlanDark = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+';
   const iconPlanLight = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+';
-  const mostrarBtnLinea = String(contexto || '').toLowerCase() === 'search';
-  const btnLineaHtml = mostrarBtnLinea
-    ? `
-        <button type="button" class="btn-nearest-line" onclick="verLineaMasCercanaDesdeActualHastaDestino(${lat}, ${lng}, '${String(nombreLugar).replace(/'/g, "\\'")}')">
-          <img class="icon light" alt="" src="${iconPlanLight}" />
-          <img class="icon dark" alt="" src="${iconPlanDark}" />
-          <span>Planear ruta</span>
-        </button>
-      `
-    : '';
-
   const html = `
     <div class="save-location-sheet">
-      <p class="save-location-label">Coordenadas:</p>
-      <p class="save-location-coords">
-        ${lat.toFixed(6)}, ${lng.toFixed(6)}
-      </p>
-      <div>
+      <p class="save-location-title">¿Guardar este lugar?</p>
+      <p class="save-location-name">${escapeHtml(nombreLugar)}</p>
+      <p class="save-location-description">Acceso rápido desde favoritos</p>
+      <div class="save-location-buttonarea">
         <button
           type="button"
-          class="btn-save-location"
+          class="btn-save-location-primary"
           data-save-lugar="1"
           data-lugar-nombre="${escapeHtml(nombreLugar)}"
           data-lat="${String(lat)}"
@@ -461,14 +454,13 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'cur
         >
           <img class="icon light" alt="" src="${iconSaveLight}" />
           <img class="icon dark" alt="" src="${iconSaveDark}" />
-          <span>Guardar</span>
+          <span>Guardar lugar</span>
         </button>
-        ${btnLineaHtml}
       </div>
     </div>
   `;
   
-  abrirBottomSheet('Opciones', html);
+  abrirBottomSheet('Guardar lugar', html);
 }
 
 function guardarUbicacionActualDesdeBottomSheet(nombreLugar, lat, lng) {
@@ -1138,9 +1130,15 @@ async function cargarParadasPorLinea({ noCache = false } = {}) {
     const payload = await resp.json();
     _paradasPorLinea = payload && typeof payload === 'object' ? payload : {};
     _indicesParadasPorLinea = null;
+    _lastParadasPorLineaError = '';
+    try {
+      const teo2Check = _paradasPorLinea['TEO2']?.paradas ? Object.keys(_paradasPorLinea['TEO2'].paradas).length : 0;
+      console.debug(`[paradas] Cargadas paradas_por_linea.json: ${Object.keys(_paradasPorLinea).length} líneas, TEO2=${teo2Check} paradas, noCache=${noCache}`);
+    } catch {}
     return _paradasPorLinea;
   } catch (err) {
     console.warn('No se pudo cargar paradas_por_linea.json:', err);
+    _lastParadasPorLineaError = err?.message ? String(err.message) : String(err);
     _paradasPorLinea = {};
     _indicesParadasPorLinea = null;
     return _paradasPorLinea;
@@ -1155,9 +1153,11 @@ async function cargarUrlsPorLinea({ noCache = false } = {}) {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const payload = await resp.json();
     _urlsPorLinea = payload && typeof payload === 'object' ? payload : {};
+    _lastUrlsPorLineaError = '';
     return _urlsPorLinea;
   } catch (err) {
     console.warn('No se pudo cargar urls_por_linea.json:', err);
+    _lastUrlsPorLineaError = err?.message ? String(err.message) : String(err);
     _urlsPorLinea = {};
     return _urlsPorLinea;
   }
@@ -1192,8 +1192,12 @@ function resolverKeyLineaEnObjeto(obj, linea) {
 
   for (const k of Object.keys(obj)) {
     const kLookup = normalizarLineaParaLookup(k);
-    if (kLookup && targetLookups.has(kLookup)) return k;
+    if (kLookup && targetLookups.has(kLookup)) {
+      try { console.debug(`[resolverKeyLinea] Encontró: "${raw}" -> "${k}" (lookups: ${Array.from(targetLookups).join(', ')})` ); } catch {}
+      return k;
+    }
   }
+  try { console.debug(`[resolverKeyLinea] NO encontró: "${raw}" (intentó: ${Array.from(targetLookups).join(', ')})` ); } catch {}
   return '';
 }
 
@@ -1407,6 +1411,41 @@ function resolverCanonicoPorTokensMejorScore(indiceLinea, clave) {
   // Bajamos el umbral solo en esos casos para evitar falsos negativos.
   const minScore = tokens.length <= 1 ? 0.75 : tokens.length === 2 ? 0.85 : 0.6;
   return bestScore >= minScore ? bestCanonica : '';
+}
+
+function resolverCanonicoPorTokensMejorScoreDetallado(indiceLinea, clave) {
+  if (!(indiceLinea instanceof Map)) return { canonica: '', score: 0, matchCount: 0, tokensLen: 0 };
+
+  const tokens = tokenizarClaveParadaApi(clave);
+  if (tokens.length === 0) return { canonica: '', score: 0, matchCount: 0, tokensLen: 0 };
+
+  let bestCanonica = '';
+  let bestScore = 0;
+  let bestMatchCount = 0;
+
+  for (const [k, v] of indiceLinea.entries()) {
+    const candTokens = tokenizarClaveParadaApi(k);
+    if (candTokens.length === 0) continue;
+
+    const tset = new Set(candTokens);
+    let matchCount = 0;
+    for (const t of tokens) {
+      if (tset.has(t)) matchCount += 1;
+    }
+    if (matchCount === 0) continue;
+
+    const coverage = matchCount / tokens.length;
+    const lengthPenalty = candTokens.length > 0 ? (tokens.length / candTokens.length) : 0;
+    const score = coverage * 0.85 + lengthPenalty * 0.15;
+
+    if (score > bestScore || (score === bestScore && matchCount > bestMatchCount)) {
+      bestCanonica = v;
+      bestScore = score;
+      bestMatchCount = matchCount;
+    }
+  }
+
+  return { canonica: bestCanonica, score: bestScore, matchCount: bestMatchCount, tokensLen: tokens.length };
 }
 
 function construirIndiceParadasApi(payload) {
@@ -1841,50 +1880,6 @@ async function obtenerCandidatosIdParadaParaArrivals(linea, paradaInput, paradaR
   return dedup;
 }
 
-async function obtenerHorariosAproximadosFallback(lineaRef, opts = {}) {
-  const ref = String(lineaRef || '').trim();
-  if (!ref) return { horarios: [], headwaySecs: 0, mensajeApi: '' };
-
-  const frequencies = await cargarFrequencies();
-  const freqRow = buscarFrequencyDeLinea(frequencies, ref);
-  const headwaySecs = Number(freqRow?.headway_secs);
-
-  if (!freqRow) {
-    const headway = DEFAULT_HEADWAY_SECS;
-    return {
-      horarios: generarHorariosAproximadosDesdeAhora({
-        n: MAX_HORARIOS_MOSTRAR,
-        headwaySecs: headway,
-        delaySecs: Math.round(headway / 2),
-      }),
-      headwaySecs: headway,
-      mensajeApi: 'Mostrando horarios aproximados (estimación).',
-    };
-  }
-
-  let offsetSecs = 0;
-  const paradaFeature = opts?.paradaFeature || null;
-  const rutas = Array.isArray(opts?.rutas) ? opts.rutas : null;
-  const coords = paradaFeature?.geometry?.coordinates;
-  if (Array.isArray(coords) && coords.length >= 2 && rutas && rutas.length) {
-    const lng = Number(coords[0]);
-    const lat = Number(coords[1]);
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      offsetSecs = estimarOffsetArriboParadaSegsDesdeRutas(rutas, lat, lng);
-    }
-  }
-
-  const horarios = paradaFeature
-    ? calcularProximosArribosEnParada(freqRow, offsetSecs, MAX_HORARIOS_MOSTRAR)
-    : calcularProximosHorarios(freqRow, MAX_HORARIOS_MOSTRAR);
-
-  return {
-    horarios,
-    headwaySecs: Number.isFinite(headwaySecs) ? headwaySecs : 0,
-    mensajeApi: 'Mostrando horarios aproximados (GTFS).',
-  };
-}
-
 async function consultarArribosApi(linea, paradaNombre, opts = {}) {
   const lineaNorm = String(linea || '').trim();
   const paradaTxt = String(paradaNombre || '').trim();
@@ -1919,7 +1914,66 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
     if (url && paradaRes?.id_p) break;
   }
 
-  const { id_p, paradaResuelta } = paradaRes || { id_p: '', paradaResuelta: '' };
+  let id_p_resuelto = String(paradaRes?.id_p || '').trim();
+  let paradaResueltaFinal = String(paradaRes?.paradaResuelta || '').trim();
+
+  // Información extra de diagnóstico: si el JSON de paradas no cargó o no se encontró
+  // la key de la línea, nunca se va a poder resolver id_p.
+  let paradasLineaKey = '';
+  let paradasLineaCount = 0;
+  let paradasObjLinea = {};
+  try {
+    let dataParadas = await cargarParadasPorLinea();
+    paradasLineaKey = resolverKeyLineaEnObjeto(dataParadas, lineaNorm) || resolverKeyLineaEnObjeto(dataParadas, lineaApi) || '';
+    let entry = paradasLineaKey ? dataParadas[paradasLineaKey] : null;
+    paradasObjLinea = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
+    paradasLineaCount = Object.keys(paradasObjLinea).length;
+
+    // Si no se resolvió la key o count es 0, reintentar sin cache (JSON puede estar viejo o corrupto en cache)
+    if (!paradasLineaKey || paradasLineaCount === 0) {
+      dataParadas = await cargarParadasPorLinea({ noCache: true });
+      paradasLineaKey = resolverKeyLineaEnObjeto(dataParadas, lineaNorm) || resolverKeyLineaEnObjeto(dataParadas, lineaApi) || '';
+      entry = paradasLineaKey ? dataParadas[paradasLineaKey] : null;
+      paradasObjLinea = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
+      paradasLineaCount = Object.keys(paradasObjLinea).length;
+    }
+  } catch {
+    paradasObjLinea = {};
+  }
+
+  // Fallback permisivo: si hay URL pero no se resolvió id_p, intentar match por tokens
+  // contra todas las paradas de la línea (útil cuando el GeoJSON trae nombres cortos).
+  let fallbackScore = 0;
+  let fallbackMatchCount = 0;
+  if (url && !id_p_resuelto && paradasObjLinea && typeof paradasObjLinea === 'object' && Object.keys(paradasObjLinea).length > 0) {
+    const indiceTokens = new Map();
+    for (const nombre of Object.keys(paradasObjLinea)) {
+      const base = normalizarNombreParadaSinSufijos(nombre);
+      const clave = crearClaveParadaApi(base);
+      if (clave) indiceTokens.set(clave, nombre);
+    }
+
+    let best = { canonica: '', score: 0, matchCount: 0, tokensLen: 0, input: '' };
+    for (const c of candidatosParada) {
+      const baseQ = normalizarNombreParadaSinSufijos(c);
+      const claveQ = crearClaveParadaApi(baseQ);
+      const det = resolverCanonicoPorTokensMejorScoreDetallado(indiceTokens, claveQ);
+      if (det.score > best.score || (det.score === best.score && det.matchCount > best.matchCount)) {
+        best = { ...det, input: String(c || '') };
+      }
+    }
+
+    // Aceptar si el match es razonable (evitar falsos positivos):
+    // - 2+ tokens coincidentes, o cobertura alta; y score mínimo.
+    const coverage = best.tokensLen > 0 ? (best.matchCount / best.tokensLen) : 0;
+    const ok = (best.matchCount >= 2 || coverage >= 0.67) && best.score >= 0.45;
+    if (ok && best.canonica && Object.prototype.hasOwnProperty.call(paradasObjLinea, best.canonica)) {
+      id_p_resuelto = String(paradasObjLinea[best.canonica] || '').trim();
+      paradaResueltaFinal = String(best.canonica || '').trim();
+      fallbackScore = best.score;
+      fallbackMatchCount = best.matchCount;
+    }
+  }
 
   const debugArrivals = {
     linea: lineaNorm,
@@ -1927,51 +1981,52 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
     lineaCandidatas,
     paradaBase: paradaTxt,
     paradaInput: paradaRes?.paradaInput || '',
-    paradaResuelta: paradaResuelta || '',
+    paradaResuelta: paradaResueltaFinal || '',
     url,
+    id_p_resuelto: String(id_p_resuelto || ''),
+    requestIntentada: false,
     intentos: [],
+    candidatosParada: Array.isArray(candidatosParada) ? candidatosParada.slice(0, 8) : [],
+    paradasJsonError: _lastParadasPorLineaError,
+    urlsJsonError: _lastUrlsPorLineaError,
+    paradasLineaKey,
+    paradasLineaCount,
+    fallbackIdP: fallbackScore > 0 ? { score: fallbackScore, matchCount: fallbackMatchCount } : null,
   };
 
-  if (!url || !id_p) {
-    try {
-      console.debug('[arrivals] NO request (faltan datos)', {
-        linea: lineaNorm,
-        urlOk: Boolean(url),
-        idPOk: Boolean(id_p),
-        paradaBase: paradaTxt,
-        paradaResuelta: paradaResuelta || '',
-      });
-    } catch {
-      // noop
-    }
-    const fb = await obtenerHorariosAproximadosFallback(lineaNorm, opts);
+  if (!url || !id_p_resuelto) {
+    console.warn('[arrivals] ERROR: Falta resolver datos antes de fetch', {
+      linea: lineaNorm,
+      urlOk: Boolean(url),
+      urlResuelto: url ? url.substring(0, 80) : '(no encontrada)',
+      idPOk: Boolean(id_p_resuelto),
+      id_pResuelto: id_p_resuelto,
+      paradaBase: paradaTxt,
+      paradaResuelta: paradaResueltaFinal || '(no resuelta)',
+      lineaCandidatas,
+      paradasLineaKey,
+      paradasLineaCount,
+    });
     return {
-      horarios: fb.horarios || [],
-      headwaySecs: fb.headwaySecs || 0,
-      tipoDatos: 'esperado',
-      paradaConsultada: paradaResuelta || paradaTxt,
-      mensajeApi: fb.mensajeApi || `No se pudo resolver url/id de parada para esta línea (parada: ${paradaTxt}).`,
+      horarios: [],
+      headwaySecs: 0,
+      tipoDatos: 'error',
+      paradaConsultada: paradaResueltaFinal || paradaTxt,
+      mensajeApi: !url 
+        ? `🔴 No se encontró URL para línea: ${lineaNorm}` 
+        : `🔴 No se encontró parada: ${paradaTxt}`,
+      apiFallo: true,
+      linea: lineaNorm,
       debugArrivals,
     };
   }
 
   try {
-    // Abortamos la consulta anterior si todavía está en vuelo, así se puede
-    // volver a consultar sin quedar trabado.
-    if (arrivalsAbortController) {
-      try { arrivalsAbortController.abort(); } catch { /* noop */ }
-    }
-    const controller = new AbortController();
-    arrivalsAbortController = controller;
-    const timeoutId = setTimeout(() => {
-      try { controller.abort(); } catch { /* noop */ }
-    }, ARRIVALS_TIMEOUT_MS);
-
     try {
-      const candidatosIdP = await obtenerCandidatosIdParadaParaArrivals(lineaNorm, paradaTxt, paradaResuelta || paradaTxt);
+      const candidatosIdP = await obtenerCandidatosIdParadaParaArrivals(lineaNorm, paradaTxt, paradaResueltaFinal || paradaTxt);
       const listaCandidatos = candidatosIdP.length
         ? candidatosIdP
-        : [{ paradaResuelta: paradaResuelta || paradaTxt, id_p }];
+        : [{ paradaResuelta: paradaResueltaFinal || paradaTxt, id_p: id_p_resuelto }];
 
       let bestParsed = null;
       let bestScore = -1;
@@ -1983,55 +2038,108 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
         const paradaTry = String(cand?.paradaResuelta || '').trim();
         if (!idTry) continue;
 
+        // Registrar el intento incluso si el fetch falla antes de responder.
+        debugArrivals.intentos.push({
+          parada: paradaTry,
+          id_p: idTry,
+          http: '',
+          horariosLen: 0,
+          horarioEstimado: '',
+          mensajeApi: '',
+        });
+        const intentoIndex = debugArrivals.intentos.length - 1;
+
         try {
           try {
             console.debug('[arrivals] POST /arrivals', {
               linea: lineaNorm,
-              url,
+              url: url.substring(0, 100),
               id_p: idTry,
               parada: paradaTry,
               intento: i + 1,
               total: maxIntentos,
+              timeout: ARRIVALS_TIMEOUT_MS,
             });
           } catch {
             // noop
           }
 
-          const resp = await fetch(ARRIVALS_API_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-              url,
-              id_p: idTry,
-            }),
-            cache: 'no-store',
-            signal: controller.signal,
+          debugArrivals.requestIntentada = true;
+
+          console.debug('[arrivals] Enviando fetch a API', {
+            endpoint: ARRIVALS_API_URL,
+            url: url.substring(0, 80),
+            id_p: idTry,
+            payload: { url: url.substring(0, 80), id_p: idTry },
           });
+
+          // Crear AbortController POR FETCH, con timeout individual
+          const fetchController = new AbortController();
+          const fetchTimeoutId = setTimeout(() => {
+            console.warn('[arrivals] Timeout en fetch individual, abortando...');
+            try { fetchController.abort(); } catch { /* noop */ }
+          }, ARRIVALS_TIMEOUT_MS);
+
+          let resp;
+          try {
+            resp = await fetch(ARRIVALS_API_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({
+                url,
+                id_p: idTry,
+              }),
+              cache: 'no-store',
+              signal: fetchController.signal,
+            });
+            clearTimeout(fetchTimeoutId);
+            console.debug('[arrivals] Fetch completado, esperando respuesta...');
+          } catch (e) {
+            clearTimeout(fetchTimeoutId);
+            console.error('[arrivals] Error durante fetch (antes de respuesta)', {
+              errorName: e?.name,
+              errorMessage: e?.message,
+              isAbort: e?.name === 'AbortError',
+            });
+            throw e;
+          }
 
           const httpInfo = resp.ok ? 'ok' : `HTTP ${resp.status}`;
           if (!resp.ok) {
-            debugArrivals.intentos.push({ parada: paradaTry, id_p: idTry, http: httpInfo, horariosLen: 0, error: httpInfo });
+            console.warn('[arrivals] Response error HTTP', {
+              status: resp.status,
+              statusText: resp.statusText,
+              linea: lineaNorm,
+              id_p: idTry,
+            });
+            debugArrivals.intentos[intentoIndex] = { ...debugArrivals.intentos[intentoIndex], http: httpInfo, error: httpInfo };
             continue;
           }
 
           const payload = await resp.json();
+          console.debug('[arrivals] Respuesta recibida', {
+            linea: lineaNorm,
+            id_p: idTry,
+            payloadKeys: Object.keys(payload),
+            horariosLen: payload?.horarios?.length || 0,
+            tieneHorarioEstimado: !!payload?.horario_estimado,
+          });
           const parsed = extraerHorariosDesdePayloadArrivals(payload);
 
           const horariosArr = Array.isArray(parsed?.horarios) ? parsed.horarios : [];
           const horarioEstimado = typeof parsed?.horarioEstimado === 'string' ? parsed.horarioEstimado.trim() : '';
           const mensajeApi = typeof parsed?.mensajeApi === 'string' ? parsed.mensajeApi.trim() : '';
 
-          debugArrivals.intentos.push({
-            parada: paradaTry,
-            id_p: idTry,
+          debugArrivals.intentos[intentoIndex] = {
+            ...debugArrivals.intentos[intentoIndex],
             http: httpInfo,
             horariosLen: horariosArr.length,
             horarioEstimado,
             mensajeApi,
-          });
+          };
 
           const score = (horariosArr.length * 100) + (horarioEstimado ? 10 : 0) + (mensajeApi ? 5 : 0);
           if (score > bestScore) {
@@ -2045,19 +2153,32 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
           const msg = (errTry && String(errTry.name) === 'AbortError')
             ? 'AbortError'
             : (errTry?.message ? String(errTry.message) : String(errTry));
-          debugArrivals.intentos.push({ parada: paradaTry, id_p: idTry, http: '', horariosLen: 0, error: msg });
+          console.error('[arrivals] ERROR en fetch/parse', {
+            errorName: errTry?.name,
+            errorMessage: msg,
+            linea: lineaNorm,
+            id_p: idTry,
+            intento: i + 1,
+          });
+          debugArrivals.intentos[intentoIndex] = { ...debugArrivals.intentos[intentoIndex], error: msg };
           if (errTry && String(errTry.name) === 'AbortError') throw errTry;
         }
       }
 
       if (!bestParsed) {
-        const fb = await obtenerHorariosAproximadosFallback(lineaNorm, opts);
+        console.error('[arrivals] No se pudo obtener respuesta exitosa de API', {
+          linea: lineaNorm,
+          intentosTotales: debugArrivals.intentos.length,
+          paradasIntentadas: debugArrivals.intentos.map(it => `${it.parada || 'unknown'} (${it.id_p})`),
+        });
         return {
-          horarios: fb.horarios || [],
-          headwaySecs: fb.headwaySecs || 0,
-          tipoDatos: 'esperado',
-          paradaConsultada: paradaResuelta || paradaTxt,
-          mensajeApi: fb.mensajeApi || '',
+          horarios: [],
+          headwaySecs: 0,
+          tipoDatos: 'error',
+          paradaConsultada: paradaResueltaFinal || paradaTxt,
+          mensajeApi: '🔴 No se pudo obtener datos de la API de arrivals',
+          apiFallo: true,
+          linea: lineaNorm,
           debugArrivals,
         };
       }
@@ -2069,215 +2190,37 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
       // Si la API responde pero viene sin datos (arrivals vacío) y tampoco aporta
       // un horario estimado o mensaje aprovechable, mostramos horarios aproximados.
       if (horariosArr.length === 0 && !horarioEstimado && !mensajeApi) {
-        const fb = await obtenerHorariosAproximadosFallback(lineaNorm, opts);
         return {
           ...bestParsed,
-          horarios: fb.horarios || [],
-          headwaySecs: fb.headwaySecs || 0,
-          tipoDatos: 'esperado',
-          mensajeApi: fb.mensajeApi || '',
-          paradaConsultada: bestParsed.paradaConsultada || paradaResuelta || paradaTxt,
+          horarios: [],
+          headwaySecs: 0,
+          tipoDatos: 'error',
+          mensajeApi: 'No hay datos de arrivals disponibles',
+          apiFallo: true,
+          linea: lineaNorm,
+          paradaConsultada: bestParsed.paradaConsultada || paradaResueltaFinal || paradaTxt,
           debugArrivals,
         };
       }
 
       return { ...bestParsed, debugArrivals };
     } finally {
-      clearTimeout(timeoutId);
-      if (arrivalsAbortController === controller) arrivalsAbortController = null;
+      // Limpieza general (ya no se usan AbortControllers globales)
     }
   } catch (err) {
     console.warn('No se pudo consultar arrivals API:', err);
-    const fb = await obtenerHorariosAproximadosFallback(lineaNorm, opts);
-    const msgAbort = (err && String(err.name) === 'AbortError') ? 'Tiempo de espera agotado al consultar arrivals.' : '';
+    const msgAbort = (err && String(err.name) === 'AbortError') ? 'Tiempo de espera agotado al consultar arrivals API.' : 'Error consultando arrivals API.';
     return {
-      horarios: fb.horarios || [],
-      headwaySecs: fb.headwaySecs || 0,
-      tipoDatos: 'esperado',
-      paradaConsultada: paradaResuelta || paradaTxt,
-      mensajeApi: msgAbort || fb.mensajeApi || '',
+      horarios: [],
+      headwaySecs: 0,
+      tipoDatos: 'error',
+      paradaConsultada: paradaResueltaFinal || paradaTxt,
+      mensajeApi: msgAbort,
+      apiFallo: true,
+      linea: lineaNorm,
       debugArrivals,
     };
   }
-}
-
-// ─── Frequencies / Horarios ───────────────────────────────────────────────────
-
-/** Carga y parsea frequencies.txt (CSV). Retorna array de objetos. */
-async function cargarFrequencies() {
-  if (_frequenciesData) return _frequenciesData;
-  try {
-    const resp = await fetch(FREQUENCIES_URL, { cache: 'force-cache' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const text = await resp.text();
-    const lines = text.trim().split(/\r?\n/);
-    const header = lines[0].split(',').map((h) => h.trim());
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',').map((c) => c.trim());
-      if (cols.length < 4) continue;
-      const row = {};
-      for (let j = 0; j < header.length; j++) row[header[j]] = cols[j] || '';
-      rows.push(row);
-    }
-    _frequenciesData = rows;
-    return _frequenciesData;
-  } catch (err) {
-    console.warn('No se pudo cargar frequencies.txt:', err);
-    _frequenciesData = [];
-    return _frequenciesData;
-  }
-}
-
-/**
- * Convierte "HH:MM:SS" a segundos desde medianoche.
- * Soporta horas > 24 (GTFS permite eso).
- */
-function horaASegundos(horaStr) {
-  if (!horaStr) return NaN;
-  const partes = String(horaStr).split(':').map(Number);
-  if (partes.length < 3) return NaN;
-  return partes[0] * 3600 + partes[1] * 60 + partes[2];
-}
-
-/**
- * Formatea segundos desde medianoche a "HH:MM".
- */
-function segundosAHora(segs) {
-  const h = Math.floor(segs / 3600) % 24;
-  const m = Math.floor((segs % 3600) / 60);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
-function generarHorariosAproximadosDesdeAhora({ n = MAX_HORARIOS_MOSTRAR, headwaySecs = DEFAULT_HEADWAY_SECS, delaySecs = 0 }) {
-  const headway = Number(headwaySecs);
-  if (!Number.isFinite(headway) || headway <= 0) return [];
-
-  const ahora = segundosActuales();
-  const base = ahora + Math.max(0, Number(delaySecs) || 0);
-  const horarios = [];
-  for (let i = 0; i < n; i++) {
-    horarios.push(segundosAHora(base + i * headway));
-  }
-  return horarios;
-}
-
-/**
- * Retorna segundos desde medianoche para la hora local actual.
- */
-function segundosActuales() {
-  const now = new Date();
-  return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-}
-
-/**
- * Busca en frequencies.txt la entrada para una línea (por ref).
- * El trip_id suele ser "trip_<ref>" pero también puede ser variante.
- */
-function buscarFrequencyDeLinea(frequencies, ref) {
-  if (!Array.isArray(frequencies) || !ref) return null;
-  const refNorm = String(ref).trim().toUpperCase();
-  const refLookup = normalizarLineaParaLookup(refNorm);
-  const refNormSinEspacios = refLookup || refNorm.replace(/\s+/g, '');
-
-  // Búsqueda exacta: trip_<ref> (insensible a mayúsculas)
-  let match = frequencies.find((r) => {
-    const tid = String(r.trip_id || '').trim().toUpperCase();
-    return tid === `TRIP_${refNorm}` || tid === `TRIP_${refNormSinEspacios}`;
-  });
-  if (match) return match;
-
-  // Búsqueda parcial: trip_id contiene el ref
-  match = frequencies.find((r) => {
-    const tid = String(r.trip_id || '').trim().toUpperCase();
-    if (tid.includes(refNorm) || tid.includes(refNormSinEspacios)) return true;
-    const tidLookup = normalizarLineaParaLookup(tid.replace(/^TRIP_/, ''));
-    return Boolean(refLookup && tidLookup && (tidLookup === refLookup || tidLookup.includes(refLookup)));
-  });
-  return match || null;
-}
-
-/**
- * Calcula los próximos N horarios de llegada aproximados.
- * Basado en headway_secs: los colectivos pasan cada headway_secs segundos.
- * Retorna array de hasta N strings "HH:MM".
- */
-function calcularProximosHorarios(frequencyRow, n = MAX_HORARIOS_MOSTRAR) {
-  if (!frequencyRow) return [];
-
-  const inicio = horaASegundos(frequencyRow.start_time);
-  const fin = horaASegundos(frequencyRow.end_time);
-  const headway = Number(frequencyRow.headway_secs);
-
-  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || !Number.isFinite(headway) || headway <= 0) return [];
-
-  const ahora = segundosActuales();
-
-  // Si estamos fuera del rango de servicio
-  if (ahora > fin) return [];
-
-  // Calcular el primer colectivo a partir de ahora
-  let primero;
-  if (ahora < inicio) {
-    // El servicio aún no empezó: primer colectivo es el de inicio
-    primero = inicio;
-  } else {
-    // Dentro del rango: próximo múltiplo de headway desde inicio
-    const transcurrido = ahora - inicio;
-    const cicloActual = Math.floor(transcurrido / headway);
-    primero = inicio + (cicloActual + 1) * headway;
-  }
-
-  const horarios = [];
-  for (let i = 0; i < n; i++) {
-    const t = primero + i * headway;
-    if (t > fin) break;
-    horarios.push(segundosAHora(t));
-  }
-  return horarios;
-}
-
-/**
- * Calcula próximos arribos a una PARADA, ajustando por un offset de viaje
- * (estimado en base a distancia sobre el recorrido de la línea).
- *
- * - start_time/end_time se interpretan como el rango de salida del servicio
- * - headway_secs es el intervalo entre salidas
- * - offsetSecs es el tiempo estimado desde el inicio del recorrido hasta la parada
- */
-function calcularProximosArribosEnParada(frequencyRow, offsetSecs = 0, n = MAX_HORARIOS_MOSTRAR) {
-  if (!frequencyRow) return [];
-
-  const inicio = horaASegundos(frequencyRow.start_time);
-  const fin = horaASegundos(frequencyRow.end_time);
-  const headway = Number(frequencyRow.headway_secs);
-  const offset = Math.max(0, Number(offsetSecs) || 0);
-
-  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || !Number.isFinite(headway) || headway <= 0) return [];
-
-  const ahora = segundosActuales();
-  // Último arribo posible aproximado en esta parada
-  const finArribo = fin + offset;
-  if (ahora > finArribo) return [];
-
-  // Buscamos el primer k tal que (inicio + k*headway + offset) >= ahora
-  const target = ahora - offset;
-  let k;
-  if (target <= inicio) {
-    k = 0;
-  } else {
-    k = Math.ceil((target - inicio) / headway);
-    if (!Number.isFinite(k) || k < 0) k = 0;
-  }
-
-  const horarios = [];
-  for (let i = 0; i < n; i++) {
-    const salida = inicio + (k + i) * headway;
-    const arribo = salida + offset;
-    if (arribo > finArribo) break;
-    horarios.push(segundosAHora(arribo));
-  }
-  return horarios;
 }
 
 function estimarOffsetArriboParadaSegsDesdeRutas(rutas, paradaLat, paradaLng) {
@@ -2323,8 +2266,10 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
   const titulo = lineaRef ? `Línea ${escapeHtml(lineaRef)}` : 'Línea';
   const detalle = lineaNombre ? ` — ${escapeHtml(lineaNombre)}` : '';
   const headwayMins = headwaySecs > 0 ? Math.round(headwaySecs / 60) : 0;
-  const tipoDatos = opts?.tipoDatos === 'tiempo_real' ? 'tiempo_real' : 'esperado';
+  const tipoDatos = opts?.tipoDatos === 'tiempo_real' ? 'tiempo_real' : (opts?.tipoDatos === 'error' ? 'error' : 'esperado');
+  const apiFallo = Boolean(opts?.apiFallo);
   const esTiempoReal = tipoDatos === 'tiempo_real';
+  const esError = tipoDatos === 'error';
   const colorPrincipal = esTiempoReal ? '#1E8E3E' : '#007BFF';
   const subtituloProximo = esTiempoReal ? '🟢 Tiempo real' : '⏱ Horario esperado';
   const textoPie = esTiempoReal
@@ -2332,71 +2277,51 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
     : 'Horarios esperados obtenidos desde arrivals API';
   const mensajeApi = typeof opts?.mensajeApi === 'string' ? opts.mensajeApi.trim() : '';
   const horarioEstimado = typeof opts?.horarioEstimado === 'string' ? opts.horarioEstimado.trim() : '';
-  const debugArrivals = opts?.debugArrivals && typeof opts.debugArrivals === 'object' ? opts.debugArrivals : null;
 
   const volverHtml = mostrarVolverParada
     ? `
       <button type="button" data-volver-parada="1" style="
         width: 100%;
-        padding: 10px 12px;
+        padding: 12px 14px;
         border-radius: 10px;
-        border: 1px solid rgba(0,0,0,0.12);
-        background: rgba(0,0,0,0.03);
-        color: #333;
+        border: 1px solid;
+        background: var(--btn-back-bg, rgba(0,0,0,0.03));
+        color: var(--btn-back-text, #333);
+        border-color: var(--btn-back-border, rgba(0,0,0,0.12));
         font-weight: 600;
         font-size: 13px;
-        margin: 0 0 10px 0;
+        margin: 0 0 12px 0;
         cursor: pointer;
-      ">
+        transition: all 0.2s ease;
+      " class="btn-volver-parada">
         ← Volver a líneas de la parada
       </button>
     `
     : '';
 
   const paradaInfoHtml = opts?.paradaConsultada
-    ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #777;">Parada consultada: ${escapeHtml(opts.paradaConsultada)}</p>`
+    ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted, #777);">Parada: ${escapeHtml(opts.paradaConsultada)}</p>`
     : '';
 
-  const debugHtml = debugArrivals
-    ? (() => {
-      const url = typeof debugArrivals?.url === 'string' ? debugArrivals.url : '';
-      const base = typeof debugArrivals?.paradaBase === 'string' ? debugArrivals.paradaBase : '';
-      const resolved = typeof debugArrivals?.paradaResuelta === 'string' ? debugArrivals.paradaResuelta : '';
-      const intentos = Array.isArray(debugArrivals?.intentos) ? debugArrivals.intentos : [];
-      const intentosHtml = intentos.length
-        ? `
-          <ol style="margin: 6px 0 0 18px; padding: 0;">
-            ${intentos.map((it) => {
-              const p = typeof it?.parada === 'string' ? it.parada : '';
-              const idp = typeof it?.id_p === 'string' ? it.id_p : '';
-              const http = typeof it?.http === 'string' ? it.http : '';
-              const hlen = Number.isFinite(Number(it?.horariosLen)) ? Number(it.horariosLen) : 0;
-              const he = typeof it?.horarioEstimado === 'string' ? it.horarioEstimado : '';
-              const msg = typeof it?.mensajeApi === 'string' ? it.mensajeApi : '';
-              const err = typeof it?.error === 'string' ? it.error : '';
-              const resumen = err
-                ? `Error: ${escapeHtml(err)}`
-                : `HTTP: ${escapeHtml(http || 'ok')} · horarios: ${hlen}${he ? ` · estimado: ${escapeHtml(he)}` : ''}${msg ? ` · msg: ${escapeHtml(msg)}` : ''}`;
-              return `<li style="margin: 0 0 6px 0;"><div style="font-size: 11px; color: #666;"><div><strong>${escapeHtml(p || '(sin nombre)')}</strong></div><div style="opacity: 0.9;">id_p: ${escapeHtml(idp || '')}</div><div style="opacity: 0.9;">${resumen}</div></div></li>`;
-            }).join('')}
-          </ol>
-        `
-        : '<p style="margin: 6px 0 0 0; font-size: 11px; color: #666;">(Sin intentos registrados)</p>';
-
-      return `
-        <details style="margin: 12px 0 0 0; padding: 10px 12px; border-radius: 10px; border: 1px dashed rgba(0,0,0,0.18); background: rgba(0,0,0,0.02);">
-          <summary style="cursor: pointer; font-size: 12px; color: #555; font-weight: 600;">Diagnóstico (sin consola)</summary>
-          <div style="margin-top: 8px; font-size: 11px; color: #666;">
-            <div><strong>Parada base:</strong> ${escapeHtml(base)}</div>
-            <div><strong>Parada resuelta:</strong> ${escapeHtml(resolved)}</div>
-            <div><strong>URL:</strong> <span style="word-break: break-all;">${escapeHtml(url)}</span></div>
-            <div style="margin-top: 6px;"><strong>Intentos:</strong></div>
-            ${intentosHtml}
-          </div>
-        </details>
-      `;
-    })()
-    : '';
+  // Si falló la API, mostrar mensaje de error
+  if (esError && apiFallo) {
+    return `
+      ${volverHtml}
+      <p style="margin: 0 0 14px 0; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
+      ${paradaInfoHtml}
+      <div style="
+        padding: 16px 14px;
+        border-radius: 10px;
+        background: rgba(220, 38, 38, 0.08);
+        border: 1px solid rgba(220, 38, 38, 0.3);
+        margin: 12px 0;
+      ">
+        <p style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary, #333); font-weight: 600;">❌ Fallo en la consulta de API</p>
+        <p style="margin: 0; font-size: 13px; color: var(--text-secondary, #666);">${escapeHtml(mensajeApi)}</p>
+      </div>
+      <p style="margin: 12px 0 0 0; font-size: 12px; color: var(--text-muted, #aaa); text-align: center;">Por favor, intenta de nuevo en unos momentos.</p>
+    `;
+  }
 
   const mensajeMinMatch = mensajeApi.match(/^\s*(\d+)\s*min(?:utos?)?\s*$/i);
   const mensajeHoraMatch = mensajeApi.match(/^\s*(\d{1,2}:\d{2})\s*$/);
@@ -2405,15 +2330,15 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
       <li style="
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
+        gap: 16px;
+        padding: 16px 14px;
         border-radius: 10px;
         background: rgba(30,142,62,0.10);
         border: 1px solid rgba(30,142,62,0.35);
-        margin-bottom: 8px;
+        margin-bottom: 10px;
       ">
-        <span style="font-size: 22px; font-weight: 700; color: #1E8E3E; min-width: 52px;">${escapeHtml(mensajeApi)}</span>
-        <span style="font-size: 12px; color: #888;">🟢 Próxima llegada</span>
+        <span style="font-size: 36px; font-weight: 700; color: #1E8E3E; min-width: 70px;">${escapeHtml(mensajeApi)}</span>
+        <span style="font-size: 13px; color: var(--text-secondary, #888);">🟢 Próxima llegada</span>
       </li>
     `
     : (mensajeHoraMatch
@@ -2421,15 +2346,15 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
         <li style="
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 10px 12px;
+          gap: 16px;
+          padding: 16px 14px;
           border-radius: 10px;
           background: rgba(120,120,120,0.10);
           border: 1px solid rgba(120,120,120,0.35);
-          margin-bottom: 8px;
+          margin-bottom: 10px;
         ">
-          <span style="font-size: 22px; font-weight: 700; color: #5f6368; min-width: 52px;">${escapeHtml(mensajeHoraMatch[1])}</span>
-          <span style="font-size: 12px; color: #888;">⏱ Horario esperado</span>
+          <span style="font-size: 36px; font-weight: 700; color: #5f6368; min-width: 70px;">${escapeHtml(mensajeHoraMatch[1])}</span>
+          <span style="font-size: 13px; color: var(--text-secondary, #888);">⏱ Horario esperado</span>
         </li>
       `
       : '');
@@ -2441,15 +2366,15 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
       <li style="
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
+        gap: 16px;
+        padding: 16px 14px;
         border-radius: 10px;
         background: rgba(120,120,120,0.10);
         border: 1px solid rgba(120,120,120,0.35);
-        margin-bottom: 8px;
+        margin-bottom: 10px;
       ">
-        <span style="font-size: 22px; font-weight: 700; color: #5f6368; min-width: 52px;">${escapeHtml(horarioEstimado)}</span>
-        <span style="font-size: 12px; color: #888;">⏱ Estimado</span>
+        <span style="font-size: 36px; font-weight: 700; color: #5f6368; min-width: 70px;">${escapeHtml(horarioEstimado)}</span>
+        <span style="font-size: 13px; color: var(--text-secondary, #888);">⏱ Estimado</span>
       </li>
     `
     : (estimadoHoraMatch
@@ -2457,15 +2382,15 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
         <li style="
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 10px 12px;
+          gap: 16px;
+          padding: 16px 14px;
           border-radius: 10px;
           background: rgba(120,120,120,0.10);
           border: 1px solid rgba(120,120,120,0.35);
-          margin-bottom: 8px;
+          margin-bottom: 10px;
         ">
-          <span style="font-size: 22px; font-weight: 700; color: #5f6368; min-width: 52px;">${escapeHtml(estimadoHoraMatch[1])}</span>
-          <span style="font-size: 12px; color: #888;">⏱ Estimado</span>
+          <span style="font-size: 36px; font-weight: 700; color: #5f6368; min-width: 70px;">${escapeHtml(estimadoHoraMatch[1])}</span>
+          <span style="font-size: 13px; color: var(--text-secondary, #888);">⏱ Estimado</span>
         </li>
       `
       : '');
@@ -2474,33 +2399,30 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
     if (mensajeComoLlegadaHtml) {
       return `
         ${volverHtml}
-        <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+        <p style="margin-bottom: 12px; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
         ${paradaInfoHtml}
-        <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
+        <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
         <ul style="list-style: none; padding: 0; margin: 0;">${mensajeComoLlegadaHtml}</ul>
-        ${debugHtml}
-        <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">${textoPie}</p>
+        <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
       `;
     }
 
     if (estimadoComoLlegadaHtml) {
       return `
         ${volverHtml}
-        <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+        <p style="margin-bottom: 12px; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
         ${paradaInfoHtml}
-        <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
+        <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
         <ul style="list-style: none; padding: 0; margin: 0;">${estimadoComoLlegadaHtml}</ul>
-        ${debugHtml}
-        <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">${textoPie}</p>
+        <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
       `;
     }
 
     return `
       ${volverHtml}
-      <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+      <p style="margin-bottom: 12px; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
       ${paradaInfoHtml}
-      <p style="font-size: 13px; color: #999; text-align: center; padding: 12px 0;">Sin datos de horarios disponibles.</p>
-      ${debugHtml}
+      <p style="font-size: 14px; color: var(--text-muted, #999); text-align: center; padding: 14px 0;">Sin datos de horarios disponibles.</p>
     `;
   }
 
@@ -2515,15 +2437,15 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
       <li style="
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
+        gap: 16px;
+        padding: 16px 14px;
         border-radius: 10px;
         background: ${esProximo ? (esTiempoReal ? 'rgba(30,142,62,0.10)' : 'rgba(0,123,255,0.08)') : 'transparent'};
         border: 1px solid ${esProximo ? (esTiempoReal ? 'rgba(30,142,62,0.35)' : 'rgba(0,123,255,0.25)') : 'rgba(0,0,0,0.07)'};
-        margin-bottom: 8px;
+        margin-bottom: 10px;
       ">
-        <span style="font-size: 22px; font-weight: 700; color: ${esProximo ? colorPrincipal : '#333'}; min-width: 52px;">${escapeHtml(h)}</span>
-        <span style="font-size: 12px; color: #888;">${subtitulo}</span>
+        <span style="font-size: 32px; font-weight: 700; color: ${esProximo ? colorPrincipal : 'var(--text-primary, #333)'}; min-width: 70px;">${escapeHtml(h)}</span>
+        <span style="font-size: 13px; color: var(--text-secondary, #888);">${subtitulo}</span>
       </li>
     `;
   }).join('');
@@ -2532,12 +2454,11 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
 
   return `
     ${volverHtml}
-    <p style="margin: 0 0 12px 0; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+    <p style="margin: 0 0 14px 0; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
     ${paradaInfoHtml}
-    <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
+    <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
     <ul style="list-style: none; padding: 0; margin: 0;">${items}</ul>
-    ${debugHtml}
-    <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">${textoPie}</p>
+    <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
   `;
 }
 
@@ -2855,25 +2776,28 @@ function mostrarLineasEnContenedorParadas(feature) {
     return;
   }
 
+  // Obtener nombre de la parada desde el feature
+  const paradaNombre = feature?.properties?.name || feature?.properties?.['name:es'] || 'Parada desconocida';
+
   const itemsHtml = lineas
     .map((l) => {
-      const etiqueta = l.ref ? `Línea ${escapeHtml(l.ref)}` : escapeHtml(l.name || 'Línea');
-      const detalle = l.name ? ` — ${escapeHtml(l.name)}` : '';
+      const ref = l.ref ? escapeHtml(l.ref) : (l.name ? escapeHtml(l.name) : 'Línea');
+      const name = l.name ? escapeHtml(l.name) : '';
       const refAttr = escapeHtml(l.ref || '');
       const nameAttr = escapeHtml(l.name || '');
-      return `<li><button type="button" data-linea-ref="${refAttr}" data-linea-name="${nameAttr}">${etiqueta}${detalle}</button></li>`;
+      const nameDisplay = name ? `<span class="linea-button-name">${name}</span>` : '';
+      return `<li><button type="button" class="btn-linea" data-linea-ref="${refAttr}" data-linea-name="${nameAttr}"><span class="linea-button-ref">${ref}</span>${nameDisplay}</button></li>`;
     })
     .join('');
 
   const listaParadasHtml = recorridoActivo ? renderListaParadasRecorrido() : '';
   
   const html = `
-    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Líneas disponibles</h4>
-    <ul>${itemsHtml}</ul>
+    <ul class="lineas-list">${itemsHtml}</ul>
     ${listaParadasHtml}
   `;
   window._currentFeature = feature;
-  abrirBottomSheet('Parada seleccionada', html, 'parada');
+  abrirBottomSheet(escapeHtml(paradaNombre), html, 'parada');
 }
 
 
