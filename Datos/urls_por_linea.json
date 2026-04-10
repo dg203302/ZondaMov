@@ -2,7 +2,7 @@
   "2": "https://moovitapp.com/tripplan/san_juan-6137/lines/2/40484565/5716491/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "3": "https://moovitapp.com/tripplan/san_juan-6137/lines/3/40484597/5233634/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "4": "https://moovitapp.com/tripplan/san_juan-6137/lines/4/40484585/5233611/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
-  "10":"https://moovitapp.com/tripplan/san_juan-6137/lines/10/40197828/5701125/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
+  "10": "https://moovitapp.com/tripplan/san_juan-6137/lines/10/40197828/5701125/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "20": "https://moovitapp.com/tripplan/san_juan-6137/lines/20/40484568/5233582/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "30": "https://moovitapp.com/tripplan/san_juan-6137/lines/30/40484594/5233628/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "40": "https://moovitapp.com/tripplan/san_juan-6137/lines/40/40484588/5716484/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
@@ -12,14 +12,14 @@
   "103": "https://moovitapp.com/tripplan/san_juan-6137/lines/103/40484574/5694859/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "104": "https://moovitapp.com/tripplan/san_juan-6137/lines/104/41103036/5694866/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "120": "https://moovitapp.com/tripplan/san_juan-6137/lines/120/41103108/5246084/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
-  "121":"https://moovitapp.com/tripplan/san_juan-6137/lines/121/41103076/6095329/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
+  "121": "https://moovitapp.com/tripplan/san_juan-6137/lines/121/41103076/6095329/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "122": "https://moovitapp.com/tripplan/san_juan-6137/lines/122/41103110/5694857/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "123": "https://moovitapp.com/tripplan/san_juan-6137/lines/123/41103061/5710288/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "124": "https://moovitapp.com/tripplan/san_juan-6137/lines/124/41103075/5246007/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "125": "https://moovitapp.com/tripplan/san_juan-6137/lines/125/41103054/5245961/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "126": "https://moovitapp.com/tripplan/san_juan-6137/lines/126/41103064/5245984/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "127": "https://moovitapp.com/tripplan/san_juan-6137/lines/127/41103085/7393310/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
-  "129":"https://moovitapp.com/tripplan/san_juan-6137/lines/129/73818525/6094381/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
+  "129": "https://moovitapp.com/tripplan/san_juan-6137/lines/129/73818525/6094381/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "140": "https://moovitapp.com/tripplan/san_juan-6137/lines/140/41103104/5246076/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "141": "https://moovitapp.com/tripplan/san_juan-6137/lines/141/41103069/5245996/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "142": "https://moovitapp.com/tripplan/san_juan-6137/lines/142/41103037/5716479/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
@@ -128,5 +128,6 @@
   "TEO1": "https://moovitapp.com/tripplan/san_juan-6137/lines/teo1/89797290/9616771/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "TEO2": "https://moovitapp.com/tripplan/san_juan-6137/lines/teo2/89797289/6566064/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
   "TEO3": "https://moovitapp.com/tripplan/san_juan-6137/lines/teo3/89797288/6566074/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
-  "TNS": "https://moovitapp.com/tripplan/san_juan-6137/lines/tns/40484595/5233630/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg"
+  "TNS": "https://moovitapp.com/tripplan/san_juan-6137/lines/tns/40484595/5233630/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg",
+  "130": "https://moovitapp.com/tripplan/san_juan-6137/lines/130/73818526/6607768/es-419?customerId=NPIdiV-P9Gcj-pA7yOXVPg"
 }

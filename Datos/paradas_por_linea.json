@@ -9213,7 +9213,7 @@
       "Plaza Centenario. Villa Krause -A": "stop-43299603-30"
     }
   },
-    "440-b": {
+  "440-b": {
     "linea": "440-b",
     "paradas": {
       "Parque Latinoamericano De Albardón S -B": "stop-43329567-0",
@@ -10069,6 +10069,61 @@
       "Plaza Bº Piuquén N": "stop-45535087-95",
       "Escuela Cruce De Los Andes B° Piuquén O": "stop-43327619-96"
     }
+  },
+  "130": {
+    "linea": "130",
+    "paradas": {
+      "Avellaneda y 9 De Julio": "stop-46329029-0",
+      "Av. 9 De Julio y Estados Unidos N -B": "stop-43330652-1",
+      "Terminal De Ómnibus San Juan Acceso A": "stop-43328513-2",
+      "Hospital De Niños Dr. Juan Carlos Navarro -A": "stop-43306240-3",
+      "Av. Rawson y Av. Córdoba O -A": "stop-43299591-4",
+      "Av. Córdoba y Aberastain N": "stop-43506150-5",
+      "Av. Córdoba y Av. Rioja N -B": "stop-45534868-6",
+      "Av. Córdoba y Gral. Acha -A": "stop-43898616-7",
+      "Av. Córdoba y Catamarca N -A": "stop-43645552-8",
+      "Av. Córdoba y Salta N": "stop-45534931-9",
+      "Estación Córdoba - Rivadavia - Ullúm -Zonda": "stop-43506176-10",
+      "Av. Ignacio De La Roza y Ricardo Rojas N -A": "stop-45534889-11",
+      "Av. Ig. De La Roza y Urquiza N": "stop-43299384-12",
+      "Colegio Central Universitario": "stop-43299395-13",
+      "Av. Ig. De La Roza y Paula A. De Sarmiento N -A": "stop-45534871-14",
+      "Paseo Comercial - Alto Del Bono Shopping N": "stop-43299406-15",
+      "Av. Ig. De La Roza y Ángel D. Rojas N": "stop-44985306-16",
+      "Av. Ig. De La Roza y E. Echeverría N": "stop-43299417-17",
+      "Av. Ig. De La Roza E H. Yrigoyen N": "stop-43299430-18",
+      "Escuela Provincia De Tucumán N": "stop-45534874-19",
+      "Centro Comercial - Espacio San Juan N": "stop-43299437-20",
+      "Bellas Artes y Domingo Di Próspero O": "stop-43327286-21",
+      "Bellas Artes y Agrimensor M. Garcia O": "stop-43327288-22",
+      "Bellas Artes y Av. Coratina N": "stop-43327289-23",
+      "Meglioli y Av. Coratina N": "stop-43327277-24",
+      "Club Atlético El Globo O": "stop-43327300-25",
+      "Meglioli y Güemes O": "stop-45535005-26",
+      "Martín Miguel De Güemes y Los Jesuitas -N": "stop-118351036-27",
+      "Martín Miguel De Güemes y Dr. A. B. Sabin -N": "stop-118351037-28",
+      "Martín Miguel De Güemes y Martín De Alzaga-S": "stop-118351038-29",
+      "Martín Güemes y Malvinas Argentinas": "stop-45534965-30",
+      "Blvd. B° Soeva N": "stop-43568104-31",
+      "Rastreador Calivar y Molina Campos E": "stop-43568105-32",
+      "Plaza Humoristas Argentinos E": "stop-43328425-33",
+      "Rastreador Calivar y Cmte. Cabot E": "stop-43328426-34",
+      "Rastreador Calivar y Av. Ig. De La Roza": "stop-43328427-35",
+      "Av. Ignacio De La Roza E Yupanqui N": "stop-45534884-36",
+      "Av. Ig. De La Roza y Julio Cortázar N": "stop-44949358-37",
+      "Av. Ig. De La Roza - B° El Huarpe N": "stop-44949359-38",
+      "Av. Ig. De La Roza y Callejón Silva N": "stop-44949466-39",
+      "Av. Ig. De La Roza y Pellegrini N": "stop-43299484-40",
+      "Pellegrini y 9 De Julio O": "stop-45163716-41",
+      "9 De Julio E Ibáñez N": "stop-44949458-42",
+      "9 De Julio y Baigorria": "stop-46329028-43",
+      "Baigorria y Republica Del Libano": "stop-46329023-44",
+      "Republica Del Libano y Pellegrini": "stop-46329024-45",
+      "Camping De Udap O": "stop-45603441-46",
+      "Pellegrini y Carlos Yornet O": "stop-45163717-47",
+      "Escuela Diógenes Perramón O": "stop-43328344-48",
+      "Dr. Ortega y Pellegrini S": "stop-43328352-49",
+      "Plaza B° Conjunto 1-2-3 S": "stop-43328347-50"
+    }
   }
 }
-

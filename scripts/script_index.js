@@ -18,14 +18,17 @@ let _indiceParadasApi = null; // Cache de nombres canónicos para arrivals API
 let _paradasPorLinea = null; // Cache de Datos/paradas_por_linea.json
 let _urlsPorLinea = null; // Cache de Datos/urls_por_linea.json
 let _indicesParadasPorLinea = null; // Cache de índices normalizados por línea
+let _correspondenciaParadas = null; // Cache de Datos/correspondencia_paradas.json
 let arrivalsAbortController = null; // Permite abortar/renovar consultas de arrivals
 let _lastParadasPorLineaError = ''; // Último error al cargar paradas_por_linea.json (para diagnóstico)
 let _lastUrlsPorLineaError = ''; // Último error al cargar urls_por_linea.json (para diagnóstico)
 
+const JSON_VERSION = '?v=3';
 const PARADAS_GEOJSON_URL = encodeURI('Datos/DATOS SAN JUAN.geojson');
-const RED_TULUM_PARADAS_URL = encodeURI('Datos/red_tulum_paradas.json');
-const PARADAS_POR_LINEA_URL = encodeURI('Datos/paradas_por_linea.json');
-const URLS_POR_LINEA_URL = encodeURI('Datos/urls_por_linea.json');
+const RED_TULUM_PARADAS_URL = encodeURI('Datos/red_tulum_paradas.json' + JSON_VERSION);
+const PARADAS_POR_LINEA_URL = encodeURI('Datos/paradas_por_linea.json' + JSON_VERSION);
+const URLS_POR_LINEA_URL = encodeURI('Datos/urls_por_linea.json' + JSON_VERSION);
+const CORRESPONDENCIA_PARADAS_URL = encodeURI('Datos/correspondencia_paradas.json' + JSON_VERSION);
 const ARRIVALS_API_URL = 'https://proxyrt-production.up.railway.app/arrivals';
 const ARRIVALS_TIMEOUT_MS = 30000;
 const ARRIVALS_MAX_INTENTOS_PARADA = 3; // cuando hay paradas duplicadas por sufijos, probar varias variantes
@@ -1145,6 +1148,64 @@ async function cargarParadasPorLinea({ noCache = false } = {}) {
   }
 }
 
+async function cargarCorrespondenciaParadas({ noCache = false } = {}) {
+  if (_correspondenciaParadas && !noCache) return _correspondenciaParadas;
+
+  try {
+    const resp = await fetch(CORRESPONDENCIA_PARADAS_URL, { cache: noCache ? 'no-store' : 'force-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const payload = await resp.json();
+    _correspondenciaParadas = payload && typeof payload === 'object' ? payload : {};
+    console.debug(`[correspondencia] Cargado correspondencia_paradas.json: ${Object.keys(_correspondenciaParadas).length} líneas`);
+    return _correspondenciaParadas;
+  } catch (err) {
+    console.warn('No se pudo cargar correspondencia_paradas.json:', err);
+    _correspondenciaParadas = {};
+    return _correspondenciaParadas;
+  }
+}
+
+/**
+ * Busca el stop-ID de una parada directamente en la tabla de correspondencia.
+ * Retorna el stop-ID (ej. "stop-43299592-33") o null si no encuentra.
+ * @param {string} linea  - Ref de la línea (ej. "2", "100", "440-a")
+ * @param {string} nombre - Nombre de la parada tal como viene del GeoJSON
+ */
+async function buscarEnCorrespondencia(linea, nombre) {
+  const corr = await cargarCorrespondenciaParadas();
+  if (!corr || !linea || !nombre) return null;
+
+  // Normalizar variantes de clave ("440A" → "440-a", etc.)
+  const candidatosLinea = [String(linea), String(linea).toLowerCase(), String(linea).toUpperCase()];
+  const m = String(linea).match(/^(\d+)([A-Za-z])$/);
+  if (m) {
+    candidatosLinea.push(`${m[1]}-${m[2].toLowerCase()}`);
+    candidatosLinea.push(`${m[1]}-${m[2].toUpperCase()}`);
+  }
+
+  for (const lk of candidatosLinea) {
+    const entrada = corr[lk];
+    if (!entrada) continue;
+    const paradas = entrada.paradas;
+    if (!paradas) continue;
+
+    // Búsqueda exacta primero
+    if (Object.prototype.hasOwnProperty.call(paradas, nombre)) {
+      return paradas[nombre] || null;
+    }
+
+    // Búsqueda case-insensitive / sin espacios extra
+    const nombreNorm = nombre.trim().toLowerCase().replace(/\s+/g, ' ');
+    for (const [k, v] of Object.entries(paradas)) {
+      if (k.trim().toLowerCase().replace(/\s+/g, ' ') === nombreNorm) {
+        return v || null;
+      }
+    }
+  }
+
+  return null;
+}
+
 async function cargarUrlsPorLinea({ noCache = false } = {}) {
   if (_urlsPorLinea && !noCache) return _urlsPorLinea;
 
@@ -1204,11 +1265,20 @@ function resolverKeyLineaEnObjeto(obj, linea) {
 function normalizarLineaParaApi(linea) {
   const raw = String(linea || '').trim();
   if (!raw) return '';
-  // Solo recortar si termina en letra mayúscula y antes hay al menos un dígito.
-  // Ej: "440A" -> "440". Evita recortar refs no numéricas.
+
+  // Formato con guion y letra: "440-a", "440-b", "441-c", "441-d", "441-e" → "440", "441"
+  // También acepta mayúsculas: "440-A", "441-B"
+  const matchGuion = raw.match(/^(\d+)-[A-Za-z]$/);
+  if (matchGuion) {
+    return matchGuion[1];
+  }
+
+  // Formato sin guion pero con letra al final: "440A" → "440"
+  // Solo aplica cuando hay dígito antes de la letra final (evita recortar refs como "TNS", "TEO1").
   if (/[A-Z]$/.test(raw) && /\d/.test(raw.slice(0, -1))) {
     return raw.slice(0, -1).trim();
   }
+
   return raw;
 }
 
@@ -1251,6 +1321,16 @@ function obtenerIndiceParadasLineaDesdeCache(lineaKey, paradasObj) {
 }
 
 async function resolverParadaDesdeJson(linea, nombreParada) {
+  const original = String(nombreParada || '').trim().replace(/\s+/g, ' ');
+  if (!original) return { id_p: '', paradaResuelta: '' };
+
+  // 0) Consultar la tabla de correspondencia precomputada (GeoJSON → stop-ID).
+  //    Es la fuente más directa y evita fuzzy matching innecesario.
+  const idCorrespondencia = await buscarEnCorrespondencia(linea, original);
+  if (idCorrespondencia) {
+    return { id_p: idCorrespondencia, paradaResuelta: original };
+  }
+
   let data = await cargarParadasPorLinea();
   let lk = resolverKeyLineaEnObjeto(data, linea);
   if (!lk) {
@@ -1259,9 +1339,6 @@ async function resolverParadaDesdeJson(linea, nombreParada) {
   }
   const entry = lk ? data[lk] : null;
   const paradasObj = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
-
-  const original = String(nombreParada || '').trim().replace(/\s+/g, ' ');
-  if (!original) return { id_p: '', paradaResuelta: '' };
 
   const baseOriginal = normalizarNombreParadaSinSufijos(original);
 
