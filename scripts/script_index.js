@@ -16,11 +16,19 @@ let paradasRecorridoMarkers = null;
 let seleccionParadaLayer = null;
 let _frequenciesData = null; // Cache de datos de frequencies.txt
 let _indiceParadasApi = null; // Cache de nombres canónicos para arrivals API
+let _paradasPorLinea = null; // Cache de Datos/paradas_por_linea.json
+let _urlsPorLinea = null; // Cache de Datos/urls_por_linea.json
+let _indicesParadasPorLinea = null; // Cache de índices normalizados por línea
+let arrivalsAbortController = null; // Permite abortar/renovar consultas de arrivals
 
 const PARADAS_GEOJSON_URL = encodeURI('Datos/DATOS SAN JUAN.geojson');
 const RED_TULUM_PARADAS_URL = encodeURI('Datos/red_tulum_paradas.json');
+const PARADAS_POR_LINEA_URL = encodeURI('Datos/paradas_por_linea.json');
+const URLS_POR_LINEA_URL = encodeURI('Datos/urls_por_linea.json');
 const FREQUENCIES_URL = 'Datos/frequencies.txt';
 const ARRIVALS_API_URL = 'https://proxyrt-production.up.railway.app/arrivals';
+const ARRIVALS_TIMEOUT_MS = 12000;
+const ARRIVALS_MAX_INTENTOS_PARADA = 3; // cuando hay paradas duplicadas por sufijos, probar varias variantes
 const RADIO_PARADAS_METROS = 700;
 const MAX_PARADAS_MOSTRAR = 40;
 const MAX_PARADAS_MOSTRAR_EN_VISTA = 200;
@@ -1002,8 +1010,31 @@ function extraerVarianteDesdeLinea(linea) {
 function extraerDireccionDesdeNombreParada(nombreParada) {
   const txt = String(nombreParada || '').trim();
   // Soporta sufijos del estilo: "... S", "... S -A", "... S-A".
-  const m = txt.match(/\s([SNEO])(?:\s*-\s*[ABC])?\s*$/i);
+  const m = txt.match(/\s([SNEO])(?:\s*-\s*[ABCD])?\s*$/i);
   return m ? String(m[1]).toUpperCase() : '';
+}
+
+function normalizarNombreParadaSinSufijos(nombreParada) {
+  // Normaliza quitando sufijos que NO queremos considerar para resolver (según requerimiento):
+  // - Dirección: N/S/E/O o Norte/Sur/Este/Oeste
+  // - Variante: -A/-B/-C/-D
+  let txt = String(nombreParada || '').trim().replace(/\s+/g, ' ');
+  if (!txt) return '';
+
+  let prev = '';
+  while (txt && txt !== prev) {
+    prev = txt;
+    txt = txt
+      // Variante al final: "... -A"
+      .replace(/\s*-\s*[ABCD]\s*$/i, '')
+      // Dirección en palabra al final: "... Oeste"
+      .replace(/\s+(norte|sur|este|oeste)\s*$/i, '')
+      // Dirección abreviada al final: "... O"
+      .replace(/\s+[SNEO]\s*$/i, '')
+      .trim();
+  }
+
+  return txt;
 }
 
 function normalizarLineaParaLookup(linea) {
@@ -1041,6 +1072,31 @@ function crearClaveParadaApi(texto) {
     // Variantes de apellidos/calles frecuentes en fuentes distintas.
     .replace(/\birigoyen\b/g, 'yrigoyen')
     .replace(/\byrigoyen\b/g, 'yrigoyen')
+    // Unificar "Hipólito" (GeoJSON) con abreviaturas tipo "H." (JSON).
+    .replace(/\bhipolito\b/g, 'h')
+    // Unificar títulos/abreviaturas frecuentes.
+    .replace(/\bdoctor\b/g, 'dr')
+    .replace(/\bdr\.?\b/g, 'dr')
+    .replace(/\bcomandante\b/g, 'cmte')
+    .replace(/\bcmte\.?\b/g, 'cmte')
+    .replace(/\bsargento\b/g, 'sgto')
+    .replace(/\bsgto\.?\b/g, 'sgto')
+    .replace(/\balmirante\b/g, 'almte')
+    .replace(/\balmte\.?\b/g, 'almte')
+    // Unificar Boulevard/Bulevar con abreviatura "Blvd.".
+    .replace(/\bboulevard\b/g, 'blvd')
+    .replace(/\bbulevar\b/g, 'blvd')
+    .replace(/\bblvd\.?\b/g, 'blvd')
+    // Unificar "Boulogne" (GeoJSON) con variantes mal escritas en datos.
+    .replace(/\bboulonge\b/g, 'boulogne')
+    // Algunas fuentes incluyen "Sur Mer" y otras solo "Sur".
+    .replace(/\bsur\s+mer\b/g, 'sur')
+    // Normalizar puntos cardinales cuando aparecen como sufijo (dirección de parada).
+    // Ej: "... Boulevard Oeste" -> "... blvd o" (para que coincida con "... blvd. O").
+    .replace(/\s+norte\b/g, ' n')
+    .replace(/\s+sur\b/g, ' s')
+    .replace(/\s+este\b/g, ' e')
+    .replace(/\s+oeste\b/g, ' o')
     // Abreviaturas comunes.
     .replace(/\bgral\.?\b/g, 'general')
     .replace(/\bdiag\.?\b/g, 'diagonal')
@@ -1049,9 +1105,15 @@ function crearClaveParadaApi(texto) {
     // Normalizar "Ruta Nac." / "RN".
     .replace(/\bruta\s+nac\.?\b/g, 'ruta nacional')
     .replace(/\brn\b/g, 'ruta nacional')
+    // Normalizar "Ruta P." / "RP" / "Ruta Provincial". En el GeoJSON suele venir como "Ruta 60".
+    .replace(/\bruta\s+provincial\b/g, 'ruta')
+    .replace(/\bruta\s+p\.?\b/g, 'ruta')
+    .replace(/\brp\b/g, 'ruta')
     // Normalizar indicadores de número: N°20, N° 20, Nº20, Nro. 20, etc.
     .replace(/\bnro\.?\b/g, 'n')
     .replace(/\bn[°º]\s*/g, 'n ')
+    // Normalizar "Barrio" con abreviaturas tipo "B°" (reduce falsos negativos).
+    .replace(/\bbarrio\b/g, 'b')
     .replace(/\bavenida\b/g, 'av')
     .replace(/\bavda\b/g, 'av')
     .replace(/\bav\./g, 'av')
@@ -1065,6 +1127,178 @@ function crearClaveParadaApi(texto) {
     .trim();
 
   return txt;
+}
+
+async function cargarParadasPorLinea({ noCache = false } = {}) {
+  if (_paradasPorLinea && !noCache) return _paradasPorLinea;
+
+  try {
+    const resp = await fetch(PARADAS_POR_LINEA_URL, { cache: noCache ? 'no-store' : 'force-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const payload = await resp.json();
+    _paradasPorLinea = payload && typeof payload === 'object' ? payload : {};
+    _indicesParadasPorLinea = null;
+    return _paradasPorLinea;
+  } catch (err) {
+    console.warn('No se pudo cargar paradas_por_linea.json:', err);
+    _paradasPorLinea = {};
+    _indicesParadasPorLinea = null;
+    return _paradasPorLinea;
+  }
+}
+
+async function cargarUrlsPorLinea({ noCache = false } = {}) {
+  if (_urlsPorLinea && !noCache) return _urlsPorLinea;
+
+  try {
+    const resp = await fetch(URLS_POR_LINEA_URL, { cache: noCache ? 'no-store' : 'force-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const payload = await resp.json();
+    _urlsPorLinea = payload && typeof payload === 'object' ? payload : {};
+    return _urlsPorLinea;
+  } catch (err) {
+    console.warn('No se pudo cargar urls_por_linea.json:', err);
+    _urlsPorLinea = {};
+    return _urlsPorLinea;
+  }
+}
+
+function resolverKeyLineaEnObjeto(obj, linea) {
+  const raw = String(linea || '').trim();
+  if (!obj || typeof obj !== 'object' || !raw) return '';
+
+  if (Object.prototype.hasOwnProperty.call(obj, raw)) return raw;
+
+  const target = raw.toLowerCase();
+  for (const k of Object.keys(obj)) {
+    if (String(k).toLowerCase() === target) return k;
+  }
+
+  // Fallback flexible: ignorar espacios/guiones/puntuación.
+  // Ejemplos:
+  // - "TEO 1" (GeoJSON) vs "TEO1" (JSON)
+  // - "440A" vs "440-a"
+  const targetLookups = new Set();
+  const addLookup = (value) => {
+    const lk = normalizarLineaParaLookup(value);
+    if (lk) targetLookups.add(lk);
+  };
+
+  addLookup(raw);
+  addLookup(normalizarLineaParaApi(raw));
+
+  const m = raw.match(/^(\d+)([A-Z])$/);
+  if (m) addLookup(`${m[1]}-${m[2].toLowerCase()}`);
+
+  for (const k of Object.keys(obj)) {
+    const kLookup = normalizarLineaParaLookup(k);
+    if (kLookup && targetLookups.has(kLookup)) return k;
+  }
+  return '';
+}
+
+function normalizarLineaParaApi(linea) {
+  const raw = String(linea || '').trim();
+  if (!raw) return '';
+  // Solo recortar si termina en letra mayúscula y antes hay al menos un dígito.
+  // Ej: "440A" -> "440". Evita recortar refs no numéricas.
+  if (/[A-Z]$/.test(raw) && /\d/.test(raw.slice(0, -1))) {
+    return raw.slice(0, -1).trim();
+  }
+  return raw;
+}
+
+function construirIndiceParadasLinea(paradasObj) {
+  // claveNormalizada -> nombreParada.
+  // Importante: cuando ignoramos sufijos (N/S/E/O, -A/-B/-C/-D) pueden aparecer
+  // duplicados por sentido. En ese caso, nos quedamos con la primera ocurrencia
+  // para evitar falsos negativos (mejor devolver algún id_p que no devolver ninguno).
+  const indice = new Map();
+
+  for (const nombre of Object.keys(paradasObj || {})) {
+    const base = normalizarNombreParadaSinSufijos(nombre);
+    const clave = crearClaveParadaApi(base);
+    if (!clave) continue;
+    if (!indice.has(clave)) {
+      indice.set(clave, nombre);
+    }
+  }
+
+  return indice;
+}
+
+async function resolverUrlDesdeJson(linea) {
+  let urls = await cargarUrlsPorLinea();
+  let lk = resolverKeyLineaEnObjeto(urls, linea);
+  if (!lk) {
+    // Si se editaron los JSON en caliente, puede haber quedado cacheado en memoria.
+    urls = await cargarUrlsPorLinea({ noCache: true });
+    lk = resolverKeyLineaEnObjeto(urls, linea);
+  }
+  return lk ? String(urls[lk] || '') : '';
+}
+
+function obtenerIndiceParadasLineaDesdeCache(lineaKey, paradasObj) {
+  if (!_indicesParadasPorLinea) _indicesParadasPorLinea = new Map();
+  if (_indicesParadasPorLinea.has(lineaKey)) return _indicesParadasPorLinea.get(lineaKey);
+  const idx = construirIndiceParadasLinea(paradasObj);
+  _indicesParadasPorLinea.set(lineaKey, idx);
+  return idx;
+}
+
+async function resolverParadaDesdeJson(linea, nombreParada) {
+  let data = await cargarParadasPorLinea();
+  let lk = resolverKeyLineaEnObjeto(data, linea);
+  if (!lk) {
+    data = await cargarParadasPorLinea({ noCache: true });
+    lk = resolverKeyLineaEnObjeto(data, linea);
+  }
+  const entry = lk ? data[lk] : null;
+  const paradasObj = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
+
+  const original = String(nombreParada || '').trim().replace(/\s+/g, ' ');
+  if (!original) return { id_p: '', paradaResuelta: '' };
+
+  const baseOriginal = normalizarNombreParadaSinSufijos(original);
+
+  // 1) Match exacto por nombre tal cual está en el JSON.
+  if (Object.prototype.hasOwnProperty.call(paradasObj, original)) {
+    return { id_p: String(paradasObj[original] || ''), paradaResuelta: original };
+  }
+
+  // 2) Match por normalización dentro de la línea (único).
+  const indice = obtenerIndiceParadasLineaDesdeCache(lk || String(linea || ''), paradasObj);
+
+  const sinSufijos = baseOriginal;
+
+  for (const candidato of [original, sinSufijos]) {
+    const clave = crearClaveParadaApi(candidato);
+    const nombreMatch = clave ? indice.get(clave) : '';
+    if (nombreMatch && Object.prototype.hasOwnProperty.call(paradasObj, nombreMatch)) {
+      return { id_p: String(paradasObj[nombreMatch] || ''), paradaResuelta: nombreMatch };
+    }
+  }
+
+  // 3) Fallback por tokens (si hay 1 único candidato).
+  const indiceTokens = new Map();
+  for (const nombre of Object.keys(paradasObj)) {
+    const base = normalizarNombreParadaSinSufijos(nombre);
+    const clave = crearClaveParadaApi(base);
+    if (clave) indiceTokens.set(clave, nombre);
+  }
+  const claveQuery = crearClaveParadaApi(sinSufijos || original);
+  const nombreTokens = resolverCanonicoPorTokensEnIndice(indiceTokens, claveQuery);
+  if (nombreTokens && Object.prototype.hasOwnProperty.call(paradasObj, nombreTokens)) {
+    return { id_p: String(paradasObj[nombreTokens] || ''), paradaResuelta: nombreTokens };
+  }
+
+  // 4) Fallback por score: elegir el candidato con mejor cobertura de tokens.
+  const nombreScore = resolverCanonicoPorTokensMejorScore(indiceTokens, claveQuery);
+  if (nombreScore && Object.prototype.hasOwnProperty.call(paradasObj, nombreScore)) {
+    return { id_p: String(paradasObj[nombreScore] || ''), paradaResuelta: nombreScore };
+  }
+
+  return { id_p: '', paradaResuelta: '' };
 }
 
 function registrarParadaCanonicaEnIndice(indice, nombreParada) {
@@ -1133,6 +1367,46 @@ function resolverCanonicoPorTokensEnIndice(indiceLinea, clave) {
   }
 
   return matches === 1 ? canonica : '';
+}
+
+function resolverCanonicoPorTokensMejorScore(indiceLinea, clave) {
+  if (!(indiceLinea instanceof Map)) return '';
+
+  const tokens = tokenizarClaveParadaApi(clave);
+  if (tokens.length === 0) return '';
+
+  let bestCanonica = '';
+  let bestScore = 0;
+  let bestMatchCount = 0;
+
+  for (const [k, v] of indiceLinea.entries()) {
+    const candTokens = tokenizarClaveParadaApi(k);
+    if (candTokens.length === 0) continue;
+
+    const tset = new Set(candTokens);
+    let matchCount = 0;
+    for (const t of tokens) {
+      if (tset.has(t)) matchCount += 1;
+    }
+    if (matchCount === 0) continue;
+
+    const coverage = matchCount / tokens.length;
+    const lengthPenalty = candTokens.length > 0 ? (tokens.length / candTokens.length) : 0;
+    const score = coverage * 0.85 + lengthPenalty * 0.15;
+
+    if (score > bestScore || (score === bestScore && matchCount > bestMatchCount)) {
+      bestCanonica = v;
+      bestScore = score;
+      bestMatchCount = matchCount;
+    }
+  }
+
+  // Para queries muy cortas (1–2 tokens útiles), un umbral alto suele impedir
+  // resolver paradas cuando el GeoJSON trae nombres genéricos (ej. "Terminal")
+  // pero el JSON de paradas tiene nombres más largos ("Terminal de ... Acceso B").
+  // Bajamos el umbral solo en esos casos para evitar falsos negativos.
+  const minScore = tokens.length <= 1 ? 0.75 : tokens.length === 2 ? 0.85 : 0.6;
+  return bestScore >= minScore ? bestCanonica : '';
 }
 
 function construirIndiceParadasApi(payload) {
@@ -1343,9 +1617,44 @@ function extraerMensajeDesdePayload(payload) {
   return '';
 }
 
+function extraerHorarioEstimadoDesdePayload(payload, _seen = null) {
+  if (payload == null) return '';
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const h = extraerHorarioEstimadoDesdePayload(item, _seen);
+      if (h) return h;
+    }
+    return '';
+  }
+
+  if (typeof payload === 'object') {
+    const seen = _seen instanceof Set ? _seen : new Set();
+    if (seen.has(payload)) return '';
+    seen.add(payload);
+
+    const he = payload.horario_estimado;
+    if (typeof he === 'string' && he.trim()) return he.trim();
+    if (typeof he === 'number' && Number.isFinite(he)) return String(he);
+
+    if (payload.raw != null) {
+      const h = extraerHorarioEstimadoDesdePayload(payload.raw, seen);
+      if (h) return h;
+    }
+
+    for (const v of Object.values(payload)) {
+      const h = extraerHorarioEstimadoDesdePayload(v, seen);
+      if (h) return h;
+    }
+  }
+
+  return '';
+}
+
 function extraerHorariosDesdePayloadArrivals(payload) {
   const salidaTiempoReal = [];
   const mensajeApi = extraerMensajeDesdePayload(payload);
+  const horarioEstimado = extraerHorarioEstimadoDesdePayload(payload);
   recolectarTiempoRealDesdeNodo(payload, salidaTiempoReal);
 
   if (salidaTiempoReal.length > 0) {
@@ -1358,7 +1667,7 @@ function extraerHorariosDesdePayloadArrivals(payload) {
       dedup.push(it.hora);
       if (dedup.length >= MAX_HORARIOS_MOSTRAR) break;
     }
-    return { horarios: dedup, tipoDatos: 'tiempo_real', mensajeApi };
+    return { horarios: dedup, tipoDatos: 'tiempo_real', mensajeApi, horarioEstimado };
   }
 
   const esperados = [];
@@ -1396,39 +1705,399 @@ function extraerHorariosDesdePayloadArrivals(payload) {
       dedup.push(h);
       if (dedup.length >= MAX_HORARIOS_MOSTRAR) break;
     }
-    return { horarios: dedup, tipoDatos: 'esperado', mensajeApi };
+    return { horarios: dedup, tipoDatos: 'esperado', mensajeApi, horarioEstimado };
   }
 
-  return { horarios: [], tipoDatos: 'esperado', mensajeApi };
+  return { horarios: [], tipoDatos: 'esperado', mensajeApi, horarioEstimado };
 }
 
-async function consultarArribosApi(linea, paradaNombre) {
+function obtenerCandidatosNombreParada(feature, nombreBase = '') {
+  const props = feature?.properties || {};
+  const seen = new Set();
+  const out = [];
+  const add = (value) => {
+    const s = typeof value === 'string' ? value.trim() : '';
+    if (!s) return;
+    const key = s.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(s);
+
+    // Variante sin sufijos de dirección/variante (-A/-B/-C/-D, N/S/E/O, Norte/Sur/Este/Oeste)
+    // para mejorar matching sin depender de esos detalles.
+    const base = normalizarNombreParadaSinSufijos(s);
+    const keyBase = base ? base.toLowerCase() : '';
+    if (base && !seen.has(keyBase)) {
+      seen.add(keyBase);
+      out.push(base);
+    }
+  };
+
+  add(nombreBase);
+  add(props.name);
+  add(props['name:es']);
+  add(props.alt_name);
+  add(props.official_name);
+  add(props.description);
+  add(props['addr:street']);
+  add(props.ref);
+  add(obtenerEtiquetaParada(feature));
+
+  return out;
+}
+
+async function resolverParadaDesdeJsonConCandidatos(linea, candidatos) {
+  const arr = Array.isArray(candidatos) ? candidatos : [];
+  for (const c of arr) {
+    const res = await resolverParadaDesdeJson(linea, c);
+    if (res?.id_p) return { ...res, paradaInput: c };
+  }
+  return { id_p: '', paradaResuelta: '', paradaInput: '' };
+}
+
+function extraerDireccionYSufijoParada(nombre) {
+  const raw = String(nombre || '').trim();
+  if (!raw) return { dir: '', var: '' };
+
+  // Dirección: letra suelta al final (N/S/E/O) o palabra completa.
+  const mDirLetra = raw.match(/\s([NSEO])\s*(?:-\s*[A-D])?\s*$/i);
+  const dir = mDirLetra ? String(mDirLetra[1] || '').toUpperCase() : '';
+
+  // Variante: -A/-B/-C/-D al final.
+  const mVar = raw.match(/-\s*([A-D])\s*$/i);
+  const vari = mVar ? String(mVar[1] || '').toUpperCase() : '';
+
+  return { dir, var: vari };
+}
+
+async function obtenerCandidatosIdParadaParaArrivals(linea, paradaInput, paradaResueltaPreferida) {
+  // Devuelve una lista ordenada de { paradaResuelta, id_p } para intentar en la API.
+  const out = [];
+  const refLinea = String(linea || '').trim();
+  if (!refLinea) return out;
+
+  let data = await cargarParadasPorLinea();
+  let lk = resolverKeyLineaEnObjeto(data, refLinea);
+  if (!lk) {
+    data = await cargarParadasPorLinea({ noCache: true });
+    lk = resolverKeyLineaEnObjeto(data, refLinea);
+  }
+  const entry = lk ? data[lk] : null;
+  const paradasObj = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
+
+  const preferida = String(paradaResueltaPreferida || '').trim();
+  const base = normalizarNombreParadaSinSufijos(preferida || paradaInput);
+  const baseKey = crearClaveParadaApi(base);
+  if (!baseKey) {
+    if (preferida && Object.prototype.hasOwnProperty.call(paradasObj, preferida)) {
+      out.push({ paradaResuelta: preferida, id_p: String(paradasObj[preferida] || '') });
+    }
+    return out.filter((c) => Boolean(c.id_p));
+  }
+
+  const inputInfo = extraerDireccionYSufijoParada(paradaInput);
+
+  // Recolectar todas las paradas que colisionan por base (ignorando sufijos).
+  for (const nombre of Object.keys(paradasObj)) {
+    const b = normalizarNombreParadaSinSufijos(nombre);
+    const k = crearClaveParadaApi(b);
+    if (k && k === baseKey) {
+      out.push({ paradaResuelta: nombre, id_p: String(paradasObj[nombre] || '') });
+    }
+  }
+
+  // Asegurar que la preferida quede primera si existe.
+  out.sort((a, b) => {
+    const aName = String(a?.paradaResuelta || '');
+    const bName = String(b?.paradaResuelta || '');
+    if (preferida) {
+      const aIsPref = aName === preferida;
+      const bIsPref = bName === preferida;
+      if (aIsPref !== bIsPref) return aIsPref ? -1 : 1;
+    }
+
+    // Luego, priorizar coincidencia de dirección/variante presentes en el input.
+    const aInfo = extraerDireccionYSufijoParada(aName);
+    const bInfo = extraerDireccionYSufijoParada(bName);
+    const aScore = (inputInfo.dir && aInfo.dir === inputInfo.dir ? 2 : 0) + (inputInfo.var && aInfo.var === inputInfo.var ? 1 : 0);
+    const bScore = (inputInfo.dir && bInfo.dir === inputInfo.dir ? 2 : 0) + (inputInfo.var && bInfo.var === inputInfo.var ? 1 : 0);
+    if (aScore !== bScore) return bScore - aScore;
+
+    // Estable para no “saltar” siempre distinto.
+    return aName.localeCompare(bName, 'es');
+  });
+
+  // Deduplicar por id_p.
+  const seen = new Set();
+  const dedup = [];
+  for (const c of out) {
+    const id = String(c?.id_p || '').trim();
+    if (!id) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    dedup.push({ paradaResuelta: String(c.paradaResuelta || '').trim(), id_p: id });
+  }
+
+  return dedup;
+}
+
+async function obtenerHorariosAproximadosFallback(lineaRef, opts = {}) {
+  const ref = String(lineaRef || '').trim();
+  if (!ref) return { horarios: [], headwaySecs: 0, mensajeApi: '' };
+
+  const frequencies = await cargarFrequencies();
+  const freqRow = buscarFrequencyDeLinea(frequencies, ref);
+  const headwaySecs = Number(freqRow?.headway_secs);
+
+  if (!freqRow) {
+    const headway = DEFAULT_HEADWAY_SECS;
+    return {
+      horarios: generarHorariosAproximadosDesdeAhora({
+        n: MAX_HORARIOS_MOSTRAR,
+        headwaySecs: headway,
+        delaySecs: Math.round(headway / 2),
+      }),
+      headwaySecs: headway,
+      mensajeApi: 'Mostrando horarios aproximados (estimación).',
+    };
+  }
+
+  let offsetSecs = 0;
+  const paradaFeature = opts?.paradaFeature || null;
+  const rutas = Array.isArray(opts?.rutas) ? opts.rutas : null;
+  const coords = paradaFeature?.geometry?.coordinates;
+  if (Array.isArray(coords) && coords.length >= 2 && rutas && rutas.length) {
+    const lng = Number(coords[0]);
+    const lat = Number(coords[1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      offsetSecs = estimarOffsetArriboParadaSegsDesdeRutas(rutas, lat, lng);
+    }
+  }
+
+  const horarios = paradaFeature
+    ? calcularProximosArribosEnParada(freqRow, offsetSecs, MAX_HORARIOS_MOSTRAR)
+    : calcularProximosHorarios(freqRow, MAX_HORARIOS_MOSTRAR);
+
+  return {
+    horarios,
+    headwaySecs: Number.isFinite(headwaySecs) ? headwaySecs : 0,
+    mensajeApi: 'Mostrando horarios aproximados (GTFS).',
+  };
+}
+
+async function consultarArribosApi(linea, paradaNombre, opts = {}) {
   const lineaNorm = String(linea || '').trim();
-  const paradaNorm = await normalizarNombreParadaParaApi(paradaNombre, lineaNorm);
-  if (!lineaNorm || !paradaNorm) {
-    return { horarios: [], tipoDatos: 'esperado', paradaConsultada: paradaNorm || '' };
+  const paradaTxt = String(paradaNombre || '').trim();
+  if (!lineaNorm || !paradaTxt) {
+    return { horarios: [], tipoDatos: 'esperado', paradaConsultada: '' };
+  }
+
+  // Normalizar línea para la API (por ejemplo "440A" -> "440").
+  const lineaApi = normalizarLineaParaApi(lineaNorm);
+
+  const paradaFeature = opts?.paradaFeature || null;
+  const candidatosParada = paradaFeature
+    ? obtenerCandidatosNombreParada(paradaFeature, paradaTxt)
+    : [paradaTxt];
+
+  const lineaCandidatas = [];
+  for (const v of [lineaNorm, lineaApi]) {
+    const s = String(v || '').trim();
+    if (s && !lineaCandidatas.includes(s)) lineaCandidatas.push(s);
+  }
+
+  // Intentar primero con la ref original (permite resolver "TEO 1" -> "TEO1", etc.),
+  // probando múltiples candidatos de nombre de parada.
+  let url = '';
+  let paradaRes = { id_p: '', paradaResuelta: '', paradaInput: '' };
+
+  for (const l of lineaCandidatas) {
+    url = url || await resolverUrlDesdeJson(l);
+    if (!paradaRes?.id_p) {
+      paradaRes = await resolverParadaDesdeJsonConCandidatos(l, candidatosParada);
+    }
+    if (url && paradaRes?.id_p) break;
+  }
+
+  const { id_p, paradaResuelta } = paradaRes || { id_p: '', paradaResuelta: '' };
+
+  const debugArrivals = {
+    linea: lineaNorm,
+    lineaApi,
+    lineaCandidatas,
+    paradaBase: paradaTxt,
+    paradaInput: paradaRes?.paradaInput || '',
+    paradaResuelta: paradaResuelta || '',
+    url,
+    intentos: [],
+  };
+
+  if (!url || !id_p) {
+    try {
+      console.debug('[arrivals] NO request (faltan datos)', {
+        linea: lineaNorm,
+        urlOk: Boolean(url),
+        idPOk: Boolean(id_p),
+        paradaBase: paradaTxt,
+        paradaResuelta: paradaResuelta || '',
+      });
+    } catch {
+      // noop
+    }
+    const fb = await obtenerHorariosAproximadosFallback(lineaNorm, opts);
+    return {
+      horarios: fb.horarios || [],
+      headwaySecs: fb.headwaySecs || 0,
+      tipoDatos: 'esperado',
+      paradaConsultada: paradaResuelta || paradaTxt,
+      mensajeApi: fb.mensajeApi || `No se pudo resolver url/id de parada para esta línea (parada: ${paradaTxt}).`,
+      debugArrivals,
+    };
   }
 
   try {
-    const resp = await fetch(ARRIVALS_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        linea: lineaNorm,
-        parada: paradaNorm,
-      }),
-    });
+    // Abortamos la consulta anterior si todavía está en vuelo, así se puede
+    // volver a consultar sin quedar trabado.
+    if (arrivalsAbortController) {
+      try { arrivalsAbortController.abort(); } catch { /* noop */ }
+    }
+    const controller = new AbortController();
+    arrivalsAbortController = controller;
+    const timeoutId = setTimeout(() => {
+      try { controller.abort(); } catch { /* noop */ }
+    }, ARRIVALS_TIMEOUT_MS);
 
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const payload = await resp.json();
-    const parsed = extraerHorariosDesdePayloadArrivals(payload);
-    return { ...parsed, paradaConsultada: paradaNorm };
+    try {
+      const candidatosIdP = await obtenerCandidatosIdParadaParaArrivals(lineaNorm, paradaTxt, paradaResuelta || paradaTxt);
+      const listaCandidatos = candidatosIdP.length
+        ? candidatosIdP
+        : [{ paradaResuelta: paradaResuelta || paradaTxt, id_p }];
+
+      let bestParsed = null;
+      let bestScore = -1;
+      const maxIntentos = Math.max(1, Math.min(ARRIVALS_MAX_INTENTOS_PARADA, listaCandidatos.length));
+
+      for (let i = 0; i < maxIntentos; i++) {
+        const cand = listaCandidatos[i];
+        const idTry = String(cand?.id_p || '').trim();
+        const paradaTry = String(cand?.paradaResuelta || '').trim();
+        if (!idTry) continue;
+
+        try {
+          try {
+            console.debug('[arrivals] POST /arrivals', {
+              linea: lineaNorm,
+              url,
+              id_p: idTry,
+              parada: paradaTry,
+              intento: i + 1,
+              total: maxIntentos,
+            });
+          } catch {
+            // noop
+          }
+
+          const resp = await fetch(ARRIVALS_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              url,
+              id_p: idTry,
+            }),
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+
+          const httpInfo = resp.ok ? 'ok' : `HTTP ${resp.status}`;
+          if (!resp.ok) {
+            debugArrivals.intentos.push({ parada: paradaTry, id_p: idTry, http: httpInfo, horariosLen: 0, error: httpInfo });
+            continue;
+          }
+
+          const payload = await resp.json();
+          const parsed = extraerHorariosDesdePayloadArrivals(payload);
+
+          const horariosArr = Array.isArray(parsed?.horarios) ? parsed.horarios : [];
+          const horarioEstimado = typeof parsed?.horarioEstimado === 'string' ? parsed.horarioEstimado.trim() : '';
+          const mensajeApi = typeof parsed?.mensajeApi === 'string' ? parsed.mensajeApi.trim() : '';
+
+          debugArrivals.intentos.push({
+            parada: paradaTry,
+            id_p: idTry,
+            http: httpInfo,
+            horariosLen: horariosArr.length,
+            horarioEstimado,
+            mensajeApi,
+          });
+
+          const score = (horariosArr.length * 100) + (horarioEstimado ? 10 : 0) + (mensajeApi ? 5 : 0);
+          if (score > bestScore) {
+            bestScore = score;
+            bestParsed = { ...parsed, paradaConsultada: paradaTry || paradaResuelta || paradaTxt };
+          }
+
+          // Si encontramos horarios concretos, nos quedamos con este intento.
+          if (horariosArr.length > 0) break;
+        } catch (errTry) {
+          const msg = (errTry && String(errTry.name) === 'AbortError')
+            ? 'AbortError'
+            : (errTry?.message ? String(errTry.message) : String(errTry));
+          debugArrivals.intentos.push({ parada: paradaTry, id_p: idTry, http: '', horariosLen: 0, error: msg });
+          if (errTry && String(errTry.name) === 'AbortError') throw errTry;
+        }
+      }
+
+      if (!bestParsed) {
+        const fb = await obtenerHorariosAproximadosFallback(lineaNorm, opts);
+        return {
+          horarios: fb.horarios || [],
+          headwaySecs: fb.headwaySecs || 0,
+          tipoDatos: 'esperado',
+          paradaConsultada: paradaResuelta || paradaTxt,
+          mensajeApi: fb.mensajeApi || '',
+          debugArrivals,
+        };
+      }
+
+      const horariosArr = Array.isArray(bestParsed?.horarios) ? bestParsed.horarios : [];
+      const horarioEstimado = typeof bestParsed?.horarioEstimado === 'string' ? bestParsed.horarioEstimado.trim() : '';
+      const mensajeApi = typeof bestParsed?.mensajeApi === 'string' ? bestParsed.mensajeApi.trim() : '';
+
+      // Si la API responde pero viene sin datos (arrivals vacío) y tampoco aporta
+      // un horario estimado o mensaje aprovechable, mostramos horarios aproximados.
+      if (horariosArr.length === 0 && !horarioEstimado && !mensajeApi) {
+        const fb = await obtenerHorariosAproximadosFallback(lineaNorm, opts);
+        return {
+          ...bestParsed,
+          horarios: fb.horarios || [],
+          headwaySecs: fb.headwaySecs || 0,
+          tipoDatos: 'esperado',
+          mensajeApi: fb.mensajeApi || '',
+          paradaConsultada: bestParsed.paradaConsultada || paradaResuelta || paradaTxt,
+          debugArrivals,
+        };
+      }
+
+      return { ...bestParsed, debugArrivals };
+    } finally {
+      clearTimeout(timeoutId);
+      if (arrivalsAbortController === controller) arrivalsAbortController = null;
+    }
   } catch (err) {
     console.warn('No se pudo consultar arrivals API:', err);
-    return { horarios: [], tipoDatos: 'esperado', paradaConsultada: paradaNorm };
+    const fb = await obtenerHorariosAproximadosFallback(lineaNorm, opts);
+    const msgAbort = (err && String(err.name) === 'AbortError') ? 'Tiempo de espera agotado al consultar arrivals.' : '';
+    return {
+      horarios: fb.horarios || [],
+      headwaySecs: fb.headwaySecs || 0,
+      tipoDatos: 'esperado',
+      paradaConsultada: paradaResuelta || paradaTxt,
+      mensajeApi: msgAbort || fb.mensajeApi || '',
+      debugArrivals,
+    };
   }
 }
 
@@ -1455,7 +2124,8 @@ async function cargarFrequencies() {
     return _frequenciesData;
   } catch (err) {
     console.warn('No se pudo cargar frequencies.txt:', err);
-    return [];
+    _frequenciesData = [];
+    return _frequenciesData;
   }
 }
 
@@ -1507,18 +2177,22 @@ function segundosActuales() {
 function buscarFrequencyDeLinea(frequencies, ref) {
   if (!Array.isArray(frequencies) || !ref) return null;
   const refNorm = String(ref).trim().toUpperCase();
+  const refLookup = normalizarLineaParaLookup(refNorm);
+  const refNormSinEspacios = refLookup || refNorm.replace(/\s+/g, '');
 
   // Búsqueda exacta: trip_<ref> (insensible a mayúsculas)
   let match = frequencies.find((r) => {
     const tid = String(r.trip_id || '').trim().toUpperCase();
-    return tid === `TRIP_${refNorm}`;
+    return tid === `TRIP_${refNorm}` || tid === `TRIP_${refNormSinEspacios}`;
   });
   if (match) return match;
 
   // Búsqueda parcial: trip_id contiene el ref
   match = frequencies.find((r) => {
     const tid = String(r.trip_id || '').trim().toUpperCase();
-    return tid.includes(refNorm);
+    if (tid.includes(refNorm) || tid.includes(refNormSinEspacios)) return true;
+    const tidLookup = normalizarLineaParaLookup(tid.replace(/^TRIP_/, ''));
+    return Boolean(refLookup && tidLookup && (tidLookup === refLookup || tidLookup.includes(refLookup)));
   });
   return match || null;
 }
@@ -1657,6 +2331,8 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
     ? 'Datos en tiempo real obtenidos desde arrivals API'
     : 'Horarios esperados obtenidos desde arrivals API';
   const mensajeApi = typeof opts?.mensajeApi === 'string' ? opts.mensajeApi.trim() : '';
+  const horarioEstimado = typeof opts?.horarioEstimado === 'string' ? opts.horarioEstimado.trim() : '';
+  const debugArrivals = opts?.debugArrivals && typeof opts.debugArrivals === 'object' ? opts.debugArrivals : null;
 
   const volverHtml = mostrarVolverParada
     ? `
@@ -1679,6 +2355,47 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
 
   const paradaInfoHtml = opts?.paradaConsultada
     ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #777;">Parada consultada: ${escapeHtml(opts.paradaConsultada)}</p>`
+    : '';
+
+  const debugHtml = debugArrivals
+    ? (() => {
+      const url = typeof debugArrivals?.url === 'string' ? debugArrivals.url : '';
+      const base = typeof debugArrivals?.paradaBase === 'string' ? debugArrivals.paradaBase : '';
+      const resolved = typeof debugArrivals?.paradaResuelta === 'string' ? debugArrivals.paradaResuelta : '';
+      const intentos = Array.isArray(debugArrivals?.intentos) ? debugArrivals.intentos : [];
+      const intentosHtml = intentos.length
+        ? `
+          <ol style="margin: 6px 0 0 18px; padding: 0;">
+            ${intentos.map((it) => {
+              const p = typeof it?.parada === 'string' ? it.parada : '';
+              const idp = typeof it?.id_p === 'string' ? it.id_p : '';
+              const http = typeof it?.http === 'string' ? it.http : '';
+              const hlen = Number.isFinite(Number(it?.horariosLen)) ? Number(it.horariosLen) : 0;
+              const he = typeof it?.horarioEstimado === 'string' ? it.horarioEstimado : '';
+              const msg = typeof it?.mensajeApi === 'string' ? it.mensajeApi : '';
+              const err = typeof it?.error === 'string' ? it.error : '';
+              const resumen = err
+                ? `Error: ${escapeHtml(err)}`
+                : `HTTP: ${escapeHtml(http || 'ok')} · horarios: ${hlen}${he ? ` · estimado: ${escapeHtml(he)}` : ''}${msg ? ` · msg: ${escapeHtml(msg)}` : ''}`;
+              return `<li style="margin: 0 0 6px 0;"><div style="font-size: 11px; color: #666;"><div><strong>${escapeHtml(p || '(sin nombre)')}</strong></div><div style="opacity: 0.9;">id_p: ${escapeHtml(idp || '')}</div><div style="opacity: 0.9;">${resumen}</div></div></li>`;
+            }).join('')}
+          </ol>
+        `
+        : '<p style="margin: 6px 0 0 0; font-size: 11px; color: #666;">(Sin intentos registrados)</p>';
+
+      return `
+        <details style="margin: 12px 0 0 0; padding: 10px 12px; border-radius: 10px; border: 1px dashed rgba(0,0,0,0.18); background: rgba(0,0,0,0.02);">
+          <summary style="cursor: pointer; font-size: 12px; color: #555; font-weight: 600;">Diagnóstico (sin consola)</summary>
+          <div style="margin-top: 8px; font-size: 11px; color: #666;">
+            <div><strong>Parada base:</strong> ${escapeHtml(base)}</div>
+            <div><strong>Parada resuelta:</strong> ${escapeHtml(resolved)}</div>
+            <div><strong>URL:</strong> <span style="word-break: break-all;">${escapeHtml(url)}</span></div>
+            <div style="margin-top: 6px;"><strong>Intentos:</strong></div>
+            ${intentosHtml}
+          </div>
+        </details>
+      `;
+    })()
     : '';
 
   const mensajeMinMatch = mensajeApi.match(/^\s*(\d+)\s*min(?:utos?)?\s*$/i);
@@ -1717,6 +2434,42 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
       `
       : '');
 
+  const estimadoMinMatch = horarioEstimado.match(/^\s*(\d+)\s*min(?:utos?)?\s*$/i);
+  const estimadoHoraMatch = horarioEstimado.match(/^\s*(\d{1,2}:\d{2})\s*$/);
+  const estimadoComoLlegadaHtml = estimadoMinMatch
+    ? `
+      <li style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(120,120,120,0.10);
+        border: 1px solid rgba(120,120,120,0.35);
+        margin-bottom: 8px;
+      ">
+        <span style="font-size: 22px; font-weight: 700; color: #5f6368; min-width: 52px;">${escapeHtml(horarioEstimado)}</span>
+        <span style="font-size: 12px; color: #888;">⏱ Estimado</span>
+      </li>
+    `
+    : (estimadoHoraMatch
+      ? `
+        <li style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          background: rgba(120,120,120,0.10);
+          border: 1px solid rgba(120,120,120,0.35);
+          margin-bottom: 8px;
+        ">
+          <span style="font-size: 22px; font-weight: 700; color: #5f6368; min-width: 52px;">${escapeHtml(estimadoHoraMatch[1])}</span>
+          <span style="font-size: 12px; color: #888;">⏱ Estimado</span>
+        </li>
+      `
+      : '');
+
   if (!horarios || horarios.length === 0) {
     if (mensajeComoLlegadaHtml) {
       return `
@@ -1725,6 +2478,19 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
         ${paradaInfoHtml}
         <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
         <ul style="list-style: none; padding: 0; margin: 0;">${mensajeComoLlegadaHtml}</ul>
+        ${debugHtml}
+        <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">${textoPie}</p>
+      `;
+    }
+
+    if (estimadoComoLlegadaHtml) {
+      return `
+        ${volverHtml}
+        <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
+        ${paradaInfoHtml}
+        <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
+        <ul style="list-style: none; padding: 0; margin: 0;">${estimadoComoLlegadaHtml}</ul>
+        ${debugHtml}
         <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">${textoPie}</p>
       `;
     }
@@ -1734,6 +2500,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
       <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
       ${paradaInfoHtml}
       <p style="font-size: 13px; color: #999; text-align: center; padding: 12px 0;">Sin datos de horarios disponibles.</p>
+      ${debugHtml}
     `;
   }
 
@@ -1769,6 +2536,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
     ${paradaInfoHtml}
     <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
     <ul style="list-style: none; padding: 0; margin: 0;">${items}</ul>
+    ${debugHtml}
     <p style="margin: 10px 0 0 0; font-size: 11px; color: #aaa; text-align: center;">${textoPie}</p>
   `;
 }
@@ -2007,7 +2775,13 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
   const data = await cargarParadasGeojson();
   if (!data) return;
 
-  const rutas = obtenerRutasDeLinea(data, ref);
+  let rutas = obtenerRutasDeLinea(data, ref);
+  if (!rutas.length) {
+    const refBase = normalizarLineaParaApi(ref);
+    if (refBase && refBase !== ref) {
+      rutas = obtenerRutasDeLinea(data, refBase);
+    }
+  }
   if (!rutas.length) {
     abrirBottomSheet('Recorrido', `<p>No se encontró el recorrido para la línea ${escapeHtml(ref)}.</p>`);
     return;
@@ -2045,17 +2819,19 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
     abrirBottomSheet(`Línea ${escapeHtml(ref)}`, renderEstadoCargaArribos(ref, name), 'linea');
 
     const paradaNombreBase = obtenerNombreParadaBase(paradaOrigen);
-    const arrivalsResp = await consultarArribosApi(ref, paradaNombreBase);
+    const arrivalsResp = await consultarArribosApi(ref, paradaNombreBase, { paradaFeature: paradaOrigen, rutas });
     const html = renderHorariosLlegada(
       arrivalsResp.horarios,
       ref,
       name,
-      0,
+      Number(arrivalsResp.headwaySecs) > 0 ? Number(arrivalsResp.headwaySecs) : 0,
       true,
       {
         tipoDatos: arrivalsResp.tipoDatos,
         paradaConsultada: arrivalsResp.paradaConsultada,
         mensajeApi: arrivalsResp.mensajeApi,
+        horarioEstimado: arrivalsResp.horarioEstimado,
+        debugArrivals: arrivalsResp.debugArrivals,
       }
     );
     abrirBottomSheet(`Línea ${escapeHtml(ref)}`, html, 'linea');
