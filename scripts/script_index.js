@@ -414,6 +414,7 @@ async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNomb
       false,
       {
         tipoDatos: arrivalsResp.tipoDatos,
+        apiFallo: Boolean(arrivalsResp.apiFallo),
         paradaConsultada: arrivalsResp.paradaConsultada,
         mensajeApi: arrivalsResp.mensajeApi,
         horarioEstimado: arrivalsResp.horarioEstimado,
@@ -1593,12 +1594,36 @@ async function buscarEnCorrespondencia(linea, nombre) {
   const corr = await cargarCorrespondenciaParadas();
   if (!corr || !linea || !nombre) return null;
 
+  const rawLinea = String(linea);
+
   // Normalizar variantes de clave ("440A" → "440-a", etc.)
-  const candidatosLinea = [String(linea), String(linea).toLowerCase(), String(linea).toUpperCase()];
-  const m = String(linea).match(/^(\d+)([A-Za-z])$/);
+  const candidatosLinea = [rawLinea, rawLinea.toLowerCase(), rawLinea.toUpperCase()];
+  const m = rawLinea.match(/^(\d+)([A-Za-z])$/);
   if (m) {
     candidatosLinea.push(`${m[1]}-${m[2].toLowerCase()}`);
     candidatosLinea.push(`${m[1]}-${m[2].toUpperCase()}`);
+  }
+
+  // Match flexible por lookup (ignora espacios, guiones y puntuación).
+  // Esto resuelve casos comunes: "TEO 2" vs "TEO2", "440A" vs "440-a".
+  const targetLookups = new Set();
+  const addLookup = (value) => {
+    const lk = normalizarLineaParaLookup(value);
+    if (lk) targetLookups.add(lk);
+  };
+  for (const c of candidatosLinea) addLookup(c);
+  addLookup(normalizarLineaParaApi(rawLinea));
+
+  let lineaKeyFlexible = '';
+  for (const k of Object.keys(corr)) {
+    const lk = normalizarLineaParaLookup(k);
+    if (lk && targetLookups.has(lk)) {
+      lineaKeyFlexible = k;
+      break;
+    }
+  }
+  if (lineaKeyFlexible && !candidatosLinea.includes(lineaKeyFlexible)) {
+    candidatosLinea.unshift(lineaKeyFlexible);
   }
 
   for (const lk of candidatosLinea) {
@@ -3228,6 +3253,7 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
       true,
       {
         tipoDatos: arrivalsResp.tipoDatos,
+        apiFallo: Boolean(arrivalsResp.apiFallo),
         paradaConsultada: arrivalsResp.paradaConsultada,
         mensajeApi: arrivalsResp.mensajeApi,
         horarioEstimado: arrivalsResp.horarioEstimado,
