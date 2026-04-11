@@ -6,8 +6,8 @@
   "description": "App de transporte público de San Juan, Argentina",
   "lang": "es",
   "dir": "auto",
-  "theme_color": "#000000",
-  "background_color": "#000000",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {
