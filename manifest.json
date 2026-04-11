@@ -1,6 +1,6 @@
 {
-  "name": "TransitSJ",
-  "short_name": "TransitSJ",
+  "name": "ZondaMov",
+  "short_name": "zondamov",
   "start_url": "/",
   "display": "standalone",
   "description": "App de transporte público de San Juan, Argentina",
