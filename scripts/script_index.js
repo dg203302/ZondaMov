@@ -66,6 +66,75 @@ const SHEET_DRAG_COLLAPSE_THRESHOLD = 90;
 const SHEET_DRAG_CLOSE_THRESHOLD = 90;
 const SHEET_DRAG_CLOSE_FROM_FULL_THRESHOLD = 220;
 
+// ─── Ads (bloque externo) ─────────────────────────────────────────────────
+// Se monta en momentos puntuales (cargando arribos / mostrando líneas de parada)
+// y se evita recargar el script o duplicar IDs en el DOM.
+const TSJ_ADS_TOKEN = 'da8bd74959eaf231b990a00938209088';
+const TSJ_ADS_SCRIPT_SRC = `https://pl29119669.profitablecpmratenetwork.com/${TSJ_ADS_TOKEN}/invoke.js`;
+const TSJ_ADS_SCRIPT_ID = `tsj-ads-script-${TSJ_ADS_TOKEN}`;
+const TSJ_ADS_WRAPPER_ID = `tsj-ads-wrapper-${TSJ_ADS_TOKEN}`;
+const TSJ_ADS_CONTAINER_ID = `container-${TSJ_ADS_TOKEN}`;
+const TSJ_ADS_PLACEHOLDER_ATTR = 'data-tsj-ads-placeholder';
+
+function asegurarScriptAdsCargado() {
+  if (document.getElementById(TSJ_ADS_SCRIPT_ID)) return;
+  const s = document.createElement('script');
+  s.id = TSJ_ADS_SCRIPT_ID;
+  s.async = true;
+  s.setAttribute('data-cfasync', 'false');
+  s.src = TSJ_ADS_SCRIPT_SRC;
+  document.body.appendChild(s);
+}
+
+function asegurarWrapperAds() {
+  let wrapper = document.getElementById(TSJ_ADS_WRAPPER_ID);
+  if (wrapper) return wrapper;
+
+  wrapper = document.createElement('div');
+  wrapper.id = TSJ_ADS_WRAPPER_ID;
+  wrapper.style.display = 'none';
+
+  const cont = document.createElement('div');
+  cont.id = TSJ_ADS_CONTAINER_ID;
+  wrapper.appendChild(cont);
+
+  document.body.appendChild(wrapper);
+  return wrapper;
+}
+
+function desmontarAdsDeBottomSheet() {
+  const wrapper = document.getElementById(TSJ_ADS_WRAPPER_ID);
+  if (!wrapper) return;
+  if (wrapper.parentElement && wrapper.parentElement !== document.body) {
+    document.body.appendChild(wrapper);
+  }
+  wrapper.style.display = 'none';
+}
+
+function montarAdsEnBottomSheetSiCorresponde() {
+  const bsContentEl = document.getElementById('bs-content');
+  if (!bsContentEl) {
+    desmontarAdsDeBottomSheet();
+    return;
+  }
+
+  const placeholder = bsContentEl.querySelector(`[${TSJ_ADS_PLACEHOLDER_ATTR}="${TSJ_ADS_TOKEN}"]`);
+  if (!(placeholder instanceof HTMLElement)) {
+    desmontarAdsDeBottomSheet();
+    return;
+  }
+
+  const wrapper = asegurarWrapperAds();
+
+  // Vaciar el placeholder y mover el wrapper (persistente) dentro.
+  placeholder.textContent = '';
+  placeholder.appendChild(wrapper);
+  wrapper.style.display = '';
+
+  // Cargar el script solo cuando se necesita el bloque.
+  asegurarScriptAdsCargado();
+}
+
 // ─── Planeación de ruta (estimaciones) ───────────────────────────────────────
 // Velocidades aproximadas (m/s). Se usan para puntuar por tiempo en lugar de solo distancia.
 const WALKING_SPEED_M_S = 1.35; // ~4.9 km/h
@@ -226,6 +295,9 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
   const overlay = document.getElementById('bottom-sheet-overlay');
   const favBtn = document.getElementById('bs-fav-btn');
   const planBtn = document.getElementById('bs-plan-btn');
+
+  // Evita que el wrapper del anuncio se destruya al hacer bsContent.innerHTML = ...
+  desmontarAdsDeBottomSheet();
   
   if (bsTitle) bsTitle.textContent = titulo;
   if (bsSubtitle) {
@@ -234,6 +306,9 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
     bsSubtitle.style.display = s ? '' : 'none';
   }
   if (bsContent) bsContent.innerHTML = inyectarFilasNavegacionBottomSheet(titulo, tipo, contenidoHtml);
+
+  // Montar anuncio si el HTML incluyó el placeholder.
+  montarAdsEnBottomSheetSiCorresponde();
   
   // Limpiar estilos transform previos
   if (bs) {
@@ -2898,6 +2973,10 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
       `
       : '');
 
+
+  // Bloque de anuncios (igual que en el spinner y lista de líneas)
+  const adsHtml = `<div class="tsj-ad-slot" data-tsj-ads-placeholder="da8bd74959eaf231b990a00938209088"></div>`;
+
   if (!horarios || horarios.length === 0) {
     if (mensajeComoLlegadaHtml) {
       return `
@@ -2906,6 +2985,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
         ${paradaInfoHtml}
         <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
         <ul style="list-style: none; padding: 0; margin: 0;">${mensajeComoLlegadaHtml}</ul>
+        ${adsHtml}
         <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
       `;
     }
@@ -2917,6 +2997,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
         ${paradaInfoHtml}
         <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
         <ul style="list-style: none; padding: 0; margin: 0;">${estimadoComoLlegadaHtml}</ul>
+        ${adsHtml}
         <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
       `;
     }
@@ -2925,6 +3006,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
       ${volverHtml}
       <p style="margin-bottom: 12px; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
       ${paradaInfoHtml}
+      ${adsHtml}
       <p style="font-size: 14px; color: var(--text-muted, #999); text-align: center; padding: 14px 0;">Sin datos de horarios disponibles.</p>
     `;
   }
@@ -2961,6 +3043,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
     ${paradaInfoHtml}
     <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
     <ul style="list-style: none; padding: 0; margin: 0;">${items}</ul>
+    ${adsHtml}
     <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
   `;
 }
@@ -2973,6 +3056,7 @@ function renderEstadoCargaArribos(lineaRef, lineaNombre) {
       <div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>
       <p class="bottom-sheet-loading-title">Consultando arribos...</p>
       <p class="bottom-sheet-loading-subtitle">${titulo}${detalle}</p>
+      <div class="tsj-ad-slot" ${TSJ_ADS_PLACEHOLDER_ATTR}="${TSJ_ADS_TOKEN}"></div>
     </div>
   `;
 }
@@ -3297,6 +3381,7 @@ function mostrarLineasEnContenedorParadas(feature) {
   
   const html = `
     <ul class="lineas-list">${itemsHtml}</ul>
+    <div class="tsj-ad-slot" ${TSJ_ADS_PLACEHOLDER_ATTR}="${TSJ_ADS_TOKEN}"></div>
     ${listaParadasHtml}
   `;
   window._currentFeature = feature;
