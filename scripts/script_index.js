@@ -5,6 +5,7 @@ const contLineasFavs = document.getElementById('lineas_favs');
 let ubicacion = null;
 let leafletMap = null;
 let userMarker = null;
+let userMarkerHalo = null;
 let paradasGeojson = null;
 let paradasLayer = null;
 let paradasPuntos = null;
@@ -14,6 +15,7 @@ let recorridoActivo = null;
 let paradasRecorrido = null;
 let paradasRecorridoMarkers = null;
 let seleccionParadaLayer = null;
+let _planeoParadasIndex = null; // Map(paradaId -> { feature, lat, lng }) para listas de paradas en planeo
 let _indiceParadasApi = null; // Cache de nombres canónicos para arrivals API
 let _paradasPorLinea = null; // Cache de Datos/paradas_por_linea.json
 let _urlsPorLinea = null; // Cache de Datos/urls_por_linea.json
@@ -22,6 +24,18 @@ let _correspondenciaParadas = null; // Cache de Datos/correspondencia_paradas.js
 let arrivalsAbortController = null; // Permite abortar/renovar consultas de arrivals
 let _lastParadasPorLineaError = ''; // Último error al cargar paradas_por_linea.json (para diagnóstico)
 let _lastUrlsPorLineaError = ''; // Último error al cargar urls_por_linea.json (para diagnóstico)
+
+// ─── Planeo de ruta (opciones / trasbordos) ─────────────────────────────────
+let _routePlanTarget = null; // { feature, nombre, lat, lng, stopId }
+let _indiceLineasPorStopId = null; // Map(stopId -> Set(refs)) (legacy; puede no coincidir con GeoJSON)
+let _indiceParadasPuntosPorId = null; // Map(stopId -> { lat, lng, feature })
+let _stopIdsSetPorLinea = null; // Map(ref -> Set(stopIds)) (legacy)
+let _stopsIndexPorLinea = null; // Map(ref -> { ids:Set<string>, stops:Array<{id,lat,lng,feature}> })
+let _routePlanLastAllowTransfer = false;
+const ROUTE_NEARBY_STOPS_RADIUS_M = 1200;
+const ROUTE_NEARBY_STOPS_MAX = 60;
+const ROUTE_MAX_OPCIONES_DIRECTAS = 10;
+const ROUTE_MAX_OPCIONES_TRASBORDO = 10;
 
 const JSON_VERSION = '?v=3';
 const PARADAS_GEOJSON_URL = encodeURI('Datos/DATOS SAN JUAN.geojson');
@@ -57,15 +71,15 @@ const SHEET_DRAG_CLOSE_FROM_FULL_THRESHOLD = 220;
 const WALKING_SPEED_M_S = 1.35; // ~4.9 km/h
 const BUS_SPEED_M_S = 5.0; // ~18 km/h (estimación conservadora)
 const DESTINO_UMBRAL_CORTE_M = 90; // cortar tramo si pasa a <= 90m del destino
-const WAIT_FALLBACK_SECS = 12 * 60; // si no hay frecuencia disponible, penaliza ~12 min
-const DEFAULT_HEADWAY_SECS = 15 * 60; // horario aproximado por defecto: cada ~15 min
+
 
 // Long press en mapa para guardar ubicación
 const MAP_LONG_PRESS_MS = 650;
 const MAP_LONG_PRESS_MOVE_TOL_M = 25;
 let _longPressMapSetupDone = false;
 
-const PARADA_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1kb3QtaWNvbiBsdWNpZGUtZG90Ij48Y2lyY2xlIGN4PSIxMi4xIiBjeT0iMTIuMSIgcj0iMSIvPjwvc3ZnPg==';
+const PARADA_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ffffff" stroke="#007BFF" stroke-width="3"/><circle cx="12" cy="12" r="2.5" fill="#007BFF"/></svg>';
+const PARADA_ICON_URL = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(PARADA_ICON_SVG)}`;
 const USER_WAYPOINT_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGluLWljb24gbHVjaWRlLW1hcC1waW4iPjxwYXRoIGQ9Ik0yMCAxMGMwIDQuOTkzLTUuNTM5IDEwLjE5My03LjM5OSAxMS43OTlhMSAxIDAgMCAxLTEuMjAyIDBDOS41MzkgMjAuMTkzIDQgMTQuOTkzIDQgMTBhOCA4IDAgMCAxIDE2IDAiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSIzIi8+PC9zdmc+';
 let _iconoParadaLeaflet = null;
 let _iconoUserWaypointLeaflet = null;
@@ -76,11 +90,43 @@ function obtenerIconoParadaLeaflet() {
 
   _iconoParadaLeaflet = L.icon({
     iconUrl: PARADA_ICON_URL,
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28],
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -11],
   });
   return _iconoParadaLeaflet;
+}
+
+function asegurarMarcadorUsuario(lat, lng) {
+  if (!leafletMap || typeof L === 'undefined') return;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+  const latLng = [lat, lng];
+
+  if (!userMarkerHalo) {
+    userMarkerHalo = L.circleMarker(latLng, {
+      radius: 18,
+      weight: 0,
+      color: '#007BFF',
+      fillColor: '#007BFF',
+      fillOpacity: 0.18,
+      interactive: false,
+    }).addTo(leafletMap);
+  } else {
+    userMarkerHalo.setLatLng(latLng);
+  }
+
+  if (!userMarker) {
+    userMarker = L.circleMarker(latLng, {
+      radius: 7,
+      weight: 3,
+      color: '#ffffff',
+      fillColor: '#007BFF',
+      fillOpacity: 1,
+    }).addTo(leafletMap);
+  } else {
+    userMarker.setLatLng(latLng);
+  }
 }
 
 function obtenerIconoUserWaypointLeaflet() {
@@ -138,16 +184,56 @@ function getBottomSheetState() {
   return state === BOTTOM_SHEET_STATE_FULL ? BOTTOM_SHEET_STATE_FULL : BOTTOM_SHEET_STATE_HALF;
 }
 
-function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
+function deberiaMostrarBotonRegresarPlanearRuta(titulo) {
+  if (!recorridoActivo || !recorridoActivo.planned) return false;
+  if (!_routePlanTarget) return false;
+  const t = String(titulo || '').trim().toLowerCase();
+  if (t === 'opciones de ruta') return false;
+  return true;
+}
+
+function inyectarFilasNavegacionBottomSheet(titulo, tipo, contenidoHtml) {
+  const html = String(contenidoHtml || '');
+  const navRows = [];
+  const sheetTipo = String(tipo || '').trim();
+
+  // En vistas de arribos (tipo='linea'), NO mostrar 'Regresar a planear ruta'
+  // para evitar doble navegación: ahí debe primar 'Volver a paradas'.
+  const showBackPlanner = sheetTipo !== 'linea'
+    && deberiaMostrarBotonRegresarPlanearRuta(titulo)
+    && !html.includes('data-route-back="planner"');
+  const showBackStops = Boolean(recorridoActivo?.planned)
+    && sheetTipo === 'linea'
+    && !html.includes('data-route-back="stops"');
+
+  if (showBackPlanner) {
+    navRows.push('<li><button type="button" class="btn-nav-row" data-route-back="planner">← Regresar a planear ruta</button></li>');
+  }
+  if (showBackStops) {
+    navRows.push('<li><button type="button" class="btn-nav-row" data-route-back="stops">← Volver a paradas</button></li>');
+  }
+
+  if (!navRows.length) return html;
+  const extraClass = navRows.length === 2 ? ' bs-nav-rows--two' : '';
+  return `<ul class="bs-nav-rows${extraClass}">${navRows.join('')}</ul>${html}`;
+}
+
+function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
   const bs = document.getElementById('bottom-sheet');
   const bsTitle = document.getElementById('bs-title');
+  const bsSubtitle = document.getElementById('bs-subtitle');
   const bsContent = document.getElementById('bs-content');
   const overlay = document.getElementById('bottom-sheet-overlay');
   const favBtn = document.getElementById('bs-fav-btn');
   const planBtn = document.getElementById('bs-plan-btn');
   
   if (bsTitle) bsTitle.textContent = titulo;
-  if (bsContent) bsContent.innerHTML = contenidoHtml;
+  if (bsSubtitle) {
+    const s = typeof subtitulo === 'string' ? subtitulo.trim() : '';
+    bsSubtitle.textContent = s;
+    bsSubtitle.style.display = s ? '' : 'none';
+  }
+  if (bsContent) bsContent.innerHTML = inyectarFilasNavegacionBottomSheet(titulo, tipo, contenidoHtml);
   
   // Limpiar estilos transform previos
   if (bs) {
@@ -198,7 +284,7 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
     if (tipo === 'parada') {
       planBtn.style.display = '';
       planBtn.onclick = () => {
-        void verLineaMasCercanaHastaParadaSeleccionada(window._currentFeature || null);
+        iniciarPlaneoRutaHastaParadaSeleccionada(window._currentFeature || null);
       };
     } else {
       planBtn.style.display = 'none';
@@ -207,11 +293,77 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '') {
   }
 }
 
-function cerrarBottomSheet() {
+let _confirmCloseRouteOnConfirm = null;
+let _confirmCloseRouteKeydownBound = false;
+
+function ocultarModalConfirmCerrarRuta() {
+  const overlay = document.getElementById('confirm-close-route-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  overlay.setAttribute('aria-hidden', 'true');
+  _confirmCloseRouteOnConfirm = null;
+}
+
+function mostrarModalConfirmCerrarRuta(onConfirm) {
+  const overlay = document.getElementById('confirm-close-route-overlay');
+  const okBtn = document.getElementById('confirm-close-route-ok');
+  if (!overlay || !okBtn) {
+    // Fallback defensivo por si el markup no existe.
+    const ok = confirm('Hay un recorrido planeado en el mapa. ¿Querés cerrarlo?');
+    if (ok && typeof onConfirm === 'function') onConfirm();
+    return;
+  }
+  _confirmCloseRouteOnConfirm = typeof onConfirm === 'function' ? onConfirm : null;
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  const cancelBtn = document.getElementById('confirm-close-route-cancel');
+  setTimeout(() => {
+    (cancelBtn || okBtn).focus?.();
+  }, 0);
+}
+
+function setupModalConfirmCerrarRuta() {
+  const overlay = document.getElementById('confirm-close-route-overlay');
+  const cancelBtn = document.getElementById('confirm-close-route-cancel');
+  const okBtn = document.getElementById('confirm-close-route-ok');
+  if (!overlay || !cancelBtn || !okBtn) return;
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'confirm-close-route-overlay') {
+      ocultarModalConfirmCerrarRuta();
+    }
+  });
+  cancelBtn.addEventListener('click', () => {
+    ocultarModalConfirmCerrarRuta();
+  });
+  okBtn.addEventListener('click', () => {
+    const cb = _confirmCloseRouteOnConfirm;
+    ocultarModalConfirmCerrarRuta();
+    if (typeof cb === 'function') cb();
+  });
+
+  if (!_confirmCloseRouteKeydownBound) {
+    _confirmCloseRouteKeydownBound = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const active = document.getElementById('confirm-close-route-overlay')?.classList.contains('active');
+      if (active) ocultarModalConfirmCerrarRuta();
+    });
+  }
+}
+
+function cerrarBottomSheet(force = false) {
   const bs = document.getElementById('bottom-sheet');
   const overlay = document.getElementById('bottom-sheet-overlay');
   const favBtn = document.getElementById('bs-fav-btn');
   const planBtn = document.getElementById('bs-plan-btn');
+
+  // Si hay un recorrido planeado activo, confirmar antes de cerrarlo.
+  if (!force && recorridoActivo && recorridoActivo.planned) {
+    mostrarModalConfirmCerrarRuta(() => cerrarBottomSheet(true));
+    return;
+  }
   
   // Limpiar estilos y clases
   if (bs) {
@@ -235,6 +387,89 @@ function cerrarBottomSheet() {
   // Limpiar recorrido activo al cerrar
   limpiarRecorrido();
   volverVistaGeneral();
+}
+
+async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNombre = '') {
+  const ref = String(lineaRef || '').trim();
+  if (!ref) return;
+  const name = String(lineaNombre || '').trim();
+
+  const paradaNombreBase = obtenerNombreParadaBase(paradaFeature);
+  const subtitulo = paradaNombreBase ? `Parada: ${paradaNombreBase}` : '';
+
+  try {
+    const loadingHtml = renderEstadoCargaArribos(ref, name);
+    abrirBottomSheet(`Línea ${ref}`, loadingHtml, 'linea', subtitulo);
+  } catch {
+    // noop
+  }
+
+  try {
+    const arrivalsResp = await consultarArribosApi(ref, paradaNombreBase, { paradaFeature });
+    const html = renderHorariosLlegada(
+      arrivalsResp.horarios,
+      ref,
+      name,
+      Number(arrivalsResp.headwaySecs) > 0 ? Number(arrivalsResp.headwaySecs) : 0,
+      false,
+      {
+        tipoDatos: arrivalsResp.tipoDatos,
+        paradaConsultada: arrivalsResp.paradaConsultada,
+        mensajeApi: arrivalsResp.mensajeApi,
+        horarioEstimado: arrivalsResp.horarioEstimado,
+        debugArrivals: arrivalsResp.debugArrivals,
+      }
+    );
+    abrirBottomSheet(`Línea ${ref}`, html, 'linea', subtitulo);
+  } catch {
+    const errHtml = '<p style="text-align:center; color: var(--text-secondary,#666);">No se pudieron consultar los arribos.</p>';
+    abrirBottomSheet(`Línea ${ref}`, errHtml, 'linea', subtitulo);
+  }
+}
+
+async function dibujarParadasDeLineaCercanasAlOrigen(relIds, origenLat, origenLng, lineaRef, lineaNombre = '', opts = {}) {
+  if (!leafletMap || typeof L === 'undefined') return;
+  if (!relIds || relIds.size === 0) return;
+
+  const latO = Number(origenLat);
+  const lngO = Number(origenLng);
+  if (!Number.isFinite(latO) || !Number.isFinite(lngO)) return;
+
+  const layerParadas = asegurarParadasLayer();
+  if (!layerParadas) return;
+  const shouldClear = !(opts && typeof opts === 'object' && opts.clear === false);
+  if (shouldClear) layerParadas.clearLayers();
+
+  const puntos = await cargarParadasPuntos();
+  if (!Array.isArray(puntos) || puntos.length === 0) return;
+
+  const originLL = L.latLng(latO, lngO);
+  const cercanas = [];
+  for (const p of puntos) {
+    if (!p || !p.feature) continue;
+    if (!featurePerteneceAAlgunaRelacion(p.feature, relIds)) continue;
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+    const d = leafletMap.distance(originLL, L.latLng(p.lat, p.lng));
+    if (d <= RADIO_PARADAS_METROS) {
+      cercanas.push({ feature: p.feature, lat: p.lat, lng: p.lng, d });
+    }
+  }
+
+  cercanas.sort((a, b) => a.d - b.d);
+  const seleccion = cercanas.slice(0, MAX_PARADAS_MOSTRAR);
+
+  for (const item of seleccion) {
+    const icon = obtenerIconoParadaLeaflet();
+    const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layerParadas);
+    marker.on('click', () => {
+      // Consultar arribos directamente al tocar la parada.
+      const ref = String(lineaRef || '').trim() || String(recorridoActivo?.ref || '').trim();
+      const name = String(lineaNombre || '').trim() || String(recorridoActivo?.name || '').trim();
+      void mostrarArribosParaParadaYLinea(item.feature, ref, name);
+    });
+  }
+
+  return seleccion;
 }
 
 function abrirBottomSheetFavoritos() {
@@ -268,6 +503,11 @@ function setupBottomSheetDrag() {
   let startY = 0;
   let currentY = 0;
   let startState = BOTTOM_SHEET_STATE_HALF;
+  let startHeightPx = 0;
+
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const getHalfHeightPx = () => Math.round((window.innerHeight || 0) * 0.5);
+  const getFullHeightPx = () => Math.round((window.innerHeight || 0) * 1.0);
 
   const resolveTargetState = (initialState, deltaY) => {
     if (initialState === BOTTOM_SHEET_STATE_FULL) {
@@ -291,6 +531,7 @@ function setupBottomSheetDrag() {
     startY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
     currentY = 0;
     startState = getBottomSheetState();
+    startHeightPx = Math.round(bottomSheet.getBoundingClientRect().height || 0);
     bottomSheet.classList.add('dragging');
     // Prevenir selección de texto durante el drag
     document.body.style.userSelect = 'none';
@@ -304,7 +545,18 @@ function setupBottomSheetDrag() {
     if (!isDragging) return;
     const clientY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
     currentY = clientY - startY;
-    bottomSheet.style.transform = `translateY(${currentY}px)`;
+
+    // En lugar de mover el sheet (que deja hueco abajo), ajustar su altura.
+    // deltaY < 0 => arrastra hacia arriba => aumenta altura
+    // deltaY > 0 => arrastra hacia abajo => reduce altura
+    const halfPx = getHalfHeightPx();
+    const fullPx = getFullHeightPx();
+    const minPx = startState === BOTTOM_SHEET_STATE_HALF ? Math.max(140, halfPx - 260) : halfPx;
+    const maxPx = Math.max(fullPx, halfPx);
+
+    const nextHeight = clamp(startHeightPx - currentY, minPx, maxPx);
+    bottomSheet.style.height = `${nextHeight}px`;
+    bottomSheet.style.transform = '';
   };
 
   const handleDragEnd = () => {
@@ -321,17 +573,27 @@ function setupBottomSheetDrag() {
     if (targetState === 'close') {
       bottomSheet.style.transform = '';
       bottomSheet.style.transition = '';
+      bottomSheet.style.height = '';
       cerrarBottomSheet();
     } else {
       setBottomSheetState(targetState);
-      bottomSheet.style.transition = 'transform 0.2s ease';
+      // Animar el ajuste de altura al estado final.
+      const halfPx = getHalfHeightPx();
+      const fullPx = getFullHeightPx();
+      const targetHeight = targetState === BOTTOM_SHEET_STATE_FULL ? fullPx : halfPx;
+      bottomSheet.style.transition = 'height 0.2s ease';
+      bottomSheet.style.height = `${targetHeight}px`;
       bottomSheet.style.transform = '';
       setTimeout(() => {
         bottomSheet.classList.remove('dragging');
+        // Volver a control por CSS (responsive) luego de la animación.
+        bottomSheet.style.transition = '';
+        bottomSheet.style.height = '';
       }, 200);
     }
     
     currentY = 0;
+    startHeightPx = 0;
   };
 
   // Remover listeners previos para evitar duplicados
@@ -366,10 +628,12 @@ function setupBottomSheetDrag() {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     setupBottomSheetDrag();
+    setupModalConfirmCerrarRuta();
     setupSidepanelConfiguracion();
   });
 } else {
   setupBottomSheetDrag();
+  setupModalConfirmCerrarRuta();
   setupSidepanelConfiguracion();
 }
 
@@ -675,6 +939,153 @@ if (bsContent) {
     const target = ev.target;
     if (!(target instanceof HTMLElement)) return;
 
+    const btnBackStops = target.closest('button[data-route-back="stops"]');
+    if (btnBackStops instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      mostrarParadasPlaneadasEnBottomSheet();
+      return;
+    }
+
+    const btnBackPlanner = target.closest('button[data-route-back="planner"]');
+    if (btnBackPlanner instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      void mostrarOpcionesRutaParaTarget(true);
+      return;
+    }
+
+    const btnBackOpciones = target.closest('button[data-route-back="options"]');
+    if (btnBackOpciones instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      void mostrarOpcionesRutaParaTarget(_routePlanLastAllowTransfer);
+      return;
+    }
+
+    const btnPref = target.closest('button[data-route-pref]');
+    if (btnPref instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const pref = (btnPref.dataset.routePref || '').toLowerCase();
+      const permitirTrasbordo = pref === 'transfer' || pref === 'trasbordo' || pref === 'si' || pref === '1';
+      void mostrarOpcionesRutaParaTarget(permitirTrasbordo);
+      return;
+    }
+
+    const btnLineaOpcion = target.closest('button[data-route-line-ref]');
+    if (btnLineaOpcion instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const ref = (btnLineaOpcion.dataset.routeLineRef || '').trim();
+      const nombre = (btnLineaOpcion.dataset.routeLineName || '').trim();
+      const latD = _routePlanTarget?.lat;
+      const lngD = _routePlanTarget?.lng;
+      const nombreD = _routePlanTarget?.nombre || '';
+      if (!ref || !Number.isFinite(latD) || !Number.isFinite(lngD)) return;
+      try {
+        abrirBottomSheet(
+          'Ruta',
+          '<div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">'
+            + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
+            + '<p class="bottom-sheet-loading-title">Cargando paradas...</p>'
+            + '</div>',
+          '',
+          `Línea ${escapeHtml(ref)}`,
+        );
+      } catch {
+        // noop
+      }
+      void (async () => {
+        await verLineaMasCercanaDesdeActualHastaDestino(latD, lngD, nombreD, [ref]);
+        mostrarParadasPlaneoActualEnBottomSheet({ ref, name: nombre });
+      })();
+      return;
+    }
+
+    const btnCombo = target.closest('button[data-route-combo="1"][data-linea-a][data-linea-b]');
+    if (btnCombo instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const a = (btnCombo.dataset.lineaA || '').trim();
+      const b = (btnCombo.dataset.lineaB || '').trim();
+      const tLat = Number(btnCombo.dataset.transferLat);
+      const tLng = Number(btnCombo.dataset.transferLng);
+      const tName = btnCombo.dataset.transferName || 'trasbordo';
+      if (!a || !b || !Number.isFinite(tLat) || !Number.isFinite(tLng)) return;
+
+      const destNombre = _routePlanTarget?.nombre || '';
+      const destLat = _routePlanTarget?.lat;
+      const destLng = _routePlanTarget?.lng;
+      if (!Number.isFinite(destLat) || !Number.isFinite(destLng)) return;
+
+      try {
+        abrirBottomSheet(
+          'Ruta',
+          '<div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">'
+            + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
+            + '<p class="bottom-sheet-loading-title">Calculando trasbordo...</p>'
+            + '</div>',
+          '',
+          tName ? `Trasbordo en: ${escapeHtml(String(tName))}` : '',
+        );
+      } catch {
+        // noop
+      }
+
+      void planearRutaConTrasbordo({
+        lineaA: a,
+        lineaB: b,
+        transfer: { lat: tLat, lng: tLng, name: tName },
+        destino: { lat: Number(destLat), lng: Number(destLng), nombre: String(destNombre || '') },
+      });
+      return;
+    }
+
+    const btnPlaneoStop = target.closest('button[data-plane-stop-id][data-plane-line-ref]');
+    if (btnPlaneoStop instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const stopId = (btnPlaneoStop.dataset.planeStopId || '').trim();
+      const lineaRef = (btnPlaneoStop.dataset.planeLineRef || '').trim();
+      const lineaName = (btnPlaneoStop.dataset.planeLineName || '').trim();
+      if (!stopId || !lineaRef) return;
+      const info = _planeoParadasIndex?.get(stopId) || null;
+      if (!info || !info.feature) return;
+
+      try {
+        if (leafletMap && Number.isFinite(info.lat) && Number.isFinite(info.lng)) {
+          leafletMap.setView([info.lat, info.lng], leafletMap.getZoom());
+        }
+      } catch {
+        // noop
+      }
+
+      void mostrarArribosParaParadaYLinea(info.feature, lineaRef, lineaName);
+      return;
+    }
+
+    const btnLeg = target.closest('button[data-route-leg][data-linea-ref]');
+    if (btnLeg instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const leg = btnLeg.dataset.routeLeg || '';
+      const ref = (btnLeg.dataset.lineaRef || '').trim();
+      if (!ref) return;
+
+      if (leg === '1') {
+        const toLat = Number(btnLeg.dataset.toLat);
+        const toLng = Number(btnLeg.dataset.toLng);
+        if (!Number.isFinite(toLat) || !Number.isFinite(toLng)) return;
+        void verLineaMasCercanaDesdeActualHastaDestino(toLat, toLng, 'trasbordo', [ref]);
+        return;
+      }
+
+      if (leg === '2') {
+        const fromLat = Number(btnLeg.dataset.fromLat);
+        const fromLng = Number(btnLeg.dataset.fromLng);
+        const destLat = _routePlanTarget?.lat;
+        const destLng = _routePlanTarget?.lng;
+        const destNombre = _routePlanTarget?.nombre || '';
+        if (!Number.isFinite(fromLat) || !Number.isFinite(fromLng)) return;
+        if (!Number.isFinite(destLat) || !Number.isFinite(destLng)) return;
+        void verLineaMasCercanaDesdeActualHastaDestino(destLat, destLng, destNombre, [ref], { lat: fromLat, lng: fromLng });
+        return;
+      }
+    }
+
     const btnGuardarLugar = target.closest('button[data-save-lugar="1"][data-lugar-nombre][data-lat][data-lng]');
     if (btnGuardarLugar instanceof HTMLButtonElement) {
       ev.stopPropagation();
@@ -800,10 +1211,13 @@ async function centrarEnLugarGuardado({ nombre, lat, lng }) {
   layerSel?.clearLayers();
 
   if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-    const marker = L.marker([latNum, lngNum]).bindPopup(escapeHtml(nombre || 'Lugar guardado')).addTo(layerSel);
+    // Para lugares guardados: mostrar el mismo "punto" que el long-press (sin pin ni texto)
+    L.circleMarker(
+      [latNum, lngNum],
+      { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 },
+    ).addTo(layerSel);
     const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
     leafletMap.setView([latNum, lngNum], Number.isFinite(z) ? z : ZOOM_CALLE);
-    marker.openPopup();
   }
 
   try {
@@ -961,6 +1375,7 @@ function obtenerEtiquetaParada(feature) {
 function renderListaParadasRecorrido({ mostrarTodas = false } = {}) {
   if (!Array.isArray(paradasRecorrido) || paradasRecorrido.length === 0) return '';
 
+  const total = paradasRecorrido.length;
   const listaParadas = mostrarTodas
     ? paradasRecorrido
     : paradasRecorrido.slice(0, MAX_PARADAS_RECORRIDO);
@@ -968,17 +1383,20 @@ function renderListaParadasRecorrido({ mostrarTodas = false } = {}) {
   const items = listaParadas
     .map((p, idx) => {
       const paradaId = p.paradaId || obtenerIdParada(p.feature);
-      const etiqueta = obtenerEtiquetaParada(p.feature);
-      return `<li><button type="button" data-parada-id="${escapeHtml(paradaId)}">${escapeHtml(etiqueta)} (${idx + 1})</button></li>`;
+      const calle = p?.feature?.properties?.['addr:street'];
+      const etiqueta = (typeof calle === 'string' && calle.trim()) ? calle.trim() : obtenerEtiquetaParada(p.feature);
+      return `<li><button type="button" class="btn-recorrido-parada" data-parada-id="${escapeHtml(paradaId)}">${escapeHtml(etiqueta)}</button></li>`;
     })
     .join('');
 
-  const total = paradasRecorrido.length;
-  const subtitulo = mostrarTodas
-    ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #666;">${total} paradas en este recorrido</p>`
-    : '';
+  const indice = `
+    <div class="recorrido-indice">
+      <span class="recorrido-indice-left">Paradas del recorrido</span>
+      <span class="recorrido-indice-right">${total} paradas</span>
+    </div>
+  `;
 
-  return `<h4>Paradas del recorrido</h4>${subtitulo}<ul>${items}</ul>`;
+  return `${indice}<ul class="recorrido-stops">${items}</ul>`;
 }
 
 function obtenerNombreParadaBase(feature) {
@@ -2356,24 +2774,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
   const horarioEstimado = typeof opts?.horarioEstimado === 'string' ? opts.horarioEstimado.trim() : '';
 
   const volverHtml = mostrarVolverParada
-    ? `
-      <button type="button" data-volver-parada="1" style="
-        width: 100%;
-        padding: 12px 14px;
-        border-radius: 10px;
-        border: 1px solid;
-        background: var(--btn-back-bg, rgba(0,0,0,0.03));
-        color: var(--btn-back-text, #333);
-        border-color: var(--btn-back-border, rgba(0,0,0,0.12));
-        font-weight: 600;
-        font-size: 13px;
-        margin: 0 0 12px 0;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      " class="btn-volver-parada">
-        ← Volver a líneas de la parada
-      </button>
-    `
+    ? '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>'
     : '';
 
   const paradaInfoHtml = opts?.paradaConsultada
@@ -2781,7 +3182,8 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
     }
   }
   if (!rutas.length) {
-    abrirBottomSheet('Recorrido', `<p>No se encontró el recorrido para la línea ${escapeHtml(ref)}.</p>`);
+    const tituloLinea = ref ? `Línea ${escapeHtml(ref)}` : (name ? escapeHtml(name) : 'Línea');
+    abrirBottomSheet(tituloLinea, `<p>No se encontró el recorrido para esta línea.</p>`);
     return;
   }
 
@@ -2835,14 +3237,12 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
     abrirBottomSheet(`Línea ${escapeHtml(ref)}`, html, 'linea');
   } else {
     // Sin parada de origen: mostrar recorrido con paradas (comportamiento anterior)
-    const titulo = ref ? `Línea ${escapeHtml(ref)}` : 'Línea';
-    const detalle = name ? ` — ${escapeHtml(name)}` : '';
+    const tituloLinea = ref ? `Línea ${escapeHtml(ref)}` : (name ? escapeHtml(name) : 'Línea');
     const listaParadasHtml = renderListaParadasRecorrido({ mostrarTodas: true });
     const html = `
-      <p style="margin-bottom: 8px; font-size: 14px; color: #666;">${titulo}${detalle}</p>
       ${listaParadasHtml}
     `;
-    abrirBottomSheet('Recorrido', html, 'linea');
+    abrirBottomSheet(tituloLinea, html, 'linea');
   }
 }
 
@@ -3027,8 +3427,6 @@ async function actualizarParadasSegunVista() {
 
   if (zoomEsSuficiente()) {
     await dibujarParadasEnVista();
-  } else if (ubicacion) {
-    await dibujarParadasCercanas(ubicacion);
   } else {
     const layer = asegurarParadasLayer();
     layer?.clearLayers();
@@ -3118,10 +3516,7 @@ function cargarLF(coords, zoomObjetivo = null){
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(leafletMap);
 
-    {
-      const icon = obtenerIconoUserWaypointLeaflet();
-      userMarker = L.marker([coords.lat, coords.lng], icon ? { icon } : undefined).addTo(leafletMap);
-    }
+    asegurarMarcadorUsuario(coords.lat, coords.lng);
     try {
       userMarker.off('click');
       userMarker.on('click', () => {
@@ -3137,9 +3532,7 @@ function cargarLF(coords, zoomObjetivo = null){
     setupLongPressGuardarUbicacionEnMapa();
   }
 
-  if (userMarker) {
-    userMarker.setLatLng([coords.lat, coords.lng]);
-  }
+  asegurarMarcadorUsuario(coords.lat, coords.lng);
 
   if (typeof zoomObjetivo === 'number') {
     leafletMap.setView([coords.lat, coords.lng], zoomObjetivo);
@@ -3300,8 +3693,125 @@ function abrirModalBusqueda() {
   const modal = document.getElementById('search-modal');
   if (modal) {
     modal.classList.add('active');
+    document.querySelector('.search-bar-container')?.classList.add('is-open');
     posicionarModalBusqueda();
-    document.getElementById('search-input')?.focus();
+    const input = document.getElementById('search-input');
+    input?.focus();
+    const q = String(input?.value || '').trim();
+    if (!q) renderHistorialBusqueda();
+  }
+}
+
+const STORAGE_SEARCH_HISTORY_KEY = 'transitsj_search_history_v1';
+const MAX_SEARCH_HISTORY = 5;
+
+function obtenerHistorialBusqueda() {
+  const arr = leerJsonLocalStorage(STORAGE_SEARCH_HISTORY_KEY, []);
+  return Array.isArray(arr) ? arr : [];
+}
+
+function guardarHistorialBusqueda(arr) {
+  guardarJsonLocalStorage(STORAGE_SEARCH_HISTORY_KEY, Array.isArray(arr) ? arr : []);
+}
+
+function claveHistorialBusqueda(entry) {
+  const tipo = String(entry?.tipo || '').toLowerCase();
+  if (tipo === 'linea') {
+    const ref = String(entry?.ref || '').trim();
+    return ref ? `linea:${ref}` : 'linea:?';
+  }
+  const lat = Number(entry?.lat);
+  const lng = Number(entry?.lng);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return `calle:${lat.toFixed(6)},${lng.toFixed(6)}`;
+  const nombre = String(entry?.nombre || '').trim();
+  return `calle:${nombre.toLowerCase()}`;
+}
+
+function agregarAHistorialBusqueda(entry) {
+  if (!entry) return;
+  const tipo = String(entry?.tipo || '').toLowerCase();
+  if (tipo !== 'linea' && tipo !== 'calle') return;
+
+  const next = obtenerHistorialBusqueda();
+  const key = claveHistorialBusqueda(entry);
+  const sinDup = next.filter((x) => claveHistorialBusqueda(x) !== key);
+  sinDup.unshift({
+    tipo,
+    ref: tipo === 'linea' ? String(entry?.ref || '').trim() : undefined,
+    name: tipo === 'linea' ? String(entry?.name || '').trim() : undefined,
+    nombre: tipo === 'calle' ? String(entry?.nombre || '').trim() : undefined,
+    lat: Number.isFinite(Number(entry?.lat)) ? Number(entry?.lat) : undefined,
+    lng: Number.isFinite(Number(entry?.lng)) ? Number(entry?.lng) : undefined,
+    ts: Date.now(),
+  });
+
+  while (sinDup.length > MAX_SEARCH_HISTORY) sinDup.pop();
+  guardarHistorialBusqueda(sinDup);
+}
+
+function renderHistorialBusqueda() {
+  const resultsDiv = document.getElementById('search-results');
+  if (!resultsDiv) return;
+
+  const hist = obtenerHistorialBusqueda()
+    .filter(Boolean)
+    .slice(0, MAX_SEARCH_HISTORY);
+
+  if (!hist.length) {
+    resultsDiv.innerHTML = '<p class="search-results-hint">Escribe para buscar</p>';
+    return;
+  }
+
+  resultsDiv.innerHTML = '';
+  const hint = document.createElement('p');
+  hint.className = 'search-results-hint';
+  hint.textContent = 'Búsquedas recientes';
+  resultsDiv.appendChild(hint);
+
+  for (const item of hist) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'search-result-item';
+
+    const tipo = String(item?.tipo || '').toLowerCase();
+    if (tipo === 'linea') {
+      const ref = String(item?.ref || '').trim();
+      const name = String(item?.name || '').trim();
+      if (!ref) continue;
+
+      btn.dataset.resultType = 'linea';
+      btn.dataset.lineaRef = ref;
+      btn.dataset.lineaName = name;
+      if (Number.isFinite(Number(item?.lat)) && Number.isFinite(Number(item?.lng))) {
+        btn.dataset.lat = String(Number(item.lat));
+        btn.dataset.lng = String(Number(item.lng));
+      }
+
+      const title = document.createElement('div');
+      title.className = 'search-result-item-title';
+      title.textContent = `Línea ${ref}`;
+
+      btn.appendChild(title);
+      resultsDiv.appendChild(btn);
+      continue;
+    }
+
+    const nombre = String(item?.nombre || '').trim() || 'Calle';
+    const lat = Number(item?.lat);
+    const lng = Number(item?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+    btn.dataset.resultType = 'calle';
+    btn.dataset.lat = String(lat);
+    btn.dataset.lng = String(lng);
+    btn.dataset.nombre = nombre;
+
+    const title = document.createElement('div');
+    title.className = 'search-result-item-title';
+    title.textContent = nombre;
+
+    btn.appendChild(title);
+    resultsDiv.appendChild(btn);
   }
 }
 
@@ -3310,6 +3820,7 @@ function cerrarModalBusqueda() {
   if (modal) {
     modal.classList.remove('active');
   }
+  document.querySelector('.search-bar-container')?.classList.remove('is-open');
   document.getElementById('search-input').value = '';
   document.getElementById('search-results').innerHTML = '<p class="search-results-hint">Escribe para buscar</p>';
 
@@ -3636,12 +4147,7 @@ function renderResultadosBusqueda(resultados) {
       title.className = 'search-result-item-title';
       title.textContent = `Línea ${item.ref}`;
 
-      const info = document.createElement('div');
-      info.className = 'search-result-item-info';
-      info.textContent = item.name ? `${item.name} · Mostrar recorrido` : 'Mostrar recorrido completo';
-
       btn.appendChild(title);
-      btn.appendChild(info);
       resultsDiv.appendChild(btn);
       continue;
     }
@@ -3655,13 +4161,7 @@ function renderResultadosBusqueda(resultados) {
     title.className = 'search-result-item-title';
     title.textContent = String(item.nombre || 'Calle');
 
-    const info = document.createElement('div');
-    info.className = 'search-result-item-info';
-    const categoria = String(item.categoria || 'Calle');
-    info.textContent = `${categoria} · ${String(item.detalle || 'San Juan')}`;
-
     btn.appendChild(title);
-    btn.appendChild(info);
     resultsDiv.appendChild(btn);
   }
 }
@@ -3677,8 +4177,11 @@ async function buscarLugaresEnTiempoReal() {
   
   // Si está vacío, cerrar modal y cancelar búsquedas
   if (!query) {
-    modal?.classList.remove('active');
-    resultsDiv.innerHTML = '<p class="search-results-hint">Escribe para buscar</p>';
+    // Mostrar historial cuando no hay texto
+    if (modal && !modal.classList.contains('active')) modal.classList.add('active');
+    document.querySelector('.search-bar-container')?.classList.add('is-open');
+    posicionarModalBusqueda();
+    renderHistorialBusqueda();
     if (searchAbortController) {
       try { searchAbortController.abort(); } catch { /* noop */ }
       searchAbortController = null;
@@ -3691,6 +4194,7 @@ async function buscarLugaresEnTiempoReal() {
   if (!modal.classList.contains('active')) {
     modal.classList.add('active');
   }
+  document.querySelector('.search-bar-container')?.classList.add('is-open');
   posicionarModalBusqueda();
   
   // Evitar pedir demasiadas veces: exigir un mínimo de letras
@@ -3709,6 +4213,29 @@ async function buscarLugaresEnTiempoReal() {
   
   // Hacer búsqueda con debounce
   searchTimeout = setTimeout(() => buscarLugares(query), SEARCH_DEBOUNCE_MS);
+}
+
+// Abrir modal con historial al tocar la barra (sin texto)
+const searchInputEl = document.getElementById('search-input');
+if (searchInputEl) {
+  const openIfNeeded = () => {
+    const q = String(searchInputEl.value || '').trim();
+    const modal = document.getElementById('search-modal');
+    if (!modal) return;
+    if (!modal.classList.contains('active')) modal.classList.add('active');
+    document.querySelector('.search-bar-container')?.classList.add('is-open');
+    posicionarModalBusqueda();
+    if (!q) {
+      renderHistorialBusqueda();
+    } else if (q.length >= SEARCH_MIN_CHARS) {
+      void buscarLugares(q);
+    }
+  };
+
+  // En móvil, abrir en touchstart puede hacer que el mismo tap termine cerrando el modal.
+  // Abrimos en focus/click, y en click lo diferimos un tick para evitar carreras con el tap.
+  searchInputEl.addEventListener('focus', openIfNeeded);
+  searchInputEl.addEventListener('click', () => setTimeout(openIfNeeded, 0));
 }
 
 async function buscarLugares(queryOverride = '') {
@@ -3780,6 +4307,14 @@ if (searchResultsEl) {
       const name = String(btn.dataset.lineaName || '').trim();
       if (!ref) return;
 
+      agregarAHistorialBusqueda({
+        tipo: 'linea',
+        ref,
+        name,
+        lat: btn.dataset.lat ? Number(btn.dataset.lat) : undefined,
+        lng: btn.dataset.lng ? Number(btn.dataset.lng) : undefined,
+      });
+
       cerrarModalBusqueda();
 
       const lat = Number(btn.dataset.lat);
@@ -3796,6 +4331,8 @@ if (searchResultsEl) {
     const lng = Number(btn.dataset.lng);
     const nombre = btn.dataset.nombre || btn.textContent || 'Calle';
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    agregarAHistorialBusqueda({ tipo: 'calle', nombre: String(nombre || '').trim(), lat, lng });
     centrarEnLugar(lat, lng, nombre);
   });
 }
@@ -3823,7 +4360,8 @@ function posicionarModalBusqueda() {
 
   const rect = bar.getBoundingClientRect();
   const viewportMargin = 8;
-  const top = Math.max(viewportMargin, rect.bottom + 8);
+  // Pegado a la barra: que parezca una extensión (sin hueco)
+  const top = Math.max(viewportMargin, rect.bottom - 1);
   const width = Math.max(220, Math.min(rect.width, window.innerWidth - viewportMargin * 2));
   const left = Math.min(
     Math.max(viewportMargin, rect.left),
@@ -3980,77 +4518,55 @@ function distanciaAcumuladaEnCamino(latLngs, startIndex, endIndex) {
   return total;
 }
 
-function estimarEsperaSegundos(frequencyRow) {
-  // Mejor que headway/2: usa el próximo arribo estimado.
-  if (!frequencyRow) return WAIT_FALLBACK_SECS;
-
-  const inicio = horaASegundos(frequencyRow.start_time);
-  const fin = horaASegundos(frequencyRow.end_time);
-  const headway = Number(frequencyRow.headway_secs);
-  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || !Number.isFinite(headway) || headway <= 0) {
-    return WAIT_FALLBACK_SECS;
-  }
-
-  const ahora = segundosActuales();
-  if (ahora > fin) return WAIT_FALLBACK_SECS;
-
-  let proximo;
-  if (ahora < inicio) {
-    proximo = inicio;
-  } else {
-    const transcurrido = ahora - inicio;
-    const cicloActual = Math.floor(transcurrido / headway);
-    proximo = inicio + (cicloActual + 1) * headway;
-  }
-  const espera = Math.max(0, proximo - ahora);
-  // Si la espera queda absurda por datos raros, cae a headway/2.
-  if (!Number.isFinite(espera) || espera < 0 || espera > 4 * 3600) {
-    return Math.max(0, Math.round(headway / 2));
-  }
-  return espera;
-}
-
 function estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs }) {
   const walkSecs = (Number(dO) + Number(dD)) / WALKING_SPEED_M_S;
   const rideSecs = Number(rideDist) / BUS_SPEED_M_S;
   const wait = Number(waitSecs);
-  const total = walkSecs + rideSecs + (Number.isFinite(wait) ? wait : WAIT_FALLBACK_SECS);
+  const total = walkSecs + rideSecs + (Number.isFinite(wait) ? wait : 0);
   return Number.isFinite(total) ? total : Infinity;
 }
 
-async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino, nombreDestino = '', allowedRefs = null) {
+async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino, nombreDestino = '', allowedRefs = null, origenOverride = null) {
   if (!leafletMap || typeof L === 'undefined') return;
 
   const latD = Number(latDestino);
   const lngD = Number(lngDestino);
   if (!Number.isFinite(latD) || !Number.isFinite(lngD)) return;
 
-  // Asegurar ubicación actual
-  if (!ubicacion || !Number.isFinite(ubicacion.lat) || !Number.isFinite(ubicacion.lng)) {
-    try {
-      const position = await obtenerPosicionActual();
-      ubicacion = { lat: position.coords.latitude, lng: position.coords.longitude };
-    } catch {
-      alert('No se pudo obtener tu ubicación actual.');
-      return;
-    }
+  let latO = NaN;
+  let lngO = NaN;
+
+  // Permite dibujar un tramo desde un origen alternativo (ej. trasbordo)
+  if (origenOverride && typeof origenOverride === 'object') {
+    latO = Number(origenOverride.lat);
+    lngO = Number(origenOverride.lng);
   }
 
-  const latO = Number(ubicacion.lat);
-  const lngO = Number(ubicacion.lng);
+  // Si no hay override válido, usar ubicación actual
+  if (!Number.isFinite(latO) || !Number.isFinite(lngO)) {
+    if (!ubicacion || !Number.isFinite(ubicacion.lat) || !Number.isFinite(ubicacion.lng)) {
+      try {
+        const position = await obtenerPosicionActual();
+        ubicacion = { lat: position.coords.latitude, lng: position.coords.longitude };
+      } catch {
+        alert('No se pudo obtener tu ubicación actual.');
+        return;
+      }
+    }
+    latO = Number(ubicacion.lat);
+    lngO = Number(ubicacion.lng);
+  }
+
   if (!Number.isFinite(latO) || !Number.isFinite(lngO)) return;
 
   const data = await cargarParadasGeojson();
   if (!data || !Array.isArray(data.features)) return;
 
-  // Cargar frequencies una sola vez para puntuar por tiempo (espera estimada)
-  const frequencies = await cargarFrequencies();
-
   const allowedSet = Array.isArray(allowedRefs) && allowedRefs.length
     ? new Set(allowedRefs.map((r) => String(r)))
     : null;
 
-  // Buscar la ruta (línea) con menor TIEMPO estimado (caminar + espera + viaje)
+  // Buscar la ruta (línea) con menor TIEMPO estimado (caminar + viaje).
   let mejor = null;
   let mejorFeature = null;
   for (const f of data.features) {
@@ -4072,13 +4588,11 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
     const iD = indiceMasCercanoEnCaminoPreciso(latD, lngD, latLngs);
     const rideDist = (iO >= 0 && iD >= 0) ? distanciaAcumuladaEnCamino(latLngs, iO, iD) : Infinity;
 
-    const freqRow = buscarFrequencyDeLinea(frequencies, ref);
-    const waitSecs = estimarEsperaSegundos(freqRow);
-    const scoreSecs = estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs });
+    const scoreSecs = estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs: 0 });
 
     if (!mejor || scoreSecs < mejor.scoreSecs) {
       const name = typeof props.name === 'string' ? props.name.trim() : '';
-      mejor = { ref, name, scoreSecs, dO, dD, iO, iD, rideDist, waitSecs };
+      mejor = { ref, name, scoreSecs, dO, dD, iO, iD, rideDist, waitSecs: 0 };
       mejorFeature = f;
     }
   }
@@ -4095,7 +4609,15 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
   // Dibujar solo el tramo (ida) del recorrido entre origen y destino.
   // Importante: NO renderizar la ruta completa ni paradas adicionales.
   limpiarRecorrido();
-  recorridoActivo = { ref: mejor.ref, name: mejor.name, planned: true };
+  recorridoActivo = {
+    ref: mejor.ref,
+    name: mejor.name,
+    planned: true,
+    origen: { lat: latO, lng: lngO },
+    destino: { lat: latD, lng: lngD, nombre: String(nombreDestino || '') },
+    relIds: null,
+    nearbyStops: [],
+  };
 
   const layerRec = asegurarRecorridoLayer();
   layerRec?.clearLayers();
@@ -4150,12 +4672,11 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
   // Dibujar paradas de la línea seleccionada (por relación)
   try {
     const relIds = obtenerRelIdsDeRutas([mejorFeature]);
+    if (recorridoActivo) recorridoActivo.relIds = relIds;
     if (relIds && relIds.size > 0) {
-      if (startIndex != null && endIndex != null) {
-        await dibujarParadasDelRecorridoRecortadas(relIds, latLngs, startIndex, endIndex);
-      } else {
-        await dibujarParadasDelRecorrido(relIds);
-      }
+      // En planeo de ruta: mostrar paradas cercanas al origen (usuario o trasbordo)
+      const seleccion = await dibujarParadasDeLineaCercanasAlOrigen(relIds, latO, lngO, mejor.ref, mejor.name);
+      if (recorridoActivo && Array.isArray(seleccion)) recorridoActivo.nearbyStops = seleccion;
     }
   } catch {
     // noop
@@ -4182,6 +4703,595 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
     // Mantener el nombre en memoria si luego se quiere reusar
     window._ultimoDestinoBusqueda = { nombre: String(nombreDestino), lat: latD, lng: lngD };
   }
+}
+
+function setPlaneoParadasIndex(stops) {
+  const map = new Map();
+  for (const s of Array.isArray(stops) ? stops : []) {
+    const paradaId = String(s?.paradaId || '').trim();
+    if (!paradaId) continue;
+    if (!map.has(paradaId)) {
+      map.set(paradaId, { feature: s.feature, lat: s.lat, lng: s.lng });
+    }
+  }
+  _planeoParadasIndex = map;
+}
+
+function normalizarParadasSeleccionParaLista(seleccion, lineaRef, lineaName) {
+  const ref = String(lineaRef || '').trim();
+  const name = String(lineaName || '').trim();
+  const out = [];
+  for (const p of Array.isArray(seleccion) ? seleccion : []) {
+    const paradaId = obtenerIdParada(p.feature);
+    if (!paradaId) continue;
+    const etiqueta = obtenerNombreParadaBase(p.feature);
+    out.push({
+      paradaId,
+      feature: p.feature,
+      lat: p.lat,
+      lng: p.lng,
+      etiqueta,
+      lineaRef: ref,
+      lineaName: name,
+    });
+  }
+  return out;
+}
+
+function renderListaParadasPlaneo({ tituloIzq = 'Paradas cercanas', stops = [], totalLabel = '' } = {}) {
+  const total = Array.isArray(stops) ? stops.length : 0;
+  const right = totalLabel ? escapeHtml(String(totalLabel)) : `${total}`;
+  const left = escapeHtml(String(tituloIzq || 'Paradas'));
+
+  const items = (Array.isArray(stops) ? stops : [])
+    .map((p) => {
+      const paradaId = p.paradaId || obtenerIdParada(p.feature);
+      const etiqueta = p.etiqueta || obtenerEtiquetaParada(p.feature);
+      const lineaRef = p.lineaRef || '';
+      const lineaName = p.lineaName || '';
+      const refLabel = lineaRef ? `Línea ${String(lineaRef)}` : 'Línea';
+      const nameLabel = lineaName ? ` — ${String(lineaName)}` : '';
+      return `<li><button type="button" class="btn-linea btn-parada-planeo" data-plane-stop-id="${escapeHtml(String(paradaId))}" data-plane-line-ref="${escapeHtml(String(lineaRef))}" data-plane-line-name="${escapeHtml(String(lineaName))}"><span class="linea-button-ref">${escapeHtml(String(etiqueta))}</span><span class="linea-button-name">${escapeHtml(refLabel + nameLabel)}</span></button></li>`;
+    })
+    .join('');
+
+  return `
+    <div class="recorrido-indice">
+      <span class="recorrido-indice-left">${left}</span>
+      <span class="recorrido-indice-right">${right}</span>
+    </div>
+    <ul class="lineas-list planeo-paradas-list">${items}</ul>
+  `;
+}
+
+function mostrarParadasPlaneoActualEnBottomSheet({ ref, name } = {}) {
+  const lineaRef = String(ref || recorridoActivo?.ref || '').trim();
+  const lineaName = String(name || recorridoActivo?.name || '').trim();
+  const seleccion = recorridoActivo?.planned ? (recorridoActivo?.nearbyStops || []) : [];
+
+  const stops = normalizarParadasSeleccionParaLista(seleccion, lineaRef, lineaName);
+  setPlaneoParadasIndex(stops);
+
+  const subtitulo = lineaRef ? `Línea ${lineaRef}${lineaName ? ` — ${lineaName}` : ''}` : '';
+  const html = stops.length
+    ? `${renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops, totalLabel: `${stops.length} paradas` })}
+       <p style="margin: 14px 0 0 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>`
+    : `<p style="margin: 0; font-size: 14px; color: var(--text-secondary, #666); text-align: center;">No se encontraron paradas cercanas para esta línea.</p>`;
+
+  abrirBottomSheet('Ruta', html, '', subtitulo);
+}
+
+function mostrarParadasPlaneadasEnBottomSheet() {
+  if (!recorridoActivo || !recorridoActivo.planned) return;
+
+  if (recorridoActivo.mode === 'transfer' && Array.isArray(recorridoActivo.legs) && recorridoActivo.legs.length >= 2) {
+    const leg1 = recorridoActivo.legs[0] || {};
+    const leg2 = recorridoActivo.legs[1] || {};
+    const aRef = String(leg1.ref || '').trim();
+    const bRef = String(leg2.ref || '').trim();
+    const stops1 = normalizarParadasSeleccionParaLista(leg1.nearbyStops || [], aRef, String(leg1.name || ''));
+    const stops2 = normalizarParadasSeleccionParaLista(leg2.nearbyStops || [], bRef, String(leg2.name || ''));
+    setPlaneoParadasIndex([...stops1, ...stops2]);
+
+    const tName = String(recorridoActivo.transferName || '').trim();
+    const subtitulo = tName ? `Trasbordo en: ${tName}` : '';
+    const html = `
+      <p style="margin: 0 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Opción con trasbordo</p>
+      <p style="margin: 0 0 14px 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>
+      <p style="margin: 0 0 8px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Tramo 1 — Línea ${escapeHtml(aRef)}</p>
+      ${stops1.length ? renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops: stops1, totalLabel: `${stops1.length} paradas` }) : '<p style="margin:0 0 12px 0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">Sin paradas cercanas para el tramo 1.</p>'}
+      <p style="margin: 16px 0 8px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Tramo 2 — Línea ${escapeHtml(bRef)}</p>
+      ${stops2.length ? renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops: stops2, totalLabel: `${stops2.length} paradas` }) : '<p style="margin:0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">Sin paradas cercanas para el tramo 2.</p>'}
+    `;
+    abrirBottomSheet('Ruta', html, '', subtitulo);
+    return;
+  }
+
+  // Directa
+  mostrarParadasPlaneoActualEnBottomSheet({ ref: recorridoActivo.ref, name: recorridoActivo.name });
+}
+
+async function elegirMejorRutaFeatureEntre(latO, lngO, latD, lngD, allowedRefs) {
+  const data = await cargarParadasGeojson();
+  if (!data || !Array.isArray(data.features)) return null;
+
+  const allowedSet = Array.isArray(allowedRefs) && allowedRefs.length
+    ? new Set(allowedRefs.map((r) => String(r).trim()).filter(Boolean))
+    : null;
+
+  let mejor = null;
+  let mejorFeature = null;
+
+  for (const f of data.features) {
+    const props = f?.properties;
+    if (!props) continue;
+    if (props.type !== 'route') continue;
+    if (props.route !== 'bus') continue;
+    const ref = typeof props.ref === 'string' ? props.ref.trim() : '';
+    if (!ref) continue;
+    if (allowedSet && !allowedSet.has(ref)) continue;
+
+    const latLngs = extraerLatLngsDeGeometria(f.geometry);
+    if (latLngs.length === 0) continue;
+
+    const dO = distanciaMinimaPuntoACamino(latO, lngO, latLngs);
+    const dD = distanciaMinimaPuntoACamino(latD, lngD, latLngs);
+
+    const iO = indiceMasCercanoEnCaminoPreciso(latO, lngO, latLngs);
+    const iD = indiceMasCercanoEnCaminoPreciso(latD, lngD, latLngs);
+    const rideDist = (iO >= 0 && iD >= 0) ? distanciaAcumuladaEnCamino(latLngs, iO, iD) : Infinity;
+
+    const scoreSecs = estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs: 0 });
+    if (!mejor || scoreSecs < mejor.scoreSecs) {
+      const name = typeof props.name === 'string' ? props.name.trim() : '';
+      mejor = { ref, name, scoreSecs, dO, dD, iO, iD, rideDist };
+      mejorFeature = f;
+    }
+  }
+
+  if (!mejor || !mejorFeature) return null;
+  return { mejor, feature: mejorFeature };
+}
+
+function calcularTramoRecortado(latO, lngO, latD, lngD, feature, mejor) {
+  const latLngs = extraerLatLngsDeGeometria(feature?.geometry);
+  if (!Array.isArray(latLngs) || latLngs.length < 2) return null;
+
+  const iO = Number.isFinite(mejor?.iO) ? mejor.iO : indiceMasCercanoEnCaminoPreciso(latO, lngO, latLngs);
+  const iDMin = indiceMasCercanoEnCaminoPreciso(latD, lngD, latLngs);
+  if (iO < 0 || iDMin < 0) return null;
+
+  const forward = iO <= iDMin;
+  const step = forward ? 1 : -1;
+  let end = iDMin;
+
+  let bestSeen = Infinity;
+  let cutCandidate = null;
+  for (let i = iO; forward ? i <= iDMin : i >= iDMin; i += step) {
+    const p = latLngs[i];
+    if (!p) continue;
+    const d = calcularDistancia(latD, lngD, p[0], p[1]);
+    if (d < bestSeen) bestSeen = d;
+    if (d <= DESTINO_UMBRAL_CORTE_M) {
+      cutCandidate = i;
+      if (bestSeen <= DESTINO_UMBRAL_CORTE_M * 0.6) break;
+    }
+  }
+  if (cutCandidate != null) end = cutCandidate;
+
+  const startIndex = Math.min(iO, end);
+  const endIndex = Math.max(iO, end);
+  const tramo = latLngs.slice(startIndex, endIndex + 1);
+  const tramoDir = forward ? tramo : tramo.slice().reverse();
+  if (tramoDir.length < 2) return null;
+  return tramoDir;
+}
+
+async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
+  if (!leafletMap || typeof L === 'undefined') return;
+
+  // asegurar ubicación actual
+  if (!ubicacion || !Number.isFinite(ubicacion.lat) || !Number.isFinite(ubicacion.lng)) {
+    try {
+      const position = await obtenerPosicionActual();
+      ubicacion = { lat: position.coords.latitude, lng: position.coords.longitude };
+    } catch {
+      alert('No se pudo obtener tu ubicación actual.');
+      return;
+    }
+  }
+
+  const latO = Number(ubicacion.lat);
+  const lngO = Number(ubicacion.lng);
+  const tLat = Number(transfer?.lat);
+  const tLng = Number(transfer?.lng);
+  const dLat = Number(destino?.lat);
+  const dLng = Number(destino?.lng);
+  if (!Number.isFinite(latO) || !Number.isFinite(lngO) || !Number.isFinite(tLat) || !Number.isFinite(tLng) || !Number.isFinite(dLat) || !Number.isFinite(dLng)) return;
+
+  const aRef = String(lineaA || '').trim();
+  const bRef = String(lineaB || '').trim();
+  if (!aRef || !bRef) return;
+
+  const tramo1 = await elegirMejorRutaFeatureEntre(latO, lngO, tLat, tLng, [aRef]);
+  const tramo2 = await elegirMejorRutaFeatureEntre(tLat, tLng, dLat, dLng, [bRef]);
+  if (!tramo1 || !tramo2) {
+    alert('No se pudo calcular la ruta con trasbordo.');
+    return;
+  }
+
+  const colorA = (typeof colorPorLinea === 'object' && colorPorLinea) ? (colorPorLinea[aRef] || '#007BFF') : '#007BFF';
+  const colorB = (typeof colorPorLinea === 'object' && colorPorLinea) ? (colorPorLinea[bRef] || '#007BFF') : '#007BFF';
+
+  limpiarRecorrido();
+  recorridoActivo = { planned: true, mode: 'transfer', legs: [], transferName: String(transfer?.name || '').trim() };
+
+  const layerRec = asegurarRecorridoLayer();
+  layerRec?.clearLayers();
+  const layerParadas = asegurarParadasLayer();
+  layerParadas?.clearLayers();
+
+  const latLngs1 = calcularTramoRecortado(latO, lngO, tLat, tLng, tramo1.feature, tramo1.mejor);
+  const latLngs2 = calcularTramoRecortado(tLat, tLng, dLat, dLng, tramo2.feature, tramo2.mejor);
+  if (Array.isArray(latLngs1) && latLngs1.length >= 2) L.polyline(latLngs1, { color: colorA, weight: 4, opacity: 0.95 }).addTo(layerRec);
+  if (Array.isArray(latLngs2) && latLngs2.length >= 2) L.polyline(latLngs2, { color: colorB, weight: 4, opacity: 0.95 }).addTo(layerRec);
+
+  const relIds1 = obtenerRelIdsDeRutas([tramo1.feature]);
+  const relIds2 = obtenerRelIdsDeRutas([tramo2.feature]);
+
+  const sel1 = (relIds1 && relIds1.size > 0)
+    ? await dibujarParadasDeLineaCercanasAlOrigen(relIds1, latO, lngO, aRef, tramo1.mejor?.name || '', { clear: true })
+    : [];
+  const sel2 = (relIds2 && relIds2.size > 0)
+    ? await dibujarParadasDeLineaCercanasAlOrigen(relIds2, tLat, tLng, bRef, tramo2.mejor?.name || '', { clear: false })
+    : [];
+
+  recorridoActivo.legs = [
+    { ref: aRef, name: tramo1.mejor?.name || '', relIds: relIds1, origen: { lat: latO, lng: lngO }, destino: { lat: tLat, lng: tLng }, nearbyStops: sel1 || [] },
+    { ref: bRef, name: tramo2.mejor?.name || '', relIds: relIds2, origen: { lat: tLat, lng: tLng }, destino: { lat: dLat, lng: dLng }, nearbyStops: sel2 || [] },
+  ];
+
+  const layerSel = asegurarSeleccionParadaLayer();
+  if (layerSel) {
+    layerSel.clearLayers();
+    L.circleMarker([latO, lngO], { radius: 6, weight: 2, color: colorA, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+    L.circleMarker([tLat, tLng], { radius: 6, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+    L.circleMarker([dLat, dLng], { radius: 6, weight: 2, color: colorB, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+  }
+
+  try {
+    const bounds = L.latLngBounds([[latO, lngO], [dLat, dLng]]);
+    bounds.extend([tLat, tLng]);
+    const recBounds = layerRec?.getBounds?.();
+    if (recBounds && recBounds.isValid && recBounds.isValid()) bounds.extend(recBounds);
+    leafletMap.fitBounds(bounds, { padding: [20, 20] });
+  } catch {
+    // noop
+  }
+
+  const stops1 = normalizarParadasSeleccionParaLista(sel1 || [], aRef, tramo1.mejor?.name || '');
+  const stops2 = normalizarParadasSeleccionParaLista(sel2 || [], bRef, tramo2.mejor?.name || '');
+  setPlaneoParadasIndex([...stops1, ...stops2]);
+
+  const tName = String(transfer?.name || '').trim();
+  const subtitulo = tName ? `Trasbordo en: ${tName}` : '';
+  const html = `
+    <p style="margin: 0 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Opción con trasbordo</p>
+    <p style="margin: 0 0 14px 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>
+    <p style="margin: 0 0 8px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Tramo 1 — Línea ${escapeHtml(aRef)}</p>
+    ${stops1.length ? renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops: stops1, totalLabel: `${stops1.length} paradas` }) : '<p style="margin:0 0 12px 0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">Sin paradas cercanas para el tramo 1.</p>'}
+    <p style="margin: 16px 0 8px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Tramo 2 — Línea ${escapeHtml(bRef)}</p>
+    ${stops2.length ? renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops: stops2, totalLabel: `${stops2.length} paradas` }) : '<p style="margin:0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">Sin paradas cercanas para el tramo 2.</p>'}
+  `;
+  abrirBottomSheet('Ruta', html, '', subtitulo);
+}
+
+async function obtenerIndiceParadasPuntosPorId() {
+  if (_indiceParadasPuntosPorId) return _indiceParadasPuntosPorId;
+  const map = new Map();
+  try {
+    const puntos = await cargarParadasPuntos();
+    if (Array.isArray(puntos)) {
+      for (const p of puntos) {
+        const id = obtenerIdParada(p.feature);
+        if (!id || map.has(id)) continue;
+        if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+        map.set(id, { lat: p.lat, lng: p.lng, feature: p.feature });
+      }
+    }
+  } catch {
+    // noop
+  }
+  _indiceParadasPuntosPorId = map;
+  return _indiceParadasPuntosPorId;
+}
+
+async function obtenerIndiceLineasPorStopId() {
+  if (_indiceLineasPorStopId) return _indiceLineasPorStopId;
+
+  const data = await cargarParadasPorLinea();
+  const map = new Map();
+  _stopIdsSetPorLinea = new Map();
+
+  for (const ref of Object.keys(data || {})) {
+    const paradasObj = data?.[ref]?.paradas;
+    if (!paradasObj || typeof paradasObj !== 'object') continue;
+
+    const set = new Set();
+    for (const stopId of Object.values(paradasObj)) {
+      const sid = typeof stopId === 'string' ? stopId.trim() : '';
+      if (!sid) continue;
+      set.add(sid);
+      const prev = map.get(sid);
+      if (prev) prev.add(ref);
+      else map.set(sid, new Set([ref]));
+    }
+    _stopIdsSetPorLinea.set(ref, set);
+  }
+
+  _indiceLineasPorStopId = map;
+  return _indiceLineasPorStopId;
+}
+
+async function obtenerStopsIndexPorLinea() {
+  if (_stopsIndexPorLinea) return _stopsIndexPorLinea;
+  const idxByLine = new Map();
+
+  try {
+    const puntos = await cargarParadasPuntos();
+    if (Array.isArray(puntos)) {
+      for (const p of puntos) {
+        const feature = p.feature;
+        const id = obtenerIdParada(feature);
+        if (!id) continue;
+        if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+
+        const lineas = obtenerLineasDetalleDesdeRelations(feature);
+        if (!Array.isArray(lineas) || lineas.length === 0) continue;
+
+        for (const l of lineas) {
+          const ref = typeof l?.ref === 'string' ? l.ref.trim() : '';
+          if (!ref) continue;
+
+          let entry = idxByLine.get(ref);
+          if (!entry) {
+            entry = { ids: new Set(), stops: [] };
+            idxByLine.set(ref, entry);
+          }
+          if (entry.ids.has(id)) continue;
+          entry.ids.add(id);
+          entry.stops.push({ id, lat: p.lat, lng: p.lng, feature });
+        }
+      }
+    }
+  } catch {
+    // noop
+  }
+
+  _stopsIndexPorLinea = idxByLine;
+  return _stopsIndexPorLinea;
+}
+
+function stopIdsDeLinea(ref) {
+  const r = String(ref || '').trim();
+  if (!r) return new Set();
+  const set = _stopIdsSetPorLinea?.get(r);
+  return set instanceof Set ? set : new Set();
+}
+
+function stopIdsDeLineaRelations(ref) {
+  const r = String(ref || '').trim();
+  if (!r) return new Set();
+  const entry = _stopsIndexPorLinea?.get(r);
+  return entry?.ids instanceof Set ? entry.ids : new Set();
+}
+
+function obtenerParadaPorIdRelations(stopId) {
+  const id = String(stopId || '').trim();
+  if (!id) return null;
+  return _indiceParadasPuntosPorId?.get(id) || null;
+}
+
+async function obtenerParadasCercanasA(lat, lng, radiusM, maxCount) {
+  const latO = Number(lat);
+  const lngO = Number(lng);
+  if (!Number.isFinite(latO) || !Number.isFinite(lngO)) return [];
+
+  const puntos = await cargarParadasPuntos();
+  if (!Array.isArray(puntos)) return [];
+
+  const res = [];
+  for (const p of puntos) {
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+    const d = typeof calcularDistancia === 'function'
+      ? calcularDistancia(latO, lngO, p.lat, p.lng)
+      : Infinity;
+    if (d <= radiusM) {
+      const id = obtenerIdParada(p.feature);
+      if (!id) continue;
+      res.push({ id, lat: p.lat, lng: p.lng, d, feature: p.feature });
+    }
+  }
+
+  res.sort((a, b) => a.d - b.d);
+  return res.slice(0, maxCount);
+}
+
+function iniciarPlaneoRutaHastaParadaSeleccionada(featureParada) {
+  if (!featureParada || !featureParada.geometry || !Array.isArray(featureParada.geometry.coordinates)) {
+    alert('No se pudo obtener la ubicación de la parada.');
+    return;
+  }
+
+  const coords = featureParada.geometry.coordinates;
+  const lng = Number(coords[0]);
+  const lat = Number(coords[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    alert('No se pudo obtener la ubicación de la parada.');
+    return;
+  }
+
+  const stopId = obtenerIdParada(featureParada);
+  const nombre = typeof obtenerEtiquetaParada === 'function'
+    ? obtenerEtiquetaParada(featureParada)
+    : ((featureParada.properties && (featureParada.properties.name || featureParada.properties.ref)) || 'la parada');
+
+  _routePlanTarget = { feature: featureParada, nombre: String(nombre || ''), lat, lng, stopId };
+
+  // Directo: mostrar opciones como "con trasbordo" (incluye directas + combinaciones)
+  void mostrarOpcionesRutaParaTarget(true);
+}
+
+async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
+  _routePlanLastAllowTransfer = Boolean(permitirTrasbordo);
+  if (!_routePlanTarget || !Number.isFinite(_routePlanTarget.lat) || !Number.isFinite(_routePlanTarget.lng)) {
+    alert('No hay destino seleccionado.');
+    return;
+  }
+
+  const destinoNombre = _routePlanTarget.nombre || '';
+  const subtitulo = destinoNombre ? `Destino: ${destinoNombre}` : '';
+
+  // Feedback inmediato mientras se calculan opciones
+  try {
+    abrirBottomSheet(
+      'Opciones de ruta',
+      '<div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">'
+        + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
+        + '<p class="bottom-sheet-loading-title">Calculando opciones...</p>'
+        + '</div>',
+      '',
+      subtitulo,
+    );
+  } catch {
+    // noop
+  }
+
+  // Asegurar ubicación actual
+  if (!ubicacion || !Number.isFinite(ubicacion.lat) || !Number.isFinite(ubicacion.lng)) {
+    try {
+      const position = await obtenerPosicionActual();
+      ubicacion = { lat: position.coords.latitude, lng: position.coords.longitude };
+    } catch {
+      alert('No se pudo obtener tu ubicación actual.');
+      return;
+    }
+  }
+
+  await obtenerIndiceParadasPuntosPorId();
+  await obtenerStopsIndexPorLinea();
+
+  const origenStops = await obtenerParadasCercanasA(ubicacion.lat, ubicacion.lng, ROUTE_NEARBY_STOPS_RADIUS_M, ROUTE_NEARBY_STOPS_MAX);
+  const origenRefs = new Set();
+  for (const s of origenStops) {
+    const lineas = obtenerLineasDetalleDesdeRelations(s.feature);
+    if (!Array.isArray(lineas)) continue;
+    for (const l of lineas) {
+      const ref = typeof l?.ref === 'string' ? l.ref.trim() : '';
+      if (ref) origenRefs.add(ref);
+    }
+  }
+
+  // Líneas que pasan por la parada destino
+  const detalleDestino = obtenerLineasDetalleDesdeRelations(_routePlanTarget.feature);
+  const refToName = new Map();
+  for (const l of detalleDestino) {
+    if (l?.ref) refToName.set(String(l.ref).trim(), String(l.name || '').trim());
+  }
+  let destinoRefs = detalleDestino
+    .map((l) => (l && l.ref != null ? String(l.ref).trim() : ''))
+    .filter(Boolean);
+
+  // Si no hay relations, no hay forma confiable de listar líneas para esa parada.
+
+  // "Sin trasbordo" = cualquier línea que pase por la parada destino.
+  // La optimización por cercanía al origen se hace al tocar el botón (ahí se calcula/dibuja).
+  destinoRefs = Array.from(new Set(destinoRefs));
+  const directLimited = destinoRefs.slice(0, ROUTE_MAX_OPCIONES_DIRECTAS);
+
+  const combos = [];
+  if (permitirTrasbordo && destinoRefs.length && origenRefs.size) {
+    const destinoSet = new Set(destinoRefs);
+    let count = 0;
+    const latO = Number(ubicacion.lat);
+    const lngO = Number(ubicacion.lng);
+    const latD = Number(_routePlanTarget.lat);
+    const lngD = Number(_routePlanTarget.lng);
+
+    for (const a of origenRefs) {
+      const setA = stopIdsDeLineaRelations(a);
+      if (!(setA instanceof Set) || setA.size === 0) continue;
+
+      for (const b of destinoSet) {
+        if (a === b) continue;
+        const setB = stopIdsDeLineaRelations(b);
+        if (!(setB instanceof Set) || setB.size === 0) continue;
+
+        // Buscar el mejor stop compartido (minimiza caminata origen->T + T->dest)
+        let best = null;
+        const iterSmall = setA.size <= setB.size ? setA : setB;
+        const other = iterSmall === setA ? setB : setA;
+
+        for (const sid of iterSmall) {
+          if (!other.has(sid)) continue;
+          const p = obtenerParadaPorIdRelations(sid);
+          if (!p) continue;
+          const d1 = typeof calcularDistancia === 'function' ? calcularDistancia(latO, lngO, p.lat, p.lng) : Infinity;
+          const d2 = typeof calcularDistancia === 'function' ? calcularDistancia(p.lat, p.lng, latD, lngD) : Infinity;
+          const score = Number(d1) + Number(d2);
+          if (!best || score < best.score) {
+            const tName = typeof obtenerEtiquetaParada === 'function' ? obtenerEtiquetaParada(p.feature) : sid;
+            best = { id: sid, lat: p.lat, lng: p.lng, name: tName, score };
+          }
+        }
+
+        if (!best) continue;
+        combos.push({ a, b, transfer: { id: best.id, lat: best.lat, lng: best.lng, name: best.name } });
+        count++;
+        if (count >= ROUTE_MAX_OPCIONES_TRASBORDO) break;
+      }
+      if (count >= ROUTE_MAX_OPCIONES_TRASBORDO) break;
+    }
+  }
+
+  // Render: usar el estilo de botones de líneas (igual que en paradas)
+  const directItems = directLimited
+    .map((ref) => {
+      const name = refToName.get(ref) || '';
+      const refAttr = escapeHtml(ref);
+      const nameAttr = escapeHtml(name);
+      const nameDisplay = name ? `<span class="linea-button-name">${escapeHtml(name)}</span>` : '';
+      return `<li><button type="button" class="btn-linea" data-route-line-ref="${refAttr}" data-route-line-name="${nameAttr}"><span class="linea-button-ref">${escapeHtml(ref)}</span>${nameDisplay}</button></li>`;
+    })
+    .join('');
+
+  const directHtml = directItems
+    ? `<ul class="lineas-list">${directItems}</ul>`
+    : `<p style="margin: 0; font-size: 14px; color: var(--text-secondary, #666); text-align: center;">No se encontraron líneas para esta parada.</p>`;
+
+  const combosItems = combos
+    .map((c) => {
+      const labelRef = `${c.a} + ${c.b}`;
+      const transferName = String(c.transfer.name || c.transfer.id || '').trim();
+      const nameDisplay = transferName ? `<span class="linea-button-name">Trasbordo: ${escapeHtml(transferName)}</span>` : '';
+      return `<li><button type="button" class="btn-linea" data-route-combo="1" data-linea-a="${escapeHtml(c.a)}" data-linea-b="${escapeHtml(c.b)}" data-transfer-lat="${String(c.transfer.lat)}" data-transfer-lng="${String(c.transfer.lng)}" data-transfer-name="${escapeHtml(transferName)}"><span class="linea-button-ref">${escapeHtml(labelRef)}</span>${nameDisplay}</button></li>`;
+    })
+    .join('');
+
+  const combosHtml = permitirTrasbordo
+    ? (combosItems
+      ? `<ul class="lineas-list">${combosItems}</ul>`
+      : `<p style="margin: 0; font-size: 14px; color: var(--text-secondary, #666); text-align: center;">No se encontraron combinaciones con 1 trasbordo.</p>`)
+    : '';
+
+  const html = `
+    <p style="margin: 0 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Sin trasbordo</p>
+    ${directHtml}
+    <p style="margin: 14px 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Con trasbordo</p>
+    ${combosHtml}
+    <p style="margin: 14px 0 0 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una opción para dibujar la ruta.</p>
+  `;
+  abrirBottomSheet('Opciones de ruta', html, '', subtitulo);
 }
 
 async function verLineaMasCercanaHastaParadaSeleccionada(featureParada) {

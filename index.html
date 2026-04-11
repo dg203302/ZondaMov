@@ -557,6 +557,92 @@
           .bottom-sheet-overlay.active {
             display: block;
           }
+
+          /* Modal de confirmación (glass) */
+          .confirm-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.38);
+            backdrop-filter: blur(calc(var(--glass-blur) * 0.7)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.7)) saturate(var(--glass-saturate));
+          }
+          .confirm-overlay.active {
+            display: flex;
+          }
+          .confirm-modal {
+            width: min(560px, 100%);
+            background: var(--glass-bg-strong);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+          }
+          .confirm-modal h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 900;
+          }
+          .confirm-modal p {
+            margin: 0 0 12px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.35;
+          }
+          .confirm-modal ul.bs-nav-rows {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            padding: 10px 4px 4px 4px;
+            margin: 0;
+          }
+          .confirm-modal ul.bs-nav-rows.bs-nav-rows--two {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
+          .confirm-modal ul.bs-nav-rows li {
+            margin: 0;
+          }
+          .confirm-modal button.btn-nav-row {
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 800;
+            padding: 16px 16px;
+            border-radius: 12px;
+            border: 2px solid rgba(0, 123, 255, 0.35);
+            background: var(--glass-bg, rgba(255, 255, 255, 0.1));
+            color: var(--text-primary, #222);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .confirm-modal button.btn-nav-row:hover {
+            background: rgba(0, 123, 255, 0.06);
+            border-color: #007BFF;
+          }
+          .confirm-modal button.btn-nav-row:active {
+            transform: scale(0.99);
+          }
+          .dark-mode .confirm-modal button.btn-nav-row {
+            border-color: rgba(59, 130, 246, 0.45);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-primary, #e5e7eb);
+          }
+          .dark-mode .confirm-modal button.btn-nav-row:hover {
+            background: rgba(59, 130, 246, 0.10);
+            border-color: rgba(59, 130, 246, 0.9);
+          }
           
           .bottom-sheet {
             position: fixed;
@@ -617,6 +703,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            /* Importante: los botones están absolute y no aportan altura.
+               Esto evita que se superpongan con el título. */
+            min-height: 56px;
           }
           .bs-top-row #bs-plan-btn {
             position: absolute;
@@ -631,22 +720,24 @@
             transform: translateY(-50%);
           }
           #bs-plan-btn {
-            width: 40px;
-            height: 40px;
+            width: 56px !important;
+            height: 56px !important;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
+            border-radius: 14px;
             box-sizing: border-box;
+            padding: 10px !important;
           }
           #bs-fav-btn {
-            width: 40px;
-            height: 40px;
+            width: 56px !important;
+            height: 56px !important;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
+            border-radius: 14px;
             box-sizing: border-box;
+            padding: 10px !important;
           }
 
           /* Estado del botón de favoritos del bottom-sheet */
@@ -668,6 +759,23 @@
             font-size: 18px;
             font-weight: 600;
             margin: 0;
+            text-align: center;
+            /* Reserva horizontal por si en algún layout el título queda cerca de los botones */
+            padding: 0 72px;
+            max-width: 100%;
+            word-break: break-word;
+            white-space: normal;
+          }
+          .bottom-sheet-subtitle {
+            margin: -6px 0 0 0;
+            font-size: 13px;
+            font-weight: 650;
+            color: var(--text-secondary, #666);
+            text-align: center;
+            max-width: 100%;
+            padding: 0 10px;
+            word-break: break-word;
+            white-space: normal;
           }
           .bottom-sheet-handle {
             width: 40px;
@@ -726,6 +834,55 @@
           .btn-volver-parada:hover {
             background: var(--btn-back-bg-hover) !important;
             border-color: var(--btn-back-border-hover) !important;
+          }
+
+          /* Bottom-sheet: filas de navegación (volver/regresar) */
+          .bottom-sheet-content ul.bs-nav-rows {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            padding: 10px 8px 12px 8px;
+            margin: 0;
+          }
+          .bottom-sheet-content ul.bs-nav-rows.bs-nav-rows--two {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
+          .bottom-sheet-content ul.bs-nav-rows li {
+            margin: 0;
+          }
+          .bottom-sheet-content button.btn-nav-row {
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 800;
+            padding: 16px 16px;
+            border-radius: 12px;
+            border: 2px solid rgba(0, 123, 255, 0.35);
+            background: var(--glass-bg, rgba(255, 255, 255, 0.1));
+            color: var(--text-primary, #222);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .bottom-sheet-content button.btn-nav-row:hover {
+            background: rgba(0, 123, 255, 0.06);
+            border-color: #007BFF;
+          }
+          .bottom-sheet-content button.btn-nav-row:active {
+            transform: scale(0.99);
+          }
+          .dark-mode .bottom-sheet-content button.btn-nav-row {
+            border-color: rgba(59, 130, 246, 0.45);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-primary, #e5e7eb);
+          }
+          .dark-mode .bottom-sheet-content button.btn-nav-row:hover {
+            background: rgba(59, 130, 246, 0.10);
+            border-color: rgba(59, 130, 246, 0.9);
           }
 
           /* Estilos para lista de líneas mejorada */
@@ -799,14 +956,93 @@
             box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
           }
 
+          /* Planeo de ruta: paradas como botones estilo 'seleccionar ruta' */
+          .lineas-list.planeo-paradas-list {
+            padding-top: 6px;
+          }
+          .lineas-list .btn-linea.btn-parada-planeo {
+            min-height: 86px;
+            padding: 18px 16px;
+          }
+          .lineas-list .btn-linea.btn-parada-planeo .linea-button-ref {
+            font-size: 18px;
+            font-weight: 850;
+            line-height: 1.15;
+          }
+          .lineas-list .btn-linea.btn-parada-planeo .linea-button-name {
+            font-size: 12px;
+            line-height: 1.2;
+            opacity: 0.95;
+          }
+
+          /* Bottom-sheet: Recorrido (lista de paradas) */
+          .recorrido-linea-detalle {
+            margin: 2px 2px 14px 2px;
+            font-size: 18px;
+            font-weight: 650;
+            color: var(--text-secondary, #666);
+            line-height: 1.25;
+          }
+          .recorrido-indice {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 6px 2px 14px 2px;
+          }
+          .recorrido-indice-left {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary, #222);
+          }
+          .recorrido-indice-right {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-secondary, #666);
+            white-space: nowrap;
+          }
+          .bottom-sheet-content ul.recorrido-stops {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            padding: 0;
+            margin: 0;
+          }
+          .bottom-sheet-content ul.recorrido-stops li {
+            margin: 0;
+          }
+          .bottom-sheet-content button.btn-recorrido-parada {
+            font-size: 18px;
+            font-weight: 750;
+            padding: 18px 18px;
+            border-radius: 12px;
+            border: 2px solid rgba(0, 123, 255, 0.35);
+            background: var(--glass-bg, rgba(255, 255, 255, 0.1));
+            color: var(--text-primary, #222);
+          }
+          .bottom-sheet-content button.btn-recorrido-parada:hover {
+            background: rgba(0, 123, 255, 0.06);
+            border-color: #007BFF;
+          }
+          .bottom-sheet-content button.btn-recorrido-parada:active {
+            transform: scale(0.99);
+          }
+          .dark-mode .bottom-sheet-content button.btn-recorrido-parada {
+            border-color: rgba(59, 130, 246, 0.45);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-primary, #e5e7eb);
+          }
+          .dark-mode .bottom-sheet-content button.btn-recorrido-parada:hover {
+            background: rgba(59, 130, 246, 0.10);
+            border-color: rgba(59, 130, 246, 0.9);
+          }
+
           /* Garantizar que los iconos de los botones del header sean mayores */
           #bs-plan-btn img,
           #bs-fav-btn img {
             width: 28px;
             height: 28px;
             object-fit: contain;
-          }
-            transition: all 0.2s ease !important;
           }
           .btn-volver-parada:hover {
             background: var(--btn-back-bg-hover) !important;
@@ -1287,6 +1523,12 @@
             box-shadow: var(--glass-shadow);
             border: 1px solid var(--glass-border);
           }
+
+          /* Cuando el dropdown está abierto: que se vea como una extensión */
+          .search-bar-container.is-open {
+            border-radius: 34px 34px 0 0;
+            border-bottom: none;
+          }
           
           .search-bar {
             flex: 1;
@@ -1337,10 +1579,11 @@
             max-height: calc(70vh);
             display: flex;
             flex-direction: column;
-            border-radius: 16px;
+            border-radius: 0 0 18px 18px;
             box-shadow: var(--glass-shadow);
             border: 1px solid var(--glass-border);
-            animation: slideUp 0.3s ease;
+            border-top: none;
+            animation: slideDown 0.24s ease;
             align-self: center;
             margin: 0 auto;
             pointer-events: auto;
@@ -1349,6 +1592,7 @@
           .search-results {
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            padding: 10px 10px 12px 10px;
           }
           .search-results-hint,
           .search-results-loading {
@@ -1356,7 +1600,8 @@
             text-align: center;
             padding: 20px;
             margin: 0;
-            font-size: 14px;
+            font-size: 18px;
+            font-weight: 800;
           }
           .search-results-error {
             color: #c00;
@@ -1368,23 +1613,31 @@
 
           .search-result-item {
             width: 100%;
-            text-align: left;
-            padding: 12px 14px;
-            border: none;
-            background: transparent;
+            text-align: center;
+            padding: 14px 14px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.06);
             cursor: pointer;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            margin: 10px 0;
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
           }
           .search-result-item:hover {
-            background: rgba(0, 0, 0, 0.03);
+            background: rgba(0, 123, 255, 0.08);
+            border-color: rgba(0, 123, 255, 0.45);
+            transform: translateY(-1px);
           }
           .search-results .search-result-item:last-child {
-            border-bottom: none;
+            margin-bottom: 6px;
           }
           .search-result-item-title {
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 750;
+            font-size: 16px;
             color: #111827;
+            letter-spacing: 0.2px;
+            text-align: center;
           }
           .search-result-item-info {
             font-size: 12px;
@@ -1397,10 +1650,12 @@
             color: rgba(229, 231, 235, 0.70);
           }
           .dark-mode .search-result-item {
-            border-bottom-color: rgba(255, 255, 255, 0.10);
+            border-color: rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.04);
           }
           .dark-mode .search-result-item:hover {
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(59, 130, 246, 0.14);
+            border-color: rgba(59, 130, 246, 0.60);
           }
           .dark-mode .search-result-item-title {
             color: #e5e7eb;
@@ -1421,10 +1676,10 @@
           .dark-mode .search-result-item-info {
             color: rgba(229, 231, 235, 0.70);
           }
-          @keyframes slideUp {
+          @keyframes slideDown {
             from {
               opacity: 0;
-              transform: translateY(10px);
+              transform: translateY(-10px);
             }
             to {
               opacity: 1;
@@ -1499,6 +1754,17 @@
                     </div>
                 </div>
             </div>
+
+            <div id="confirm-close-route-overlay" class="confirm-overlay" aria-hidden="true">
+              <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-close-route-title" onclick="event.stopPropagation()">
+                <h3 id="confirm-close-route-title">¿Cerrar ruta planeada?</h3>
+                <p id="confirm-close-route-message">Si cerrás, se limpiará el recorrido del mapa.</p>
+                <ul class="bs-nav-rows bs-nav-rows--two">
+                  <li><button id="confirm-close-route-cancel" type="button" class="btn-nav-row">Cancelar</button></li>
+                  <li><button id="confirm-close-route-ok" type="button" class="btn-nav-row">Cerrar ruta</button></li>
+                </ul>
+              </div>
+            </div>
             
             <div id="bottom-sheet-overlay" class="bottom-sheet-overlay" onclick="if(event.target.id === 'bottom-sheet-overlay') cerrarBottomSheet()"></div>
             <div id="bottom-sheet" class="bottom-sheet">
@@ -1523,6 +1789,7 @@
                   </button>
                 </div>
                     <h2 id="bs-title">Contenido</h2>
+                  <p id="bs-subtitle" class="bottom-sheet-subtitle" style="display:none"></p>
                 </div>
                 <div class="bottom-sheet-content" id="bs-content">
                 </div>
@@ -1551,6 +1818,6 @@
             </div>
         </footer>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-        <script src="scripts/script_index.js?v=2026-04-10-fix1"></script>
+        <script src="scripts/script_index.js?v=2026-04-11-fix3"></script>
     </body>
 </html>
