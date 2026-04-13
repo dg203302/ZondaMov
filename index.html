@@ -559,6 +559,130 @@
           .btn-floating:active {
             transform: scale(0.9);
           }
+
+          /* Estilos añadidos: versión adaptada del botón glass (scope solo a botones dentro de .button-wrap) */
+          .button-wrap {
+            position: relative;
+            z-index: 2;
+            border-radius: 999vw;
+            background: transparent;
+            pointer-events: none;
+            transition: all var(--anim--hover-time, 0.18s) var(--anim--hover-ease, ease);
+          }
+
+          /* Posicionamiento responsive para el botón de configuración:
+             - por defecto (móvil): esquina inferior izquierda
+             - en escritorio (>=900px): esquina superior derecha */
+          .button-wrap.settings-wrap {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            z-index: 1002;
+          }
+          @media (min-width: 900px) {
+            .button-wrap.settings-wrap {
+              top: 16px;
+              right: 16px;
+              bottom: auto;
+              left: auto;
+              margin-top: 28px;
+            }
+          }
+
+          .button-shadow {
+            --shadow-cuttoff-fix: 2em;
+            position: absolute;
+            width: calc(100% + var(--shadow-cuttoff-fix));
+            height: calc(100% + var(--shadow-cuttoff-fix));
+            top: calc(0% - var(--shadow-cuttoff-fix) / 2);
+            left: calc(0% - var(--shadow-cuttoff-fix) / 2);
+            filter: blur(clamp(2px, 0.125em, 12px));
+            overflow: visible;
+            pointer-events: none;
+          }
+
+          .button-shadow::after {
+            content: "";
+            position: absolute;
+            z-index: 0;
+            inset: 0;
+            border-radius: 999vw;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+            width: calc(100% - var(--shadow-cuttoff-fix) - 0.25em);
+            height: calc(100% - var(--shadow-cuttoff-fix) - 0.25em);
+            top: calc(var(--shadow-cuttoff-fix) - 0.5em);
+            left: calc(var(--shadow-cuttoff-fix) - 0.875em);
+            padding: 0.125em;
+            box-sizing: border-box;
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask-composite: exclude;
+            transition: all var(--anim--hover-time, 0.18s) var(--anim--hover-ease, ease);
+            overflow: visible;
+            opacity: 1;
+          }
+
+          /* Scope: aplicar estilos base solo a botones dentro de .button-wrap (no a todos los botones globales) */
+          .button-wrap > button,
+          .button-wrap .btn-floating {
+            --border-width: clamp(1px, 0.0625em, 4px);
+            all: unset;
+            cursor: pointer;
+            position: relative;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            pointer-events: auto;
+            z-index: 3;
+            background: linear-gradient(-75deg, rgba(255,255,255,0.05), rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+            border-radius: 999vw;
+            box-shadow: inset 0 0.125em 0.125em rgba(0,0,0,0.05), inset 0 -0.125em 0.125em rgba(255,255,255,0.5), 0 0.25em 0.125em -0.125em rgba(0,0,0,0.2), 0 0 0.1em 0.25em inset rgba(255,255,255,0.2);
+            backdrop-filter: blur(clamp(1px, 0.125em, 4px));
+            transition: all var(--anim--hover-time, 0.18s) var(--anim--hover-ease, ease);
+            width: 56px;
+            height: 56px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5em;
+            box-sizing: border-box;
+            color: inherit;
+          }
+
+          .button-wrap > button:hover,
+          .button-wrap .btn-floating:hover {
+            transform: scale(0.975);
+            box-shadow: inset 0 0.125em 0.125em rgba(0,0,0,0.05), inset 0 -0.125em 0.125em rgba(255,255,255,0.5), 0 0.15em 0.05em -0.1em rgba(0,0,0,0.25);
+          }
+
+          .button-wrap > button span {
+            position: relative;
+          }
+
+          .button-wrap > button::after {
+            content: "";
+            position: absolute;
+            z-index: 1;
+            inset: 0;
+            border-radius: 999vw;
+            width: calc(100% + var(--border-width));
+            height: calc(100% + var(--border-width));
+            top: calc(0% - var(--border-width) / 2);
+            left: calc(0% - var(--border-width) / 2);
+            padding: var(--border-width);
+            box-sizing: border-box;
+            background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.5));
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask-composite: exclude;
+            transition: all var(--anim--hover-time, 0.18s) var(--anim--hover-ease, ease);
+            box-shadow: inset 0 0 0 calc(var(--border-width) / 2) rgba(255,255,255,0.5);
+          }
+
+          .button-wrap:has(button:hover) .button-shadow {
+            filter: blur(clamp(2px, 0.0625em, 6px));
+            transition: filter var(--anim--hover-time, 0.18s) var(--anim--hover-ease, ease);
+          }
+
+          .button-wrap:has(button:active) {
+            transform: rotate3d(1,0,0,25deg);
+          }
           
           .footer-buttons {
             display: flex;
@@ -583,7 +707,7 @@
           }
           
           footer .btn-floating:hover {
-            background: rgba(255, 255, 255, 1);
+            background: rgba(255, 255, 255, 0);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
             transform: scale(1.05);
           }
@@ -1562,12 +1686,12 @@
             }
 
             .search-bar-container {
-              position: fixed;
-              top: 16px;
-              left: 16px;
-              right: 16px;
-              min-width: 0;
-              margin: 0;
+              position: fixed !important;
+              top: 16px !important;
+              left: 16px !important;
+              right: 16px !important;
+              min-width: 0 !important;
+              margin: 0 !important;
               z-index: 1003;
             }
 
@@ -1590,9 +1714,10 @@
             gap: 8px;
             min-width: 250px;
             margin-bottom: 16px;
-            background: var(--glass-bg-strong);
-            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            /* Usar el mismo look glass que los botones: fondo ligero en gradiente + blur moderado */
+            background: linear-gradient(-75deg, rgba(255,255,255,0.05), rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+            backdrop-filter: blur(clamp(1px, 0.125em, 4px)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(clamp(1px, 0.125em, 4px)) saturate(var(--glass-saturate));
             padding: 12px;
             border-radius: 34px;
             box-shadow: var(--glass-shadow);
@@ -1617,6 +1742,8 @@
             transition: all 0.2s ease;
             color: #333;
             text-align: center;
+            position: relative;
+            z-index: 2;
           }
           .search-bar:focus {
             border: none;
@@ -1624,7 +1751,67 @@
             background: rgba(255, 255, 255, 0.1);
           }
           .search-bar::placeholder {
-            color: #999;
+            color: #000000;
+          }
+
+          /* Efecto glass extra para la barra de búsqueda (cuando la transparencia está activa) */
+          .search-bar-container {
+            position: relative;
+            isolation: isolate;
+          }
+
+          .search-bar-container::before {
+            content: "";
+            position: absolute;
+            z-index: 1;
+            inset: 0;
+            border-radius: 34px;
+            background: linear-gradient(var(--angle-2, -15deg), rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 40% 50%, rgba(255,255,255,0) 55%);
+            mix-blend-mode: screen;
+            pointer-events: none;
+            background-size: 200% 200%;
+            background-position: 0% 50%;
+            background-repeat: no-repeat;
+            transition: background-position calc(var(--anim--hover-time, 0.18s) * 1.25) var(--anim--hover-ease, ease), --angle-2 calc(var(--anim--hover-time, 0.18s) * 1.25) var(--anim--hover-ease, ease);
+            pointer-events: none !important;
+          }
+
+          .search-bar-container:hover::before {
+            background-position: 25% 50%;
+          }
+
+          .search-bar-container::after {
+            content: "";
+            position: absolute;
+            z-index: 0;
+            inset: 0;
+            border-radius: 34px;
+            width: calc(100% + var(--border-width, 1px));
+            height: calc(100% + var(--border-width, 1px));
+            top: calc(0% - var(--border-width, 1px) / 2);
+            left: calc(0% - var(--border-width, 1px) / 2);
+            padding: var(--border-width, 1px);
+            box-sizing: border-box;
+            background: conic-gradient(from var(--angle-1, 0deg) at 50% 50%, rgba(0,0,0,0.5), rgba(0,0,0,0) 5% 40%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 60% 95%, rgba(0,0,0,0.5)), linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.5));
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask-composite: exclude;
+            transition: all var(--anim--hover-time, 0.18s) var(--anim--hover-ease, ease), --angle-1 500ms ease;
+            box-shadow: inset 0 0 0 calc(var(--border-width, 1px) / 2) rgba(255,255,255,0.5);
+            pointer-events: none !important;
+          }
+
+          .search-bar-container:hover::after {
+            --angle-1: -125deg;
+          }
+
+          .search-bar-container:active::after {
+            --angle-1: -75deg;
+          }
+
+          /* Desactivar efectos glass cuando .no-transparency está presente */
+          .no-transparency .search-bar-container::before,
+          .no-transparency .search-bar-container::after {
+            display: none !important;
           }
           
           .search-modal {
@@ -1739,7 +1926,16 @@
           /* Ajustes extra para modo sin transparencia: quita blur explícitamente */
           .no-transparency .btn-settings,
           .no-transparency footer .btn-floating,
-          .no-transparency .search-bar-container,
+          .no-transparency .search-bar-container {
+            background: #fff !important;
+            border: 1px solid rgba(0,0,0,0.08) !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.10) !important;
+          }
+          .dark-mode.no-transparency .search-bar-container {
+            background: #0b1220 !important;
+            border: 1px solid rgba(255,255,255,0.10) !important;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.55) !important;
+          }
           .no-transparency .search-modal-content,
           .no-transparency .bottom-sheet,
           .no-transparency .sidepanel,
@@ -1747,6 +1943,40 @@
           .no-transparency .toggle-row {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
+          }
+
+          /* Restaurar estilo opaco/previo para botones cuando se desactiva la transparencia */
+          .no-transparency .button-wrap > button,
+          .no-transparency .button-wrap .btn-floating,
+          .no-transparency .btn-settings,
+          .no-transparency footer .btn-floating {
+            background: #ffffff !important;
+            color: #111827 !important;
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 50% !important;
+          }
+
+          /* Variante para modo oscuro cuando la transparencia está desactivada */
+          .dark-mode.no-transparency .button-wrap > button,
+          .dark-mode.no-transparency .button-wrap .btn-floating,
+          .dark-mode.no-transparency .btn-settings,
+          .dark-mode.no-transparency footer .btn-floating {
+            background: #0b1220 !important;
+            color: #e5e7eb !important;
+            border: 1px solid rgba(255, 255, 255, 0.10) !important;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55) !important;
+          }
+
+          /* Quitar efectos extra (brillo, outline y sombras) en modo no-transparency */
+          .no-transparency .button-shadow {
+            display: none !important;
+          }
+          .no-transparency .button-wrap > button::after,
+          .no-transparency .button-wrap > button span::after {
+            display: none !important;
           }
           .dark-mode .search-result-item-info {
             color: rgba(229, 231, 235, 0.70);
@@ -1776,10 +2006,13 @@
           <div class="page-shade top"></div>
           <div class="page-shade bottom"></div>
 
-          <button id="btn-settings" class="btn-settings" type="button" title="Configuración" aria-label="Configuración">
-            <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
-            <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
-          </button>
+          <div class="button-wrap settings-wrap">
+            <div class="button-shadow"></div>
+            <button id="btn-settings" class="btn-settings" type="button" title="Configuración" aria-label="Configuración">
+              <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
+              <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jb2ctaWNvbiBsdWNpZGUtY29nIj48cGF0aCBkPSJNMTEgMTAuMjcgNyAzLjM0Ii8+PHBhdGggZD0ibTExIDEzLjczLTQgNi45MyIvPjxwYXRoIGQ9Ik0xMiAyMnYtMiIvPjxwYXRoIGQ9Ik0xMiAydjIiLz48cGF0aCBkPSJNMTQgMTJoOCIvPjxwYXRoIGQ9Im0xNyAyMC42Ni0xLTEuNzMiLz48cGF0aCBkPSJtMTcgMy4zNC0xIDEuNzMiLz48cGF0aCBkPSJNMiAxMmgyIi8+PHBhdGggZD0ibTIwLjY2IDE3LTEuNzMtMSIvPjxwYXRoIGQ9Im0yMC42NiA3LTEuNzMgMSIvPjxwYXRoIGQ9Im0zLjM0IDE3IDEuNzMtMSIvPjxwYXRoIGQ9Im0zLjM0IDcgMS43MyAxIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjgiLz48L3N2Zz4=" />
+            </button>
+          </div>
 
           <div id="settings-overlay" class="sidepanel-overlay" aria-hidden="true"></div>
           <aside id="settings-panel" class="sidepanel" aria-hidden="true">
@@ -1881,14 +2114,20 @@
               <input type="text" id="search-input" class="search-bar" placeholder="Toca aquí para buscar" oninput="buscarLugaresEnTiempoReal()" onkeydown="if(event.key==='Escape') cerrarModalBusqueda()">
             </div>
             <div class="footer-buttons">
-            <button id="btn-centrar" class="btn-floating" title="Recentrar ubicación" onclick="CentrarYOferécerGuardar()" aria-label="Recentrar ubicación">
-              <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1sb2NhdGUtZml4ZWQtaWNvbiBsdWNpZGUtbG9jYXRlLWZpeGVkIj48bGluZSB4MT0iMiIgeDI9IjUiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjE5IiB4Mj0iMjIiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjEyIiB4Mj0iMTIiIHkxPSIyIiB5Mj0iNSIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyIiB5MT0iMTkiIHkyPSIyMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjciLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIi8+PC9zdmc+" />
-              <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1sb2NhdGUtZml4ZWQtaWNvbiBsdWNpZGUtbG9jYXRlLWZpeGVkIj48bGluZSB4MT0iMiIgeDI9IjUiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjE5IiB4Mj0iMjIiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjEyIiB4Mj0iMTIiIHkxPSIyIiB5Mj0iNSIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyIiB5MT0iMTkiIHkyPSIyMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjciLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIi8+PC9zdmc+" />
-            </button>
-              <button id="btn-favs" class="btn-floating" title="Ver favoritos" onclick="abrirBottomSheetFavoritos()" aria-label="Ver favoritos">
-                <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1ib29rLWhlYXJ0LWljb24gbHVjaWRlLWJvb2staGVhcnQiPjxwYXRoIGQ9Ik00IDE5LjV2LTE1QTIuNSAyLjUgMCAwIDEgNi41IDJIMTlhMSAxIDAgMCAxIDEgMXYxOGExIDEgMCAwIDEtMSAxSDYuNWExIDEgMCAwIDEgMC01SDIwIi8+PHBhdGggZD0iTTguNjIgOS44QTIuMjUgMi4yNSAwIDEgMSAxMiA2LjgzNmEyLjI1IDIuMjUgMCAxIDEgMy4zOCAyLjk2NmwtMi42MjYgMi44NTZhLjk5OC45OTggMCAwIDEtMS41MDcgMHoiLz48L3N2Zz4=" />
-                <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1ib29rLWhlYXJ0LWljb24gbHVjaWRlLWJvb2staGVhcnQiPjxwYXRoIGQ9Ik00IDE5LjV2LTE1QTIuNSAyLjUgMCAwIDEgNi41IDJIMTlhMSAxIDAgMCAxIDEgMXYxOGExIDEgMCAwIDEtMSAxSDYuNWExIDEgMCAwIDEgMC01SDIwIi8+PHBhdGggZD0iTTguNjIgOS44QTIuMjUgMi4yNSAwIDEgMSAxMiA2LjgzNmEyLjI1IDIuMjUgMCAxIDEgMy4zOCAyLjk2NmwtMi42MjYgMi44NTZhLjk5OC45OTggMCAwIDEtMS41MDcgMHoiLz48L3N2Zz4=" />
-              </button>
+              <div class="button-wrap">
+                <div class="button-shadow"></div>
+                <button id="btn-centrar" class="btn-floating" title="Recentrar ubicación" onclick="CentrarYOferécerGuardar()" aria-label="Recentrar ubicación">
+                  <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1sb2NhdGUtZml4ZWQtaWNvbiBsdWNpZGUtbG9jYXRlLWZpeGVkIj48bGluZSB4MT0iMiIgeDI9IjUiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjE5IiB4Mj0iMjIiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjEyIiB4Mj0iMTIiIHkxPSIyIiB5Mj0iNSIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyIiB5MT0iMTkiIHkyPSIyMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjciLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIi8+PC9zdmc+" />
+                  <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1sb2NhdGUtZml4ZWQtaWNvbiBsdWNpZGUtbG9jYXRlLWZpeGVkIj48bGluZSB4MT0iMiIgeDI9IjUiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjE5IiB4Mj0iMjIiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjEyIiB4Mj0iMTIiIHkxPSIyIiB5Mj0iNSIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyIiB5MT0iMTkiIHkyPSIyMiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjciLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIi8+PC9zdmc+" />
+                </button>
+              </div>
+              <div class="button-wrap">
+                <div class="button-shadow"></div>
+                <button id="btn-favs" class="btn-floating" title="Ver favoritos" onclick="abrirBottomSheetFavoritos()" aria-label="Ver favoritos">
+                  <img class="icon light" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1ib29rLWhlYXJ0LWljb24gbHVjaWRlLWJvb2staGVhcnQiPjxwYXRoIGQ9Ik00IDE5LjV2LTE1QTIuNSAyLjUgMCAwIDEgNi41IDJIMTlhMSAxIDAgMCAxIDEgMXYxOGExIDEgMCAwIDEtMSAxSDYuNWExIDEgMCAwIDEgMC01SDIwIi8+PHBhdGggZD0iTTguNjIgOS44QTIuMjUgMi4yNSAwIDEgMSAxMiA2LjgzNmEyLjI1IDIuMjUgMCAxIDEgMy4zOCAyLjk2NmwtMi42MjYgMi44NTZhLjk5OC45OTggMCAwIDEtMS41MDcgMHoiLz48L3N2Zz4=" />
+                  <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1ib29rLWhlYXJ0LWljb24gbHVjaWRlLWJvb2staGVhcnQiPjxwYXRoIGQ9Ik00IDE5LjV2LTE1QTIuNSAyLjUgMCAwIDEgNi41IDJIMTlhMSAxIDAgMCAxIDEgMXYxOGExIDEgMCAwIDEtMSAxSDYuNWExIDEgMCAwIDEgMC01SDIwIi8+PHBhdGggZD0iTTguNjIgOS44QTIuMjUgMi4yNSAwIDEgMSAxMiA2LjgzNmEyLjI1IDIuMjUgMCAxIDEgMy4zOCAyLjk2NmwtMi42MjYgMi44NTZhLjk5OC45OTggMCAwIDEtMS41MDcgMHoiLz48L3N2Zz4=" />
+                </button>
+              </div>
             </div>
         </footer>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
