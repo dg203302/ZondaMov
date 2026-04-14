@@ -36,11 +36,11 @@
             - Al desactivar (clase .no-transparency en <html>): fondos opacos y sin blur.
           */
           :root {
-            --glass-blur: 30px;
+            --glass-blur: 7px;
             --glass-saturate: 185%;
             --glass-border: rgba(255, 255, 255, 0.22);
             --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
-            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.048);
             --glass-bg-strong: rgba(255, 255, 255, 0.28);
 
             --glass-fg: #111;
@@ -451,7 +451,7 @@
             background: var(--glass-bg-strong);
           }
           .dark-mode .bottom-sheet-header {
-            background: rgba(31, 41, 55, 0.95);
+            background: var(--glass-bg);
             border-bottom-color: rgba(255, 255, 255, 0.08);
           }
           .dark-mode .bottom-sheet-header h2 {
@@ -586,6 +586,49 @@
               bottom: auto;
               left: auto;
               margin-top: 28px;
+            }
+          }
+
+          /* Agrandar botones principales (centrar, favoritos, configuración) */
+          #btn-centrar,
+          #btn-favs,
+          #btn-settings {
+            width: 72px !important;
+            height: 72px !important;
+            min-width: 72px !important;
+            min-height: 72px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999vw !important;
+            padding: 0 !important;
+            font-size: 26px !important;
+          }
+
+          /* Iconos dentro de los botones principales */
+          #btn-centrar .icon,
+          #btn-favs .icon,
+          #btn-settings .icon {
+            width: 36px !important;
+            height: 36px !important;
+          }
+
+          /* Tamaño ligeramente mayor en pantallas de escritorio */
+          @media (min-width: 900px) {
+            #btn-centrar,
+            #btn-favs,
+            #btn-settings {
+              width: 80px !important;
+              height: 80px !important;
+              min-width: 80px !important;
+              min-height: 80px !important;
+              font-size: 28px !important;
+            }
+            #btn-centrar .icon,
+            #btn-favs .icon,
+            #btn-settings .icon {
+              width: 40px !important;
+              height: 40px !important;
             }
           }
 
@@ -872,14 +915,62 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 16px;
-            border-bottom: 1px solid #e0e0e0;
-            background-color: #f8f9fa;
+            padding: 8px 12px;
+            min-height: 56px;
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            box-shadow: var(--glass-shadow);
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
+            justify-content: center;
+            align-items: center;
             cursor: grab;
             user-select: none;
             touch-action: none;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .bottom-sheet-header::before {
+            content: "";
+            position: absolute;
+            z-index: 0;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(var(--angle-2, -15deg), rgba(255,255,255,0) 0%, rgba(255,255,255,0.35) 40% 50%, rgba(255,255,255,0) 55%);
+            mix-blend-mode: screen;
+            pointer-events: none;
+            background-size: 200% 200%;
+            background-position: 0% 50%;
+            transition: background-position calc(var(--anim--hover-time, 0.18s) * 1.25) var(--anim--hover-ease, ease), --angle-2 calc(var(--anim--hover-time, 0.18s) * 1.25) var(--anim--hover-ease, ease);
+          }
+
+          .bottom-sheet-header:hover::before {
+            background-position: 25% 50%;
+          }
+
+          .bottom-sheet-header > * {
+            position: relative;
+            z-index: 1;
+          }
+
+          /* Disable glass effects when transparency is turned off */
+          .no-transparency .bottom-sheet-header {
+            background: #ffffff !important;
+            border-bottom-color: rgba(0,0,0,0.08) !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.10) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+          .dark-mode.no-transparency .bottom-sheet-header {
+            background: #0b1220 !important;
+            border-bottom-color: rgba(255,255,255,0.10) !important;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.55) !important;
+          }
+          .no-transparency .bottom-sheet-header::before {
+            display: none !important;
           }
           
           .bottom-sheet-header:active {
@@ -967,16 +1058,7 @@
             white-space: normal;
           }
           .bottom-sheet-handle {
-            width: 40px;
-            height: 4px;
-            background: #ccc;
-            border-radius: 2px;
-            cursor: grab;
-            user-select: none;
-            flex-shrink: 0;
-          }
-          .bottom-sheet-handle:active {
-            cursor: grabbing;
+            display: none !important;
           }
           
           .bottom-sheet-content {
@@ -1833,9 +1915,10 @@
             pointer-events: auto;
           }
           .search-modal-content {
-            background: var(--glass-bg-strong);
-            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            /* Usar el mismo nivel de translucencia que la barra de búsqueda */
+            background: linear-gradient(-75deg, rgba(255,255,255,0.05), rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+            backdrop-filter: blur(clamp(1px, 0.125em, 4px)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(clamp(1px, 0.125em, 4px)) saturate(var(--glass-saturate));
             width: 90%;
             max-width: 500px;
             max-height: calc(70vh);
@@ -1879,11 +1962,12 @@
             padding: 14px 14px;
             border: 1px solid rgba(0, 0, 0, 0.08);
             border-radius: 14px;
-            background: rgba(255, 255, 255, 0.06);
+            /* Menor translucidez: fondo casi opaco y blur reducido para legibilidad */
+            background: rgba(255, 255, 255, 0.562);
             cursor: pointer;
             margin: 10px 0;
-            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            backdrop-filter: blur(1px) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(1px) saturate(var(--glass-saturate));
             transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
           }
           .search-result-item:hover {
@@ -1913,7 +1997,10 @@
           }
           .dark-mode .search-result-item {
             border-color: rgba(255, 255, 255, 0.14);
-            background: rgba(255, 255, 255, 0.04);
+            /* Menor translucidez en modo oscuro */
+            background: rgba(17, 24, 39, 0.92);
+            backdrop-filter: blur(1px) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(1px) saturate(var(--glass-saturate));
           }
           .dark-mode .search-result-item:hover {
             background: rgba(59, 130, 246, 0.14);
@@ -1941,6 +2028,33 @@
           .no-transparency .sidepanel,
           .no-transparency .sidepanel-header,
           .no-transparency .toggle-row {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+
+          /* Fondo opaco para el modal de resultados cuando la transparencia está desactivada */
+          .no-transparency .search-modal-content {
+            background: #ffffff !important;
+            border: 1px solid rgba(0,0,0,0.08) !important;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12) !important;
+          }
+          .dark-mode.no-transparency .search-modal-content {
+            background: #0b1220 !important;
+            border: 1px solid rgba(255,255,255,0.10) !important;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.55) !important;
+          }
+          /* Resultados opacos cuando se desactiva la transparencia */
+          .no-transparency .search-result-item {
+            background: #ffffff !important;
+            color: #111827 !important;
+            border-color: rgba(0,0,0,0.08) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+          .dark-mode.no-transparency .search-result-item {
+            background: #0b1220 !important;
+            color: #e5e7eb !important;
+            border-color: rgba(255,255,255,0.10) !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
           }
@@ -2094,8 +2208,8 @@
                       <img class="icon dark" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1oZWFydC1taW51cy1pY29uIGx1Y2lkZS1oZWFydC1taW51cyI+PHBhdGggZD0ibTE0Ljg3NiAxOC45OS0xLjM2OCAxLjMyM2EyIDIgMCAwIDEtMyAuMDE5TDUgMTVjLTEuNS0xLjUtMy0zLjItMy01LjVhNS41IDUuNSAwIDAgMSA5LjU5MS0zLjY3Ni41Ni41NiAwIDAgMCAuODE4IDBBNS40OSA1LjQ5IDAgMCAxIDIyIDkuNWE1LjIgNS4yIDAgMCAxLS4yNDQgMS41NzIiLz48cGF0aCBkPSJNMTUgMTVoNiIvPjwvc3ZnPg==" />
                     </span>
                   </button>
+                  <h2 id="bs-title">Contenido</h2>
                 </div>
-                    <h2 id="bs-title">Contenido</h2>
                   <p id="bs-subtitle" class="bottom-sheet-subtitle" style="display:none"></p>
                 </div>
                 <div class="bottom-sheet-content" id="bs-content">
