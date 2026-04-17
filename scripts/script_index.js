@@ -3357,6 +3357,17 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
 }
 
 function mostrarLineasEnContenedorParadas(feature) {
+  if (leafletMap && feature?.geometry?.coordinates) {
+    const coords = feature.geometry.coordinates;
+    if (Array.isArray(coords) && coords.length >= 2) {
+      const lat = Number(coords[1]);
+      const lng = Number(coords[0]);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        leafletMap.panTo([lat, lng]);
+      }
+    }
+  }
+
   const lineas = obtenerLineasDetalleDesdeRelations(feature);
   if (!lineas.length) {
     abrirBottomSheet('Parada', '<p>No hay líneas disponibles para esta parada.</p>');
