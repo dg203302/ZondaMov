@@ -892,6 +892,7 @@ function guardarBoolLocalStorage(key, value) {
 
 function aplicarModoOscuro(enabled) {
   document.documentElement.classList.toggle('dark-mode', Boolean(enabled));
+  document.head.querySelector('meta[name="theme-color"]')?.setAttribute('content', Boolean(enabled) ? '#000000' : '#ffffff');
   guardarBoolLocalStorage(STORAGE_DARK_MODE_KEY, Boolean(enabled));
 }
 
@@ -5553,3 +5554,5 @@ window.onload = async () => {
     console.error('Error al obtener la ubicación inicial:', error.message ?? error);
   }
 };
+
+document
