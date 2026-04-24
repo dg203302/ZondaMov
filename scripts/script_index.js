@@ -221,7 +221,7 @@ function actualizarEstadoBotonFavoritos() {
   if (!favBtn) return;
 
   let esFavorita = false;
-  
+
   if (favBtn.dataset.tipo === 'parada') {
     const feature = window._currentFeature;
     if (feature) {
@@ -298,7 +298,7 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
 
   // Evita que el wrapper del anuncio se destruya al hacer bsContent.innerHTML = ...
   desmontarAdsDeBottomSheet();
-  
+
   if (bsTitle) bsTitle.textContent = titulo;
   if (bsSubtitle) {
     const s = typeof subtitulo === 'string' ? subtitulo.trim() : '';
@@ -309,22 +309,22 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
 
   // Montar anuncio si el HTML incluyó el placeholder.
   montarAdsEnBottomSheetSiCorresponde();
-  
+
   // Limpiar estilos transform previos
   if (bs) {
     setBottomSheetState(BOTTOM_SHEET_STATE_HALF);
     bs.style.transform = '';
     bs.style.transition = '';
   }
-  
+
   bs?.classList.add('active');
   overlay?.classList.add('active');
-  
+
   // Reinicializar el drag después de un pequeño delay para asegurar que el DOM está actualizado
   setTimeout(() => {
     setupBottomSheetDrag();
   }, 50);
-  
+
   // Mostrar/ocultar botón de favoritos según el tipo
   if (favBtn) {
     if (tipo === 'parada') {
@@ -439,7 +439,7 @@ function cerrarBottomSheet(force = false) {
     mostrarModalConfirmCerrarRuta(() => cerrarBottomSheet(true));
     return;
   }
-  
+
   // Limpiar estilos y clases
   if (bs) {
     bs.classList.remove('active');
@@ -448,7 +448,7 @@ function cerrarBottomSheet(force = false) {
     bs.style.transform = '';
     bs.style.transition = '';
   }
-  
+
   overlay?.classList.remove('active');
 
   if (favBtn) {
@@ -458,7 +458,7 @@ function cerrarBottomSheet(force = false) {
     planBtn.onclick = null;
     planBtn.style.display = 'none';
   }
-  
+
   // Limpiar recorrido activo al cerrar
   limpiarRecorrido();
   volverVistaGeneral();
@@ -555,7 +555,7 @@ function abrirBottomSheetFavoritos() {
   const paradasHtml = contParadas?.innerHTML || '<p class="fav-empty">Sin paradas favoritas</p>';
   const lineasHtml = contLineas?.innerHTML || '<p class="fav-empty">Sin líneas favoritas</p>';
   const lugaresHtml = contLugares?.innerHTML || '<p class="fav-empty">Sin lugares guardados</p>';
-  
+
   const html = `
     <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 20px; font-weight: 700; color: var(--text-primary, #222);">📍 Paradas Favoritas</h3>
     <div style="margin-bottom: 28px;">${paradasHtml}</div>
@@ -572,12 +572,15 @@ function setupBottomSheetDrag() {
   const header = document.querySelector('.bottom-sheet-header');
   const bottomSheet = document.getElementById('bottom-sheet');
   const content = document.getElementById('bs-content');
-  
+
   if (!header || !bottomSheet) return;
-  
+
   let isDragging = false;
   let startY = 0;
   let currentY = 0;
+  let lastY = 0;
+  let lastTime = 0;
+  let velocity = 0;
   let startState = BOTTOM_SHEET_STATE_HALF;
   let startHeightPx = 0;
 
@@ -585,91 +588,148 @@ function setupBottomSheetDrag() {
   const getHalfHeightPx = () => Math.round((window.innerHeight || 0) * 0.5);
   const getFullHeightPx = () => Math.round((window.innerHeight || 0) * 1.0);
 
-  const resolveTargetState = (initialState, deltaY) => {
-    if (initialState === BOTTOM_SHEET_STATE_FULL) {
-      if (deltaY > 0) return BOTTOM_SHEET_STATE_HALF;
-      return BOTTOM_SHEET_STATE_FULL;
-    }
-
-    if (deltaY <= -SHEET_DRAG_EXPAND_THRESHOLD) return BOTTOM_SHEET_STATE_FULL;
-    if (deltaY >= SHEET_DRAG_CLOSE_THRESHOLD) return 'close';
-    return BOTTOM_SHEET_STATE_HALF;
-  };
-
   const handleDragStart = (e) => {
-    // No iniciar drag si el click es en un botón
-    if (e.target.closest('button') || e.target.closest('svg') || e.target.closest('img')) {
+    // No iniciar drag si el click es en un botón o elementos interactivos
+    if (e.target.closest('button') || e.target.closest('svg') || e.target.closest('img') || e.target.closest('.btn-nav-row')) {
       return;
     }
-    
+
     if (!bottomSheet.classList.contains('active')) return;
+
     isDragging = true;
     startY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
-    currentY = 0;
+    lastY = startY;
+    lastTime = Date.now();
+    velocity = 0;
+
     startState = getBottomSheetState();
     startHeightPx = Math.round(bottomSheet.getBoundingClientRect().height || 0);
+
     bottomSheet.classList.add('dragging');
     // Prevenir selección de texto durante el drag
     document.body.style.userSelect = 'none';
     if (content) {
       content.style.pointerEvents = 'none';
     }
-    e.preventDefault();
   };
 
   const handleDragMove = (e) => {
     if (!isDragging) return;
-    const clientY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
-    currentY = clientY - startY;
 
-    // En lugar de mover el sheet (que deja hueco abajo), ajustar su altura.
-    // deltaY < 0 => arrastra hacia arriba => aumenta altura
-    // deltaY > 0 => arrastra hacia abajo => reduce altura
+    const now = Date.now();
+    const clientY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
+
+    // Calcular velocidad (píxeles por milisegundo)
+    const dt = now - lastTime;
+    if (dt > 0) {
+      velocity = (clientY - lastY) / dt;
+    }
+
+    currentY = clientY - startY;
+    lastY = clientY;
+    lastTime = now;
+
     const halfPx = getHalfHeightPx();
     const fullPx = getFullHeightPx();
-    const minPx = startState === BOTTOM_SHEET_STATE_HALF ? Math.max(140, halfPx - 260) : halfPx;
-    const maxPx = Math.max(fullPx, halfPx);
 
-    const nextHeight = clamp(startHeightPx - currentY, minPx, maxPx);
-    bottomSheet.style.height = `${nextHeight}px`;
-    bottomSheet.style.transform = '';
+    // Límites de arrastre: permitir cerrar (min height 0) y exceder un poco el top (rubber band)
+    const minPx = 0;
+    const maxLimit = fullPx + 50;
+
+    let nextHeight = startHeightPx - currentY;
+
+    if (nextHeight > fullPx) {
+      // Efecto "muelle" (rubber banding) al llegar al tope
+      nextHeight = fullPx + (nextHeight - fullPx) * 0.3;
+    }
+
+    bottomSheet.style.height = `${clamp(nextHeight, minPx, maxLimit)}px`;
+    bottomSheet.style.transform = 'translateY(0)';
   };
 
   const handleDragEnd = () => {
     if (!isDragging) return;
     isDragging = false;
+
     bottomSheet.classList.remove('dragging');
     document.body.style.userSelect = '';
     if (content) {
       content.style.pointerEvents = '';
     }
 
-    const targetState = resolveTargetState(startState, currentY);
+    const halfPx = getHalfHeightPx();
+    const fullPx = getFullHeightPx();
+    const currentHeight = bottomSheet.offsetHeight;
 
+    // Lógica de snapping basada en velocidad y posición
+    const flickThreshold = 0.5; // px/ms
+    let targetState = BOTTOM_SHEET_STATE_HALF;
+    let targetHeight = halfPx;
+
+    if (velocity > flickThreshold) {
+      // Flick hacia abajo: o va a half o cierra
+      if (currentHeight > halfPx * 1.1) {
+        targetState = BOTTOM_SHEET_STATE_HALF;
+        targetHeight = halfPx;
+      } else {
+        targetState = 'close';
+        targetHeight = 0;
+      }
+    } else if (velocity < -flickThreshold) {
+      // Flick hacia arriba: expandir a full
+      targetState = BOTTOM_SHEET_STATE_FULL;
+      targetHeight = fullPx;
+    } else {
+      // Sin velocidad: ir al estado más cercano
+      const distToFull = Math.abs(currentHeight - fullPx);
+      const distToHalf = Math.abs(currentHeight - halfPx);
+      const distToClose = currentHeight;
+
+      if (distToClose < 120) {
+        targetState = 'close';
+        targetHeight = 0;
+      } else if (distToFull < distToHalf) {
+        targetState = BOTTOM_SHEET_STATE_FULL;
+        targetHeight = fullPx;
+      } else {
+        targetState = BOTTOM_SHEET_STATE_HALF;
+        targetHeight = halfPx;
+      }
+    }
+
+    // Aplicar transición suave
     if (targetState === 'close') {
-      bottomSheet.style.transform = '';
-      bottomSheet.style.transition = '';
-      bottomSheet.style.height = '';
-      cerrarBottomSheet();
+      // Para evitar el salto vertical, animamos el transform hacia abajo
+      // en lugar de colapsar el height a 0px.
+      bottomSheet.style.transition = 'transform 0.3s ease-in';
+      bottomSheet.style.transform = 'translateY(100%)';
+      
+      // Desactivamos el overlay inmediatamente
+      document.getElementById('bottom-sheet-overlay')?.classList.remove('active');
+
+      setTimeout(() => {
+        cerrarBottomSheet(true);
+        bottomSheet.style.transform = '';
+        bottomSheet.style.height = '';
+        bottomSheet.style.transition = '';
+      }, 300);
     } else {
       setBottomSheetState(targetState);
-      // Animar el ajuste de altura al estado final.
-      const halfPx = getHalfHeightPx();
-      const fullPx = getFullHeightPx();
-      const targetHeight = targetState === BOTTOM_SHEET_STATE_FULL ? fullPx : halfPx;
-      bottomSheet.style.transition = 'height 0.2s ease';
+      // Usar una curva con un ligero bounce para el snapping
+      bottomSheet.style.transition = 'height 0.35s cubic-bezier(0.33, 1, 0.68, 1)';
       bottomSheet.style.height = `${targetHeight}px`;
-      bottomSheet.style.transform = '';
+
       setTimeout(() => {
         bottomSheet.classList.remove('dragging');
-        // Volver a control por CSS (responsive) luego de la animación.
         bottomSheet.style.transition = '';
+        // Volver a dejar que el CSS maneje la altura reactiva (dvh) tras la animación
         bottomSheet.style.height = '';
-      }, 200);
+      }, 350);
     }
-    
+
     currentY = 0;
     startHeightPx = 0;
+    velocity = 0;
   };
 
   // Remover listeners previos para evitar duplicados
@@ -802,7 +862,7 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'cur
       </div>
     </div>
   `;
-  
+
   abrirBottomSheet('Guardar lugar', html);
 }
 
@@ -980,10 +1040,10 @@ function renderLineasFavs() {
   for (const f of favs) {
     const ref = typeof f?.ref === 'string' ? f.ref.trim() : '';
     const name = typeof f?.name === 'string' ? f.name.trim() : '';
-    
+
     const wrapper = document.createElement('div');
     wrapper.className = 'fav-row';
-    
+
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'fav-main';
@@ -991,7 +1051,7 @@ function renderLineasFavs() {
     item.dataset.lineaRef = ref;
     item.dataset.lineaName = name;
     item.textContent = ref ? `Línea ${ref}${name ? ` — ${name}` : ''}` : name;
-    
+
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
     btnEliminar.textContent = '✕';
@@ -999,7 +1059,7 @@ function renderLineasFavs() {
     btnEliminar.className = 'btn-eliminar-fav';
     btnEliminar.dataset.lineaRef = ref;
     btnEliminar.dataset.lineaName = name;
-    
+
     wrapper.appendChild(item);
     wrapper.appendChild(btnEliminar);
     contLineasFavs.appendChild(wrapper);
@@ -1059,9 +1119,9 @@ if (bsContent) {
         abrirBottomSheet(
           'Ruta',
           '<div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">'
-            + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
-            + '<p class="bottom-sheet-loading-title">Cargando paradas...</p>'
-            + '</div>',
+          + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
+          + '<p class="bottom-sheet-loading-title">Cargando paradas...</p>'
+          + '</div>',
           '',
           `Línea ${escapeHtml(ref)}`,
         );
@@ -1094,9 +1154,9 @@ if (bsContent) {
         abrirBottomSheet(
           'Ruta',
           '<div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">'
-            + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
-            + '<p class="bottom-sheet-loading-title">Calculando trasbordo...</p>'
-            + '</div>',
+          + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
+          + '<p class="bottom-sheet-loading-title">Calculando trasbordo...</p>'
+          + '</div>',
           '',
           tName ? `Trasbordo en: ${escapeHtml(String(tName))}` : '',
         );
@@ -1187,7 +1247,7 @@ if (bsContent) {
       }
       return;
     }
-    
+
     // Manejar botones de eliminar de favoritos
     const btnDeleteLugar = target.closest('.btn-eliminar-fav[data-lugar-nombre]');
     if (btnDeleteLugar instanceof HTMLButtonElement) {
@@ -1199,7 +1259,7 @@ if (bsContent) {
       abrirBottomSheetFavoritos(); // Actualizar vista
       return;
     }
-    
+
     const btnDeleteParada = target.closest('button.btn-eliminar-fav[data-parada-id]');
     if (btnDeleteParada instanceof HTMLButtonElement) {
       ev.stopPropagation();
@@ -1212,7 +1272,7 @@ if (bsContent) {
       abrirBottomSheetFavoritos(); // Actualizar vista
       return;
     }
-    
+
     // Eliminar líneas favoritas
     const btnDeleteLinea = target.closest('[data-linea-ref].btn-eliminar-fav');
     if (btnDeleteLinea instanceof HTMLButtonElement) {
@@ -1333,10 +1393,10 @@ function renderParadasFavs() {
     const label = typeof f?.label === 'string' ? f.label : 'Parada';
     const lat = typeof f?.lat === 'number' && Number.isFinite(f.lat) ? f.lat : null;
     const lng = typeof f?.lng === 'number' && Number.isFinite(f.lng) ? f.lng : null;
-    
+
     const wrapper = document.createElement('div');
     wrapper.className = 'fav-row';
-    
+
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'fav-main';
@@ -1344,7 +1404,7 @@ function renderParadasFavs() {
     if (lat !== null) item.dataset.lat = String(lat);
     if (lng !== null) item.dataset.lng = String(lng);
     item.textContent = label;
-    
+
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
     btnEliminar.textContent = '✕';
@@ -1353,7 +1413,7 @@ function renderParadasFavs() {
     btnEliminar.dataset.paradaId = id;
     if (lat !== null) btnEliminar.dataset.paradaLat = String(lat);
     if (lng !== null) btnEliminar.dataset.paradaLng = String(lng);
-    
+
     wrapper.appendChild(item);
     wrapper.appendChild(btnEliminar);
     contParadasFavs.appendChild(wrapper);
@@ -1408,19 +1468,19 @@ function obtenerIdParada(feature) {
 
 function obtenerEtiquetaParada(feature) {
   const props = feature?.properties || {};
-  
+
   // Intenta obtener el nombre de la parada
   const name = props.name;
   if (typeof name === 'string' && name.trim()) return name.trim();
-  
+
   // Si no hay nombre, intenta obtener información de calles cercanas
   const addr_street = props['addr:street'];
   if (typeof addr_street === 'string' && addr_street.trim()) return addr_street.trim();
-  
+
   // Si existe un ref, usalo
   const ref = props.ref;
   if (typeof ref === 'string' && ref.trim()) return ref.trim();
-  
+
   // Intenta obtener información de las relaciones (rutas que pasan por esta parada)
   const relations = props['@relations'];
   if (Array.isArray(relations) && relations.length > 0) {
@@ -1432,7 +1492,7 @@ function obtenerEtiquetaParada(feature) {
         return reltags.from.trim();
       }
     }
-    
+
     // Si no encontro "from", intenta con "to"
     for (const rel of relations) {
       const reltags = rel?.reltags || {};
@@ -1441,11 +1501,11 @@ function obtenerEtiquetaParada(feature) {
       }
     }
   }
-  
+
   // Ultima opcion: usa el ID de OSM
   const id = props['@id'];
   if (typeof id === 'string' && id.trim()) return id.trim();
-  
+
   return 'Parada';
 }
 
@@ -1557,8 +1617,8 @@ function crearClaveParadaApi(texto) {
     .replace(/\s*\/\s*/g, ' y ')
     .replace(/\bconmplejo\b/g, 'complejo')
     .replace(/\bcomplejo\s+universitario\b/g, 'complejo')
-    .replace(/\bavenida\s+ignacio\b/g, 'av ignacio')
-    .replace(/\bav\.?\s+ig\.?\b/g, 'av ignacio')
+    .replace(/\bignacio\b/g, 'ig')
+    .replace(/\big\.?\b/g, 'ig')
     // Variantes de apellidos/calles frecuentes en fuentes distintas.
     .replace(/\birigoyen\b/g, 'yrigoyen')
     .replace(/\byrigoyen\b/g, 'yrigoyen')
@@ -1632,7 +1692,7 @@ async function cargarParadasPorLinea({ noCache = false } = {}) {
     try {
       const teo2Check = _paradasPorLinea['TEO2']?.paradas ? Object.keys(_paradasPorLinea['TEO2'].paradas).length : 0;
       console.debug(`[paradas] Cargadas paradas_por_linea.json: ${Object.keys(_paradasPorLinea).length} líneas, TEO2=${teo2Check} paradas, noCache=${noCache}`);
-    } catch {}
+    } catch { }
     return _paradasPorLinea;
   } catch (err) {
     console.warn('No se pudo cargar paradas_por_linea.json:', err);
@@ -1641,88 +1701,6 @@ async function cargarParadasPorLinea({ noCache = false } = {}) {
     _indicesParadasPorLinea = null;
     return _paradasPorLinea;
   }
-}
-
-async function cargarCorrespondenciaParadas({ noCache = false } = {}) {
-  if (_correspondenciaParadas && !noCache) return _correspondenciaParadas;
-
-  try {
-    const resp = await fetch(CORRESPONDENCIA_PARADAS_URL, { cache: noCache ? 'no-store' : 'force-cache' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const payload = await resp.json();
-    _correspondenciaParadas = payload && typeof payload === 'object' ? payload : {};
-    console.debug(`[correspondencia] Cargado correspondencia_paradas.json: ${Object.keys(_correspondenciaParadas).length} líneas`);
-    return _correspondenciaParadas;
-  } catch (err) {
-    console.warn('No se pudo cargar correspondencia_paradas.json:', err);
-    _correspondenciaParadas = {};
-    return _correspondenciaParadas;
-  }
-}
-
-/**
- * Busca el stop-ID de una parada directamente en la tabla de correspondencia.
- * Retorna el stop-ID (ej. "stop-43299592-33") o null si no encuentra.
- * @param {string} linea  - Ref de la línea (ej. "2", "100", "440-a")
- * @param {string} nombre - Nombre de la parada tal como viene del GeoJSON
- */
-async function buscarEnCorrespondencia(linea, nombre) {
-  const corr = await cargarCorrespondenciaParadas();
-  if (!corr || !linea || !nombre) return null;
-
-  const rawLinea = String(linea);
-
-  // Normalizar variantes de clave ("440A" → "440-a", etc.)
-  const candidatosLinea = [rawLinea, rawLinea.toLowerCase(), rawLinea.toUpperCase()];
-  const m = rawLinea.match(/^(\d+)([A-Za-z])$/);
-  if (m) {
-    candidatosLinea.push(`${m[1]}-${m[2].toLowerCase()}`);
-    candidatosLinea.push(`${m[1]}-${m[2].toUpperCase()}`);
-  }
-
-  // Match flexible por lookup (ignora espacios, guiones y puntuación).
-  // Esto resuelve casos comunes: "TEO 2" vs "TEO2", "440A" vs "440-a".
-  const targetLookups = new Set();
-  const addLookup = (value) => {
-    const lk = normalizarLineaParaLookup(value);
-    if (lk) targetLookups.add(lk);
-  };
-  for (const c of candidatosLinea) addLookup(c);
-  addLookup(normalizarLineaParaApi(rawLinea));
-
-  let lineaKeyFlexible = '';
-  for (const k of Object.keys(corr)) {
-    const lk = normalizarLineaParaLookup(k);
-    if (lk && targetLookups.has(lk)) {
-      lineaKeyFlexible = k;
-      break;
-    }
-  }
-  if (lineaKeyFlexible && !candidatosLinea.includes(lineaKeyFlexible)) {
-    candidatosLinea.unshift(lineaKeyFlexible);
-  }
-
-  for (const lk of candidatosLinea) {
-    const entrada = corr[lk];
-    if (!entrada) continue;
-    const paradas = entrada.paradas;
-    if (!paradas) continue;
-
-    // Búsqueda exacta primero
-    if (Object.prototype.hasOwnProperty.call(paradas, nombre)) {
-      return paradas[nombre] || null;
-    }
-
-    // Búsqueda case-insensitive / sin espacios extra
-    const nombreNorm = nombre.trim().toLowerCase().replace(/\s+/g, ' ');
-    for (const [k, v] of Object.entries(paradas)) {
-      if (k.trim().toLowerCase().replace(/\s+/g, ' ') === nombreNorm) {
-        return v || null;
-      }
-    }
-  }
-
-  return null;
 }
 
 async function cargarUrlsPorLinea({ noCache = false } = {}) {
@@ -1773,11 +1751,11 @@ function resolverKeyLineaEnObjeto(obj, linea) {
   for (const k of Object.keys(obj)) {
     const kLookup = normalizarLineaParaLookup(k);
     if (kLookup && targetLookups.has(kLookup)) {
-      try { console.debug(`[resolverKeyLinea] Encontró: "${raw}" -> "${k}" (lookups: ${Array.from(targetLookups).join(', ')})` ); } catch {}
+      try { console.debug(`[resolverKeyLinea] Encontró: "${raw}" -> "${k}" (lookups: ${Array.from(targetLookups).join(', ')})`); } catch { }
       return k;
     }
   }
-  try { console.debug(`[resolverKeyLinea] NO encontró: "${raw}" (intentó: ${Array.from(targetLookups).join(', ')})` ); } catch {}
+  try { console.debug(`[resolverKeyLinea] NO encontró: "${raw}" (intentó: ${Array.from(targetLookups).join(', ')})`); } catch { }
   return '';
 }
 
@@ -2571,6 +2549,53 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
     }
   }
 
+  // ── Validación cruzada: verificar que el stop-ID resuelto pertenezca a esta línea ──
+  // Protege contra correspondencias manuales/automáticas con stop-IDs de otra línea.
+  if (id_p_resuelto && paradasObjLinea && typeof paradasObjLinea === 'object' && Object.keys(paradasObjLinea).length > 0) {
+    const idsDeLinea = new Set(Object.values(paradasObjLinea).map((v) => String(v || '').trim()));
+    if (!idsDeLinea.has(id_p_resuelto)) {
+      console.warn('[arrivals] VALIDACIÓN: stop-ID resuelto NO pertenece a esta línea, descartando', {
+        linea: lineaNorm,
+        id_p_descartado: id_p_resuelto,
+        paradaResuelta: paradaResueltaFinal,
+        paradasLineaCount,
+      });
+      // Intentar re-resolver por fallback de tokens antes de rendirse
+      const indiceTokensFallback = new Map();
+      for (const nombre of Object.keys(paradasObjLinea)) {
+        const base = normalizarNombreParadaSinSufijos(nombre);
+        const clave = crearClaveParadaApi(base);
+        if (clave) indiceTokensFallback.set(clave, nombre);
+      }
+      let reResolved = false;
+      for (const c of candidatosParada) {
+        const baseQ = normalizarNombreParadaSinSufijos(c);
+        const claveQ = crearClaveParadaApi(baseQ);
+        const det = resolverCanonicoPorTokensMejorScoreDetallado(indiceTokensFallback, claveQ);
+        const cov = det.tokensLen > 0 ? (det.matchCount / det.tokensLen) : 0;
+        const okRe = (det.matchCount >= 2 || cov >= 0.67) && det.score >= 0.45;
+        if (okRe && det.canonica && Object.prototype.hasOwnProperty.call(paradasObjLinea, det.canonica)) {
+          const newId = String(paradasObjLinea[det.canonica] || '').trim();
+          if (newId && idsDeLinea.has(newId)) {
+            id_p_resuelto = newId;
+            paradaResueltaFinal = String(det.canonica || '').trim();
+            reResolved = true;
+            console.debug('[arrivals] Re-resuelto por tokens tras validación cruzada', {
+              linea: lineaNorm,
+              newId,
+              paradaResuelta: paradaResueltaFinal,
+            });
+            break;
+          }
+        }
+      }
+      if (!reResolved) {
+        id_p_resuelto = '';
+        paradaResueltaFinal = '';
+      }
+    }
+  }
+
   const debugArrivals = {
     linea: lineaNorm,
     lineaApi,
@@ -2608,8 +2633,8 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
       headwaySecs: 0,
       tipoDatos: 'error',
       paradaConsultada: paradaResueltaFinal || paradaTxt,
-      mensajeApi: !url 
-        ? `🔴 No se encontró URL para línea: ${lineaNorm}` 
+      mensajeApi: !url
+        ? `🔴 No se encontró URL para línea: ${lineaNorm}`
         : `🔴 No se encontró parada: ${paradaTxt}`,
       apiFallo: true,
       linea: lineaNorm,
@@ -3231,13 +3256,13 @@ function agregarLineaAFavoritos(linea) {
 
   const favs = obtenerLineasFavs();
   const indice = favs.findIndex((f) => f?.ref === ref);
-  
+
   if (indice !== -1) {
     favs.splice(indice, 1);
   } else {
     favs.push({ ref, name });
   }
-  
+
   guardarLineasFavs(favs);
   renderLineasFavs();
   actualizarEstadoBotonFavoritos();
@@ -3254,7 +3279,7 @@ function agregarParadaAFavoritos(feature) {
 
   const favs = obtenerParadasFavs();
   const indice = favs.findIndex((f) => f?.id === id);
-  
+
   if (indice !== -1) {
     favs.splice(indice, 1);
   } else {
@@ -3390,7 +3415,7 @@ function mostrarLineasEnContenedorParadas(feature) {
     .join('');
 
   const listaParadasHtml = recorridoActivo ? renderListaParadasRecorrido() : '';
-  
+
   const html = `
     <ul class="lineas-list">${itemsHtml}</ul>
     <div class="tsj-ad-slot" ${TSJ_ADS_PLACEHOLDER_ATTR}="${TSJ_ADS_TOKEN}"></div>
@@ -3615,11 +3640,11 @@ async function dibujarParadasCercanas(userCoords) {
 }
 
 
-function cargarLF(coords, zoomObjetivo = null){
-    if (typeof L === 'undefined') {
-        console.error('Leaflet no está cargado. Verifica que leaflet.js esté incluido.');
-        return;
-    }
+function cargarLF(coords, zoomObjetivo = null) {
+  if (typeof L === 'undefined') {
+    console.error('Leaflet no está cargado. Verifica que leaflet.js esté incluido.');
+    return;
+  }
 
   if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') {
     console.error('No hay coordenadas válidas para inicializar el mapa.');
@@ -3769,10 +3794,10 @@ function setupLongPressGuardarUbicacionEnMapa() {
     abrirGuardadoEn(L.latLng(latlng.lat, latlng.lng));
   });
 }
-function MostrarFavs(){
+function MostrarFavs() {
   abrirBottomSheetFavoritos();
 }
-function cargarFavos(){
+function cargarFavos() {
   renderParadasFavs();
   renderLineasFavs();
   renderLugaresFavs();
@@ -4294,10 +4319,10 @@ async function buscarLugaresEnTiempoReal() {
   const query = input?.value?.trim() || '';
   const modal = document.getElementById('search-modal');
   const resultsDiv = document.getElementById('search-results');
-  
+
   // Limpiar timeout anterior
   if (searchTimeout) clearTimeout(searchTimeout);
-  
+
   // Si está vacío, cerrar modal y cancelar búsquedas
   if (!query) {
     // Mostrar historial cuando no hay texto
@@ -4312,14 +4337,14 @@ async function buscarLugaresEnTiempoReal() {
     lastSearchIssuedQuery = '';
     return;
   }
-  
+
   // Abrir modal
   if (!modal.classList.contains('active')) {
     modal.classList.add('active');
   }
   document.querySelector('.search-bar-container')?.classList.add('is-open');
   posicionarModalBusqueda();
-  
+
   // Evitar pedir demasiadas veces: exigir un mínimo de letras
   if (query.length < SEARCH_MIN_CHARS) {
     resultsDiv.innerHTML = `<p class="search-results-hint">Escribe al menos ${SEARCH_MIN_CHARS} letras</p>`;
@@ -4333,7 +4358,7 @@ async function buscarLugaresEnTiempoReal() {
 
   // Mostrar estado de búsqueda
   resultsDiv.innerHTML = '<p class="search-results-loading">Buscando calles y líneas...</p>';
-  
+
   // Hacer búsqueda con debounce
   searchTimeout = setTimeout(() => buscarLugares(query), SEARCH_DEBOUNCE_MS);
 }
@@ -4392,13 +4417,13 @@ async function buscarLugares(queryOverride = '') {
     const primeroLineas = pareceBusquedaLinea(query);
     const resultados = primeroLineas
       ? [
-          ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
-          ...calles,
-        ]
+        ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
+        ...calles,
+      ]
       : [
-          ...calles,
-          ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
-        ];
+        ...calles,
+        ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
+      ];
 
     if (resultados.length === 0) {
       resultsDiv.innerHTML = '<p class="search-results-hint">No se encontraron calles ni líneas en San Juan</p>';
@@ -4467,10 +4492,10 @@ function centrarEnLugar(lat, lng, nombreLugar) {
     }
   }
   if (!leafletMap) return;
-  
+
   cerrarModalBusqueda();
   centrarEnCoordenadas(lat, lng, ZOOM_CALLE);
-  
+
   // Abrir bottom-sheet para ofrecer guardar la ubicación
   abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, 'search');
 }
@@ -4521,7 +4546,7 @@ function calcularDistancia(lat1, lng1, lat2, lng2) {
   const dLat = (lat2 - lat1) * toRad;
   const dLng = (lng2 - lng1) * toRad;
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -5280,9 +5305,9 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
     abrirBottomSheet(
       'Opciones de ruta',
       '<div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">'
-        + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
-        + '<p class="bottom-sheet-loading-title">Calculando opciones...</p>'
-        + '</div>',
+      + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
+      + '<p class="bottom-sheet-loading-title">Calculando opciones...</p>'
+      + '</div>',
       '',
       subtitulo,
     );
@@ -5452,15 +5477,15 @@ async function verLineaMasCercanaHastaParadaSeleccionada(featureParada) {
 
 async function irAParadaDelLugar(lat, lng, nombreLugar, paradaLat, paradaLng) {
   cerrarModalBusqueda();
-  
+
   if (!leafletMap) return;
-  
+
   leafletMap.setView([paradaLat, paradaLng], ZOOM_CALLE);
-  
+
   const puntos = await cargarParadasPuntos();
   let feature = null;
   let closest = { dist: Infinity };
-  
+
   for (const punto of puntos) {
     const dist = calcularDistancia(paradaLat, paradaLng, punto.lat, punto.lng);
     if (dist < closest.dist) {
@@ -5468,7 +5493,7 @@ async function irAParadaDelLugar(lat, lng, nombreLugar, paradaLat, paradaLng) {
       feature = punto.feature;
     }
   }
-  
+
   if (feature) {
     mostrarLineasEnContenedorParadas(feature);
   }
@@ -5481,18 +5506,18 @@ function agregarLugarAFavoritos(nombre, lat, lng) {
 
   const favs = obtenerLugaresFavs();
   const indice = favs.findIndex((f) => esMismoLugarGuardado(f, { nombre, lat: latNum, lng: lngNum }));
-  
+
   if (indice !== -1) {
     favs.splice(indice, 1);
   } else {
     // Guardar coordenadas como números (evita strings en LocalStorage)
     favs.push({ nombre, lat: latNum, lng: lngNum });
-    
+
     while (favs.length > MAX_LUGARES_FAVS) {
       favs.shift();
     }
   }
-  
+
   guardarLugaresFavs(favs);
   renderLugaresFavs();
 }
@@ -5500,21 +5525,21 @@ function agregarLugarAFavoritos(nombre, lat, lng) {
 function renderLugaresFavs() {
   const favs = obtenerLugaresFavs();
   const container = document.getElementById('lugares_favs');
-  
+
   if (!container) {
     const div = document.createElement('div');
     div.id = 'lugares_favs';
     document.getElementById('favoritos')?.appendChild(div);
   }
-  
+
   const contLugares = document.getElementById('lugares_favs') || document.createElement('div');
   contLugares.innerHTML = '';
-  
+
   if (favs.length === 0) {
     contLugares.innerHTML = '<p class="fav-empty">Sin lugares guardados</p>';
     return;
   }
-  
+
   for (const lugar of favs) {
     const lat = Number(lugar?.lat);
     const lng = Number(lugar?.lng);
@@ -5522,7 +5547,7 @@ function renderLugaresFavs() {
 
     const wrapper = document.createElement('div');
     wrapper.className = 'fav-row';
-    
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'fav-main';
@@ -5530,7 +5555,7 @@ function renderLugaresFavs() {
     btn.dataset.lat = String(lat);
     btn.dataset.lng = String(lng);
     btn.textContent = lugar.nombre;
-    
+
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
     btnEliminar.textContent = '✕';
@@ -5539,7 +5564,7 @@ function renderLugaresFavs() {
     btnEliminar.dataset.lugarNombre = lugar.nombre;
     btnEliminar.dataset.lugarLat = String(lat);
     btnEliminar.dataset.lugarLng = String(lng);
-    
+
     wrapper.appendChild(btn);
     wrapper.appendChild(btnEliminar);
     contLugares.appendChild(wrapper);
