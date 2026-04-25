@@ -703,7 +703,7 @@ function setupBottomSheetDrag() {
       // en lugar de colapsar el height a 0px.
       bottomSheet.style.transition = 'transform 0.3s ease-in';
       bottomSheet.style.transform = 'translateY(100%)';
-      
+
       // Desactivamos el overlay inmediatamente
       document.getElementById('bottom-sheet-overlay')?.classList.remove('active');
 
@@ -1564,35 +1564,52 @@ function extraerDireccionDesdeNombreParada(nombreParada) {
   return m ? String(m[1]).toUpperCase() : '';
 }
 
-function normalizarNombreParadaSinSufijos(nombreParada) {
-  // Normaliza quitando sufijos que NO queremos considerar para resolver (según requerimiento):
-  // - Dirección: N/S/E/O o Norte/Sur/Este/Oeste
-  // - Variante: -A/-B/-C/-D
-  let txt = String(nombreParada || '').trim().replace(/\s+/g, ' ');
-  if (!txt) return '';
 
-  let prev = '';
-  while (txt && txt !== prev) {
-    prev = txt;
-    txt = txt
-      // Variante al final: "... -A"
-      .replace(/\s*-\s*[ABCD]\s*$/i, '')
-      // Dirección en palabra al final: "... Oeste"
-      .replace(/\s+(norte|sur|este|oeste)\s*$/i, '')
-      // Dirección abreviada al final: "... O"
-      .replace(/\s+[SNEO]\s*$/i, '')
-      .trim();
+const STOP_WORDS_PARADA = new Set([
+  'y', 'de', 'del', 'la', 'las', 'el', 'los', 'en',
+  'av', 'avenida', 'avda', 'calle', 'ruta', 'rn', 'rp', 'nacional', 'provincial',
+  'n', 's', 'e', 'o', 'b', 'barrio', 'villa', 'poblacion', 'loteo',
+  'dr', 'doctor', 'gral', 'general', 'ig', 'ignacio',
+  'blvd', 'boulevard', 'nro', 'km', 'esq', 'esquina',
+  'cmte', 'comandante', 'almte', 'almirante', 'sgto', 'sargento',
+  'h', 'hipolito', 'pte', 'presidente'
+]);
+
+function tokenizarNombreParada(nombre) {
+  let txt = String(nombre || '').trim().toLowerCase();
+
+  // Limpiar sufijos direccionales o variantes al final
+  txt = txt
+    .replace(/\s+[nseo]\s*(?:-\s*[abcd])?$/gi, '')
+    .replace(/\s*-\s*[abcd]$/gi, '');
+
+  // Simplificar acentos
+  txt = txt.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // Quitar puntuación y dejar solo alfanuméricos
+  txt = txt.replace(/[^\w\s]/g, ' ');
+
+  const tokens = new Set();
+  const parts = txt.split(/\s+/);
+  for (const t of parts) {
+    if (t.length > 1 && !STOP_WORDS_PARADA.has(t)) {
+      tokens.add(t);
+    }
   }
-
-  return txt;
+  return tokens;
 }
 
-function normalizarLineaParaLookup(linea) {
-  return String(linea || '')
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, '')
-    .replace(/[^A-Z0-9]/g, '');
+function calcularSimilitudJaccard(setA, setB) {
+  if (setA.size === 0 && setB.size === 0) return 0;
+  if (setA.size === 0 || setB.size === 0) return 0;
+
+  let matchCount = 0;
+  for (const t of setA) {
+    if (setB.has(t)) matchCount++;
+  }
+
+  const unionSize = setA.size + setB.size - matchCount;
+  return matchCount / unionSize;
 }
 
 function obtenerClavesLineaLookup(linea) {
@@ -1605,78 +1622,385 @@ function obtenerClavesLineaLookup(linea) {
   return claves;
 }
 
-function crearClaveParadaApi(texto) {
-  let txt = String(texto || '').trim().toLowerCase();
-  if (!txt) return '';
+function resolverKeyLineaEnObjeto(objeto, linea) {
+  if (!objeto || typeof objeto !== 'object') return null;
+  const clavesLookup = obtenerClavesLineaLookup(linea);
 
-  txt = txt
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    // Conectores típicos en esquinas: unificar para mejorar matching.
-    .replace(/\s*&\s*/g, ' y ')
-    .replace(/\s*\/\s*/g, ' y ')
-    .replace(/\bconmplejo\b/g, 'complejo')
-    .replace(/\bcomplejo\s+universitario\b/g, 'complejo')
-    .replace(/\bignacio\b/g, 'ig')
-    .replace(/\big\.?\b/g, 'ig')
-    // Variantes de apellidos/calles frecuentes en fuentes distintas.
-    .replace(/\birigoyen\b/g, 'yrigoyen')
-    .replace(/\byrigoyen\b/g, 'yrigoyen')
-    // Unificar "Hipólito" (GeoJSON) con abreviaturas tipo "H." (JSON).
-    .replace(/\bhipolito\b/g, 'h')
-    // Unificar títulos/abreviaturas frecuentes.
-    .replace(/\bdoctor\b/g, 'dr')
-    .replace(/\bdr\.?\b/g, 'dr')
-    .replace(/\bcomandante\b/g, 'cmte')
-    .replace(/\bcmte\.?\b/g, 'cmte')
-    .replace(/\bsargento\b/g, 'sgto')
-    .replace(/\bsgto\.?\b/g, 'sgto')
-    .replace(/\balmirante\b/g, 'almte')
-    .replace(/\balmte\.?\b/g, 'almte')
-    // Unificar Boulevard/Bulevar con abreviatura "Blvd.".
-    .replace(/\bboulevard\b/g, 'blvd')
-    .replace(/\bbulevar\b/g, 'blvd')
-    .replace(/\bblvd\.?\b/g, 'blvd')
-    // Unificar "Boulogne" (GeoJSON) con variantes mal escritas en datos.
-    .replace(/\bboulonge\b/g, 'boulogne')
-    // Algunas fuentes incluyen "Sur Mer" y otras solo "Sur".
-    .replace(/\bsur\s+mer\b/g, 'sur')
-    // Normalizar puntos cardinales cuando aparecen como sufijo (dirección de parada).
-    // Ej: "... Boulevard Oeste" -> "... blvd o" (para que coincida con "... blvd. O").
-    .replace(/\s+norte\b/g, ' n')
-    .replace(/\s+sur\b/g, ' s')
-    .replace(/\s+este\b/g, ' e')
-    .replace(/\s+oeste\b/g, ' o')
-    // Abreviaturas comunes.
-    .replace(/\bgral\.?\b/g, 'general')
-    .replace(/\bdiag\.?\b/g, 'diagonal')
-    // Algunas fuentes incluyen "Diag. General ..." y otras no.
-    .replace(/\bdiagonal\s+general\s+/g, 'diagonal ')
-    // Normalizar "Ruta Nac." / "RN".
-    .replace(/\bruta\s+nac\.?\b/g, 'ruta nacional')
-    .replace(/\brn\b/g, 'ruta nacional')
-    // Normalizar "Ruta P." / "RP" / "Ruta Provincial". En el GeoJSON suele venir como "Ruta 60".
-    .replace(/\bruta\s+provincial\b/g, 'ruta')
-    .replace(/\bruta\s+p\.?\b/g, 'ruta')
-    .replace(/\brp\b/g, 'ruta')
-    // Normalizar indicadores de número: N°20, N° 20, Nº20, Nro. 20, etc.
-    .replace(/\bnro\.?\b/g, 'n')
-    .replace(/\bn[°º]\s*/g, 'n ')
-    // Normalizar "Barrio" con abreviaturas tipo "B°" (reduce falsos negativos).
-    .replace(/\bbarrio\b/g, 'b')
-    .replace(/\bavenida\b/g, 'av')
-    .replace(/\bavda\b/g, 'av')
-    .replace(/\bav\./g, 'av')
-    // Remover símbolos residuales (por ejemplo el signo de número °/º) y
-    // separar letras/dígitos para que "n20" y "n 20" coincidan.
-    .replace(/[°º]/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/([a-z])(\d)/g, '$1 $2')
-    .replace(/(\d)([a-z])/g, '$1 $2')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // 1. Opciones principales primero (_opcion_0 o _ida)
+  for (const kLookup of clavesLookup) {
+    for (const key of Object.keys(objeto)) {
+      const normKey = normalizarLineaParaLookup(key);
+      if (normKey === kLookup || normKey.startsWith(kLookup + 'OPCION0') || normKey.startsWith(kLookup + 'IDA')) return key;
+    }
+  }
+  // 2. Fallback general
+  for (const kLookup of clavesLookup) {
+    for (const key of Object.keys(objeto)) {
+      if (normalizarLineaParaLookup(key).includes(kLookup)) return key;
+    }
+  }
+  return null;
+}
 
-  return txt;
+function agregarParadasDeTodasLasOpciones(dataParadas, lineaRef) {
+  const paradasAgregadas = {};
+  if (!dataParadas || typeof dataParadas !== 'object') return paradasAgregadas;
+
+  const lineaNorm = normalizarLineaParaLookup(lineaRef);
+  if (!lineaNorm) return paradasAgregadas;
+
+  const targetPrefix = lineaNorm.replace(/([ABC])$/, ''); 
+
+  for (const [key, lineData] of Object.entries(dataParadas)) {
+    if (!lineData?.paradas) continue;
+    
+    let keyNorm = normalizarLineaParaLookup(key);
+    keyNorm = keyNorm.replace(/OPCION[0-9]+$/i, '');
+    
+    if (keyNorm === targetPrefix || keyNorm === lineaNorm) {
+      for (const [pName, pId] of Object.entries(lineData.paradas)) {
+        if (!paradasAgregadas[pName]) paradasAgregadas[pName] = pId;
+      }
+    }
+  }
+
+  return paradasAgregadas;
+}
+
+async function resolverParadaDesdeJson(linea, nombreParada) {
+  const original = String(nombreParada || '').trim();
+  if (!original) return { id_p: '', paradaResuelta: '' };
+
+  let data = await cargarParadasPorLinea();
+  if (!data || Object.keys(data).length === 0) {
+    data = await cargarParadasPorLinea({ noCache: true });
+  }
+
+  const paradasObj = agregarParadasDeTodasLasOpciones(data, linea);
+
+  if (Object.keys(paradasObj).length === 0) {
+    console.warn(`[resolverParada] Sin paradas para línea "${linea}"`);
+    return { id_p: '', paradaResuelta: '' };
+  }
+
+  // 1) Match exacto
+  if (Object.prototype.hasOwnProperty.call(paradasObj, original)) {
+    return { id_p: String(paradasObj[original] || ''), paradaResuelta: original };
+  }
+
+  // 2) Match por Token Jaccard Similarity
+  const tokensQuery = tokenizarNombreParada(original);
+  let bestMatch = '';
+  let bestScore = 0;
+
+  for (const cand of Object.keys(paradasObj)) {
+    const tokensCand = tokenizarNombreParada(cand);
+    const score = calcularSimilitudJaccard(tokensQuery, tokensCand);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = cand;
+    }
+  }
+
+  if (bestScore >= 0.5 && bestMatch) {
+    return { id_p: String(paradasObj[bestMatch] || ''), paradaResuelta: bestMatch };
+  }
+
+  return { id_p: '', paradaResuelta: '' };
+}
+
+function obtenerCandidatosNombreParada(feature, nombreBase = '') {
+  const props = feature?.properties || {};
+  const seen = new Set();
+  const out = [];
+  const add = (value) => {
+    const s = typeof value === 'string' ? value.trim() : '';
+    if (!s) return;
+    const key = s.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(s);
+  };
+
+  add(nombreBase);
+  add(props.name);
+  add(props['name:es']);
+  add(props.alt_name);
+  add(props.official_name);
+  add(props.description);
+  add(props['addr:street']);
+  add(props.ref);
+  add(obtenerEtiquetaParada(feature));
+
+  return out;
+}
+
+async function obtenerCandidatosIdParadaParaArrivals(linea, paradaInput, paradaResueltaPreferida) {
+  const out = [];
+  const refLinea = String(linea || '').trim();
+  if (!refLinea) return out;
+
+  let data = await cargarParadasPorLinea();
+  if (!data || Object.keys(data).length === 0) {
+    data = await cargarParadasPorLinea({ noCache: true });
+  }
+
+  const paradasObj = agregarParadasDeTodasLasOpciones(data, refLinea);
+  const preferida = String(paradaResueltaPreferida || '').trim();
+
+  if (preferida && Object.prototype.hasOwnProperty.call(paradasObj, preferida)) {
+    out.push({ paradaResuelta: preferida, id_p: String(paradasObj[preferida] || '') });
+  }
+
+  const tokensQuery = tokenizarNombreParada(paradaInput);
+  const matchedList = [];
+
+  for (const cand of Object.keys(paradasObj)) {
+    if (cand === preferida) continue;
+    const tokensCand = tokenizarNombreParada(cand);
+    const score = calcularSimilitudJaccard(tokensQuery, tokensCand);
+    if (score >= 0.5) {
+      matchedList.push({ cand, score });
+    }
+  }
+
+  matchedList.sort((a, b) => b.score - a.score);
+
+  for (const m of matchedList) {
+    out.push({ paradaResuelta: m.cand, id_p: String(paradasObj[m.cand] || '') });
+  }
+
+  const seen = new Set();
+  const dedup = [];
+  for (const c of out) {
+    const id = String(c?.id_p || '').trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    dedup.push({ paradaResuelta: String(c.paradaResuelta || '').trim(), id_p: id });
+  }
+
+  return dedup;
+}
+
+async function consultarArribosApi(linea, paradaNombre, opts = {}) {
+  const lineaNorm = String(linea || '').trim();
+  const paradaTxt = String(paradaNombre || '').trim();
+  if (!lineaNorm || !paradaTxt) {
+    return { horarios: [], tipoDatos: 'esperado', paradaConsultada: '' };
+  }
+
+  const lineaApi = normalizarLineaParaApi(lineaNorm);
+
+  const paradaFeature = opts?.paradaFeature || null;
+  const candidatosParada = paradaFeature
+    ? obtenerCandidatosNombreParada(paradaFeature, paradaTxt)
+    : [paradaTxt];
+
+  const lineaCandidatas = [];
+  for (const v of [lineaNorm, lineaApi]) {
+    const s = String(v || '').trim();
+    if (s && !lineaCandidatas.includes(s)) lineaCandidatas.push(s);
+  }
+
+  let url = '';
+  let paradaRes = { id_p: '', paradaResuelta: '', paradaInput: '' };
+
+  for (const l of lineaCandidatas) {
+    url = url || await resolverUrlDesdeJson(l);
+    if (!paradaRes?.id_p) {
+      paradaRes = await resolverParadaDesdeJsonConCandidatos(l, candidatosParada);
+    }
+    if (url && paradaRes?.id_p) break;
+  }
+
+  let id_p_resuelto = String(paradaRes?.id_p || '').trim();
+  let paradaResueltaFinal = String(paradaRes?.paradaResuelta || '').trim();
+
+  let paradasLineaCount = 0;
+  try {
+    let dataParadas = await cargarParadasPorLinea();
+    const paradasObj = agregarParadasDeTodasLasOpciones(dataParadas, lineaNorm);
+    paradasLineaCount = Object.keys(paradasObj).length;
+  } catch { }
+
+  const debugArrivals = {
+    linea: lineaNorm,
+    lineaApi,
+    lineaCandidatas,
+    paradaBase: paradaTxt,
+    paradaInput: paradaRes?.paradaInput || '',
+    paradaResuelta: paradaResueltaFinal || '',
+    url,
+    id_p_resuelto: String(id_p_resuelto || ''),
+    requestIntentada: false,
+    intentos: [],
+    candidatosParada: Array.isArray(candidatosParada) ? candidatosParada.slice(0, 8) : [],
+    paradasJsonError: typeof _lastParadasPorLineaError !== 'undefined' ? _lastParadasPorLineaError : '',
+    urlsJsonError: typeof _lastUrlsPorLineaError !== 'undefined' ? _lastUrlsPorLineaError : '',
+    paradasLineaCount,
+  };
+
+  if (!url || !id_p_resuelto) {
+    console.warn('[arrivals] ERROR: Falta resolver datos antes de fetch', { ...debugArrivals });
+    return {
+      horarios: [],
+      headwaySecs: 0,
+      tipoDatos: 'error',
+      paradaConsultada: paradaResueltaFinal || paradaTxt,
+      mensajeApi: !url
+        ? `🔴 No se encontró URL para línea: ${lineaNorm}`
+        : `🔴 No se encontró parada: ${paradaTxt}`,
+      apiFallo: true,
+      linea: lineaNorm,
+      debugArrivals,
+    };
+  }
+
+  try {
+    const candidatosIdP = await obtenerCandidatosIdParadaParaArrivals(lineaNorm, paradaTxt, paradaResueltaFinal || paradaTxt);
+    const listaCandidatos = candidatosIdP.length
+      ? candidatosIdP
+      : [{ paradaResuelta: paradaResueltaFinal || paradaTxt, id_p: id_p_resuelto }];
+
+    let bestParsed = null;
+    let bestScore = -1;
+    const maxIntentos = Math.max(1, Math.min(ARRIVALS_MAX_INTENTOS_PARADA, listaCandidatos.length));
+
+    for (let i = 0; i < maxIntentos; i++) {
+      const cand = listaCandidatos[i];
+      const idTry = String(cand?.id_p || '').trim();
+      const paradaTry = String(cand?.paradaResuelta || '').trim();
+      if (!idTry) continue;
+
+      debugArrivals.intentos.push({
+        parada: paradaTry,
+        id_p: idTry,
+        http: '',
+        horariosLen: 0,
+        horarioEstimado: '',
+        mensajeApi: '',
+      });
+      const intentoIndex = debugArrivals.intentos.length - 1;
+
+      try {
+        debugArrivals.requestIntentada = true;
+
+        const fetchController = new AbortController();
+        const fetchTimeoutId = setTimeout(() => {
+          try { fetchController.abort(); } catch { }
+        }, ARRIVALS_TIMEOUT_MS);
+
+        let resp;
+        try {
+          resp = await fetch(ARRIVALS_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ url, id_p: idTry }),
+            cache: 'no-store',
+            signal: fetchController.signal,
+          });
+          clearTimeout(fetchTimeoutId);
+        } catch (e) {
+          clearTimeout(fetchTimeoutId);
+          throw e;
+        }
+
+        const httpInfo = resp.ok ? 'ok' : `HTTP ${resp.status}`;
+        if (!resp.ok) {
+          debugArrivals.intentos[intentoIndex] = { ...debugArrivals.intentos[intentoIndex], http: httpInfo, error: httpInfo };
+          continue;
+        }
+
+        const payload = await resp.json();
+        const parsed = extraerHorariosDesdePayloadArrivals(payload);
+
+        const horariosArr = Array.isArray(parsed?.horarios) ? parsed.horarios : [];
+        const horarioEstimado = typeof parsed?.horarioEstimado === 'string' ? parsed.horarioEstimado.trim() : '';
+        const mensajeApi = typeof parsed?.mensajeApi === 'string' ? parsed.mensajeApi.trim() : '';
+
+        debugArrivals.intentos[intentoIndex] = {
+          ...debugArrivals.intentos[intentoIndex],
+          http: httpInfo,
+          horariosLen: horariosArr.length,
+          horarioEstimado,
+          mensajeApi,
+        };
+
+        const score = (horariosArr.length * 100) + (horarioEstimado ? 10 : 0) + (mensajeApi ? 5 : 0);
+        if (score > bestScore) {
+          bestScore = score;
+          bestParsed = { ...parsed, paradaConsultada: paradaTry || paradaResueltaFinal || paradaTxt };
+        }
+
+        if (horariosArr.length > 0) break;
+      } catch (errTry) {
+        const msg = (errTry && String(errTry.name) === 'AbortError')
+          ? 'AbortError'
+          : (errTry?.message ? String(errTry.message) : String(errTry));
+        debugArrivals.intentos[intentoIndex] = { ...debugArrivals.intentos[intentoIndex], error: msg };
+        if (errTry && String(errTry.name) === 'AbortError') throw errTry;
+      }
+    }
+
+    if (!bestParsed) {
+      return {
+        horarios: [],
+        headwaySecs: 0,
+        tipoDatos: 'error',
+        paradaConsultada: paradaResueltaFinal || paradaTxt,
+        mensajeApi: '🔴 No se pudo obtener datos de la API de arrivals',
+        apiFallo: true,
+        linea: lineaNorm,
+        debugArrivals,
+      };
+    }
+
+    const horariosArr = Array.isArray(bestParsed?.horarios) ? bestParsed.horarios : [];
+    const horarioEstimado = typeof bestParsed?.horarioEstimado === 'string' ? bestParsed.horarioEstimado.trim() : '';
+    const mensajeApi = typeof bestParsed?.mensajeApi === 'string' ? bestParsed.mensajeApi.trim() : '';
+
+    if (horariosArr.length === 0 && !horarioEstimado && !mensajeApi) {
+      return {
+        ...bestParsed,
+        horarios: [],
+        headwaySecs: 0,
+        tipoDatos: 'error',
+        mensajeApi: 'No hay datos de arrivals disponibles',
+        apiFallo: true,
+        linea: lineaNorm,
+        paradaConsultada: bestParsed.paradaConsultada || paradaResueltaFinal || paradaTxt,
+        debugArrivals,
+      };
+    }
+
+    return { ...bestParsed, debugArrivals };
+  } catch (err) {
+    const msgAbort = (err && String(err.name) === 'AbortError') ? 'Tiempo de espera agotado al consult...' : 'Error consultando arrivals API.';
+    return {
+      horarios: [],
+      headwaySecs: 0,
+      tipoDatos: 'error',
+      paradaConsultada: paradaResueltaFinal || paradaTxt,
+      mensajeApi: msgAbort,
+      apiFallo: true,
+      linea: lineaNorm,
+      debugArrivals,
+    };
+  }
+}
+
+
+
+function normalizarLineaParaLookup(linea) {
+  return String(linea || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 async function cargarParadasPorLinea({ noCache = false } = {}) {
@@ -1721,44 +2045,6 @@ async function cargarUrlsPorLinea({ noCache = false } = {}) {
   }
 }
 
-function resolverKeyLineaEnObjeto(obj, linea) {
-  const raw = String(linea || '').trim();
-  if (!obj || typeof obj !== 'object' || !raw) return '';
-
-  if (Object.prototype.hasOwnProperty.call(obj, raw)) return raw;
-
-  const target = raw.toLowerCase();
-  for (const k of Object.keys(obj)) {
-    if (String(k).toLowerCase() === target) return k;
-  }
-
-  // Fallback flexible: ignorar espacios/guiones/puntuación.
-  // Ejemplos:
-  // - "TEO 1" (GeoJSON) vs "TEO1" (JSON)
-  // - "440A" vs "440-a"
-  const targetLookups = new Set();
-  const addLookup = (value) => {
-    const lk = normalizarLineaParaLookup(value);
-    if (lk) targetLookups.add(lk);
-  };
-
-  addLookup(raw);
-  addLookup(normalizarLineaParaApi(raw));
-
-  const m = raw.match(/^(\d+)([A-Z])$/);
-  if (m) addLookup(`${m[1]}-${m[2].toLowerCase()}`);
-
-  for (const k of Object.keys(obj)) {
-    const kLookup = normalizarLineaParaLookup(k);
-    if (kLookup && targetLookups.has(kLookup)) {
-      try { console.debug(`[resolverKeyLinea] Encontró: "${raw}" -> "${k}" (lookups: ${Array.from(targetLookups).join(', ')})`); } catch { }
-      return k;
-    }
-  }
-  try { console.debug(`[resolverKeyLinea] NO encontró: "${raw}" (intentó: ${Array.from(targetLookups).join(', ')})`); } catch { }
-  return '';
-}
-
 function normalizarLineaParaApi(linea) {
   const raw = String(linea || '').trim();
   if (!raw) return '';
@@ -1779,24 +2065,6 @@ function normalizarLineaParaApi(linea) {
   return raw;
 }
 
-function construirIndiceParadasLinea(paradasObj) {
-  // claveNormalizada -> nombreParada.
-  // Importante: cuando ignoramos sufijos (N/S/E/O, -A/-B/-C/-D) pueden aparecer
-  // duplicados por sentido. En ese caso, nos quedamos con la primera ocurrencia
-  // para evitar falsos negativos (mejor devolver algún id_p que no devolver ninguno).
-  const indice = new Map();
-
-  for (const nombre of Object.keys(paradasObj || {})) {
-    const base = normalizarNombreParadaSinSufijos(nombre);
-    const clave = crearClaveParadaApi(base);
-    if (!clave) continue;
-    if (!indice.has(clave)) {
-      indice.set(clave, nombre);
-    }
-  }
-
-  return indice;
-}
 
 async function resolverUrlDesdeJson(linea) {
   let urls = await cargarUrlsPorLinea();
@@ -1817,67 +2085,6 @@ function obtenerIndiceParadasLineaDesdeCache(lineaKey, paradasObj) {
   return idx;
 }
 
-async function resolverParadaDesdeJson(linea, nombreParada) {
-  const original = String(nombreParada || '').trim().replace(/\s+/g, ' ');
-  if (!original) return { id_p: '', paradaResuelta: '' };
-
-  // 0) Consultar la tabla de correspondencia precomputada (GeoJSON → stop-ID).
-  //    Es la fuente más directa y evita fuzzy matching innecesario.
-  const idCorrespondencia = await buscarEnCorrespondencia(linea, original);
-  if (idCorrespondencia) {
-    return { id_p: idCorrespondencia, paradaResuelta: original };
-  }
-
-  let data = await cargarParadasPorLinea();
-  let lk = resolverKeyLineaEnObjeto(data, linea);
-  if (!lk) {
-    data = await cargarParadasPorLinea({ noCache: true });
-    lk = resolverKeyLineaEnObjeto(data, linea);
-  }
-  const entry = lk ? data[lk] : null;
-  const paradasObj = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
-
-  const baseOriginal = normalizarNombreParadaSinSufijos(original);
-
-  // 1) Match exacto por nombre tal cual está en el JSON.
-  if (Object.prototype.hasOwnProperty.call(paradasObj, original)) {
-    return { id_p: String(paradasObj[original] || ''), paradaResuelta: original };
-  }
-
-  // 2) Match por normalización dentro de la línea (único).
-  const indice = obtenerIndiceParadasLineaDesdeCache(lk || String(linea || ''), paradasObj);
-
-  const sinSufijos = baseOriginal;
-
-  for (const candidato of [original, sinSufijos]) {
-    const clave = crearClaveParadaApi(candidato);
-    const nombreMatch = clave ? indice.get(clave) : '';
-    if (nombreMatch && Object.prototype.hasOwnProperty.call(paradasObj, nombreMatch)) {
-      return { id_p: String(paradasObj[nombreMatch] || ''), paradaResuelta: nombreMatch };
-    }
-  }
-
-  // 3) Fallback por tokens (si hay 1 único candidato).
-  const indiceTokens = new Map();
-  for (const nombre of Object.keys(paradasObj)) {
-    const base = normalizarNombreParadaSinSufijos(nombre);
-    const clave = crearClaveParadaApi(base);
-    if (clave) indiceTokens.set(clave, nombre);
-  }
-  const claveQuery = crearClaveParadaApi(sinSufijos || original);
-  const nombreTokens = resolverCanonicoPorTokensEnIndice(indiceTokens, claveQuery);
-  if (nombreTokens && Object.prototype.hasOwnProperty.call(paradasObj, nombreTokens)) {
-    return { id_p: String(paradasObj[nombreTokens] || ''), paradaResuelta: nombreTokens };
-  }
-
-  // 4) Fallback por score: elegir el candidato con mejor cobertura de tokens.
-  const nombreScore = resolverCanonicoPorTokensMejorScore(indiceTokens, claveQuery);
-  if (nombreScore && Object.prototype.hasOwnProperty.call(paradasObj, nombreScore)) {
-    return { id_p: String(paradasObj[nombreScore] || ''), paradaResuelta: nombreScore };
-  }
-
-  return { id_p: '', paradaResuelta: '' };
-}
 
 function registrarParadaCanonicaEnIndice(indice, nombreParada) {
   if (!(indice instanceof Map)) return;
@@ -1893,134 +2100,9 @@ function registrarParadaCanonicaEnIndice(indice, nombreParada) {
   }
 }
 
-function tokenizarClaveParadaApi(clave) {
-  const ignorar = new Set([
-    'y',
-    'de',
-    'del',
-    'la',
-    'el',
-    'los',
-    'las',
-    'av',
-    'ruta',
-    'nacional',
-    'diagonal',
-    'general',
-    'n',
-  ]);
 
-  return String(clave || '')
-    .split(' ')
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .filter((t) => t.length > 1)
-    .filter((t) => !ignorar.has(t));
-}
 
-function resolverCanonicoPorTokensEnIndice(indiceLinea, clave) {
-  if (!(indiceLinea instanceof Map)) return '';
 
-  const tokens = tokenizarClaveParadaApi(clave);
-  if (tokens.length === 0) return '';
-
-  let canonica = '';
-  let matches = 0;
-
-  for (const [k, v] of indiceLinea.entries()) {
-    const tset = new Set(tokenizarClaveParadaApi(k));
-
-    let ok = true;
-    for (const t of tokens) {
-      if (!tset.has(t)) {
-        ok = false;
-        break;
-      }
-    }
-    if (!ok) continue;
-
-    matches += 1;
-    canonica = v;
-    if (matches > 1) return '';
-  }
-
-  return matches === 1 ? canonica : '';
-}
-
-function resolverCanonicoPorTokensMejorScore(indiceLinea, clave) {
-  if (!(indiceLinea instanceof Map)) return '';
-
-  const tokens = tokenizarClaveParadaApi(clave);
-  if (tokens.length === 0) return '';
-
-  let bestCanonica = '';
-  let bestScore = 0;
-  let bestMatchCount = 0;
-
-  for (const [k, v] of indiceLinea.entries()) {
-    const candTokens = tokenizarClaveParadaApi(k);
-    if (candTokens.length === 0) continue;
-
-    const tset = new Set(candTokens);
-    let matchCount = 0;
-    for (const t of tokens) {
-      if (tset.has(t)) matchCount += 1;
-    }
-    if (matchCount === 0) continue;
-
-    const coverage = matchCount / tokens.length;
-    const lengthPenalty = candTokens.length > 0 ? (tokens.length / candTokens.length) : 0;
-    const score = coverage * 0.85 + lengthPenalty * 0.15;
-
-    if (score > bestScore || (score === bestScore && matchCount > bestMatchCount)) {
-      bestCanonica = v;
-      bestScore = score;
-      bestMatchCount = matchCount;
-    }
-  }
-
-  // Para queries muy cortas (1–2 tokens útiles), un umbral alto suele impedir
-  // resolver paradas cuando el GeoJSON trae nombres genéricos (ej. "Terminal")
-  // pero el JSON de paradas tiene nombres más largos ("Terminal de ... Acceso B").
-  // Bajamos el umbral solo en esos casos para evitar falsos negativos.
-  const minScore = tokens.length <= 1 ? 0.75 : tokens.length === 2 ? 0.85 : 0.6;
-  return bestScore >= minScore ? bestCanonica : '';
-}
-
-function resolverCanonicoPorTokensMejorScoreDetallado(indiceLinea, clave) {
-  if (!(indiceLinea instanceof Map)) return { canonica: '', score: 0, matchCount: 0, tokensLen: 0 };
-
-  const tokens = tokenizarClaveParadaApi(clave);
-  if (tokens.length === 0) return { canonica: '', score: 0, matchCount: 0, tokensLen: 0 };
-
-  let bestCanonica = '';
-  let bestScore = 0;
-  let bestMatchCount = 0;
-
-  for (const [k, v] of indiceLinea.entries()) {
-    const candTokens = tokenizarClaveParadaApi(k);
-    if (candTokens.length === 0) continue;
-
-    const tset = new Set(candTokens);
-    let matchCount = 0;
-    for (const t of tokens) {
-      if (tset.has(t)) matchCount += 1;
-    }
-    if (matchCount === 0) continue;
-
-    const coverage = matchCount / tokens.length;
-    const lengthPenalty = candTokens.length > 0 ? (tokens.length / candTokens.length) : 0;
-    const score = coverage * 0.85 + lengthPenalty * 0.15;
-
-    if (score > bestScore || (score === bestScore && matchCount > bestMatchCount)) {
-      bestCanonica = v;
-      bestScore = score;
-      bestMatchCount = matchCount;
-    }
-  }
-
-  return { canonica: bestCanonica, score: bestScore, matchCount: bestMatchCount, tokensLen: tokens.length };
-}
 
 function construirIndiceParadasApi(payload) {
   const global = new Map();
@@ -2324,40 +2406,6 @@ function extraerHorariosDesdePayloadArrivals(payload) {
   return { horarios: [], tipoDatos: 'esperado', mensajeApi, horarioEstimado };
 }
 
-function obtenerCandidatosNombreParada(feature, nombreBase = '') {
-  const props = feature?.properties || {};
-  const seen = new Set();
-  const out = [];
-  const add = (value) => {
-    const s = typeof value === 'string' ? value.trim() : '';
-    if (!s) return;
-    const key = s.toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
-    out.push(s);
-
-    // Variante sin sufijos de dirección/variante (-A/-B/-C/-D, N/S/E/O, Norte/Sur/Este/Oeste)
-    // para mejorar matching sin depender de esos detalles.
-    const base = normalizarNombreParadaSinSufijos(s);
-    const keyBase = base ? base.toLowerCase() : '';
-    if (base && !seen.has(keyBase)) {
-      seen.add(keyBase);
-      out.push(base);
-    }
-  };
-
-  add(nombreBase);
-  add(props.name);
-  add(props['name:es']);
-  add(props.alt_name);
-  add(props.official_name);
-  add(props.description);
-  add(props['addr:street']);
-  add(props.ref);
-  add(obtenerEtiquetaParada(feature));
-
-  return out;
-}
 
 async function resolverParadaDesdeJsonConCandidatos(linea, candidatos) {
   const arr = Array.isArray(candidatos) ? candidatos : [];
@@ -2368,481 +2416,8 @@ async function resolverParadaDesdeJsonConCandidatos(linea, candidatos) {
   return { id_p: '', paradaResuelta: '', paradaInput: '' };
 }
 
-function extraerDireccionYSufijoParada(nombre) {
-  const raw = String(nombre || '').trim();
-  if (!raw) return { dir: '', var: '' };
 
-  // Dirección: letra suelta al final (N/S/E/O) o palabra completa.
-  const mDirLetra = raw.match(/\s([NSEO])\s*(?:-\s*[A-D])?\s*$/i);
-  const dir = mDirLetra ? String(mDirLetra[1] || '').toUpperCase() : '';
 
-  // Variante: -A/-B/-C/-D al final.
-  const mVar = raw.match(/-\s*([A-D])\s*$/i);
-  const vari = mVar ? String(mVar[1] || '').toUpperCase() : '';
-
-  return { dir, var: vari };
-}
-
-async function obtenerCandidatosIdParadaParaArrivals(linea, paradaInput, paradaResueltaPreferida) {
-  // Devuelve una lista ordenada de { paradaResuelta, id_p } para intentar en la API.
-  const out = [];
-  const refLinea = String(linea || '').trim();
-  if (!refLinea) return out;
-
-  let data = await cargarParadasPorLinea();
-  let lk = resolverKeyLineaEnObjeto(data, refLinea);
-  if (!lk) {
-    data = await cargarParadasPorLinea({ noCache: true });
-    lk = resolverKeyLineaEnObjeto(data, refLinea);
-  }
-  const entry = lk ? data[lk] : null;
-  const paradasObj = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
-
-  const preferida = String(paradaResueltaPreferida || '').trim();
-  const base = normalizarNombreParadaSinSufijos(preferida || paradaInput);
-  const baseKey = crearClaveParadaApi(base);
-  if (!baseKey) {
-    if (preferida && Object.prototype.hasOwnProperty.call(paradasObj, preferida)) {
-      out.push({ paradaResuelta: preferida, id_p: String(paradasObj[preferida] || '') });
-    }
-    return out.filter((c) => Boolean(c.id_p));
-  }
-
-  const inputInfo = extraerDireccionYSufijoParada(paradaInput);
-
-  // Recolectar todas las paradas que colisionan por base (ignorando sufijos).
-  for (const nombre of Object.keys(paradasObj)) {
-    const b = normalizarNombreParadaSinSufijos(nombre);
-    const k = crearClaveParadaApi(b);
-    if (k && k === baseKey) {
-      out.push({ paradaResuelta: nombre, id_p: String(paradasObj[nombre] || '') });
-    }
-  }
-
-  // Asegurar que la preferida quede primera si existe.
-  out.sort((a, b) => {
-    const aName = String(a?.paradaResuelta || '');
-    const bName = String(b?.paradaResuelta || '');
-    if (preferida) {
-      const aIsPref = aName === preferida;
-      const bIsPref = bName === preferida;
-      if (aIsPref !== bIsPref) return aIsPref ? -1 : 1;
-    }
-
-    // Luego, priorizar coincidencia de dirección/variante presentes en el input.
-    const aInfo = extraerDireccionYSufijoParada(aName);
-    const bInfo = extraerDireccionYSufijoParada(bName);
-    const aScore = (inputInfo.dir && aInfo.dir === inputInfo.dir ? 2 : 0) + (inputInfo.var && aInfo.var === inputInfo.var ? 1 : 0);
-    const bScore = (inputInfo.dir && bInfo.dir === inputInfo.dir ? 2 : 0) + (inputInfo.var && bInfo.var === inputInfo.var ? 1 : 0);
-    if (aScore !== bScore) return bScore - aScore;
-
-    // Estable para no “saltar” siempre distinto.
-    return aName.localeCompare(bName, 'es');
-  });
-
-  // Deduplicar por id_p.
-  const seen = new Set();
-  const dedup = [];
-  for (const c of out) {
-    const id = String(c?.id_p || '').trim();
-    if (!id) continue;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    dedup.push({ paradaResuelta: String(c.paradaResuelta || '').trim(), id_p: id });
-  }
-
-  return dedup;
-}
-
-async function consultarArribosApi(linea, paradaNombre, opts = {}) {
-  const lineaNorm = String(linea || '').trim();
-  const paradaTxt = String(paradaNombre || '').trim();
-  if (!lineaNorm || !paradaTxt) {
-    return { horarios: [], tipoDatos: 'esperado', paradaConsultada: '' };
-  }
-
-  // Normalizar línea para la API (por ejemplo "440A" -> "440").
-  const lineaApi = normalizarLineaParaApi(lineaNorm);
-
-  const paradaFeature = opts?.paradaFeature || null;
-  const candidatosParada = paradaFeature
-    ? obtenerCandidatosNombreParada(paradaFeature, paradaTxt)
-    : [paradaTxt];
-
-  const lineaCandidatas = [];
-  for (const v of [lineaNorm, lineaApi]) {
-    const s = String(v || '').trim();
-    if (s && !lineaCandidatas.includes(s)) lineaCandidatas.push(s);
-  }
-
-  // Intentar primero con la ref original (permite resolver "TEO 1" -> "TEO1", etc.),
-  // probando múltiples candidatos de nombre de parada.
-  let url = '';
-  let paradaRes = { id_p: '', paradaResuelta: '', paradaInput: '' };
-
-  for (const l of lineaCandidatas) {
-    url = url || await resolverUrlDesdeJson(l);
-    if (!paradaRes?.id_p) {
-      paradaRes = await resolverParadaDesdeJsonConCandidatos(l, candidatosParada);
-    }
-    if (url && paradaRes?.id_p) break;
-  }
-
-  let id_p_resuelto = String(paradaRes?.id_p || '').trim();
-  let paradaResueltaFinal = String(paradaRes?.paradaResuelta || '').trim();
-
-  // Información extra de diagnóstico: si el JSON de paradas no cargó o no se encontró
-  // la key de la línea, nunca se va a poder resolver id_p.
-  let paradasLineaKey = '';
-  let paradasLineaCount = 0;
-  let paradasObjLinea = {};
-  try {
-    let dataParadas = await cargarParadasPorLinea();
-    paradasLineaKey = resolverKeyLineaEnObjeto(dataParadas, lineaNorm) || resolverKeyLineaEnObjeto(dataParadas, lineaApi) || '';
-    let entry = paradasLineaKey ? dataParadas[paradasLineaKey] : null;
-    paradasObjLinea = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
-    paradasLineaCount = Object.keys(paradasObjLinea).length;
-
-    // Si no se resolvió la key o count es 0, reintentar sin cache (JSON puede estar viejo o corrupto en cache)
-    if (!paradasLineaKey || paradasLineaCount === 0) {
-      dataParadas = await cargarParadasPorLinea({ noCache: true });
-      paradasLineaKey = resolverKeyLineaEnObjeto(dataParadas, lineaNorm) || resolverKeyLineaEnObjeto(dataParadas, lineaApi) || '';
-      entry = paradasLineaKey ? dataParadas[paradasLineaKey] : null;
-      paradasObjLinea = entry?.paradas && typeof entry.paradas === 'object' ? entry.paradas : {};
-      paradasLineaCount = Object.keys(paradasObjLinea).length;
-    }
-  } catch {
-    paradasObjLinea = {};
-  }
-
-  // Fallback permisivo: si hay URL pero no se resolvió id_p, intentar match por tokens
-  // contra todas las paradas de la línea (útil cuando el GeoJSON trae nombres cortos).
-  let fallbackScore = 0;
-  let fallbackMatchCount = 0;
-  if (url && !id_p_resuelto && paradasObjLinea && typeof paradasObjLinea === 'object' && Object.keys(paradasObjLinea).length > 0) {
-    const indiceTokens = new Map();
-    for (const nombre of Object.keys(paradasObjLinea)) {
-      const base = normalizarNombreParadaSinSufijos(nombre);
-      const clave = crearClaveParadaApi(base);
-      if (clave) indiceTokens.set(clave, nombre);
-    }
-
-    let best = { canonica: '', score: 0, matchCount: 0, tokensLen: 0, input: '' };
-    for (const c of candidatosParada) {
-      const baseQ = normalizarNombreParadaSinSufijos(c);
-      const claveQ = crearClaveParadaApi(baseQ);
-      const det = resolverCanonicoPorTokensMejorScoreDetallado(indiceTokens, claveQ);
-      if (det.score > best.score || (det.score === best.score && det.matchCount > best.matchCount)) {
-        best = { ...det, input: String(c || '') };
-      }
-    }
-
-    // Aceptar si el match es razonable (evitar falsos positivos):
-    // - 2+ tokens coincidentes, o cobertura alta; y score mínimo.
-    const coverage = best.tokensLen > 0 ? (best.matchCount / best.tokensLen) : 0;
-    const ok = (best.matchCount >= 2 || coverage >= 0.67) && best.score >= 0.45;
-    if (ok && best.canonica && Object.prototype.hasOwnProperty.call(paradasObjLinea, best.canonica)) {
-      id_p_resuelto = String(paradasObjLinea[best.canonica] || '').trim();
-      paradaResueltaFinal = String(best.canonica || '').trim();
-      fallbackScore = best.score;
-      fallbackMatchCount = best.matchCount;
-    }
-  }
-
-  // ── Validación cruzada: verificar que el stop-ID resuelto pertenezca a esta línea ──
-  // Protege contra correspondencias manuales/automáticas con stop-IDs de otra línea.
-  if (id_p_resuelto && paradasObjLinea && typeof paradasObjLinea === 'object' && Object.keys(paradasObjLinea).length > 0) {
-    const idsDeLinea = new Set(Object.values(paradasObjLinea).map((v) => String(v || '').trim()));
-    if (!idsDeLinea.has(id_p_resuelto)) {
-      console.warn('[arrivals] VALIDACIÓN: stop-ID resuelto NO pertenece a esta línea, descartando', {
-        linea: lineaNorm,
-        id_p_descartado: id_p_resuelto,
-        paradaResuelta: paradaResueltaFinal,
-        paradasLineaCount,
-      });
-      // Intentar re-resolver por fallback de tokens antes de rendirse
-      const indiceTokensFallback = new Map();
-      for (const nombre of Object.keys(paradasObjLinea)) {
-        const base = normalizarNombreParadaSinSufijos(nombre);
-        const clave = crearClaveParadaApi(base);
-        if (clave) indiceTokensFallback.set(clave, nombre);
-      }
-      let reResolved = false;
-      for (const c of candidatosParada) {
-        const baseQ = normalizarNombreParadaSinSufijos(c);
-        const claveQ = crearClaveParadaApi(baseQ);
-        const det = resolverCanonicoPorTokensMejorScoreDetallado(indiceTokensFallback, claveQ);
-        const cov = det.tokensLen > 0 ? (det.matchCount / det.tokensLen) : 0;
-        const okRe = (det.matchCount >= 2 || cov >= 0.67) && det.score >= 0.45;
-        if (okRe && det.canonica && Object.prototype.hasOwnProperty.call(paradasObjLinea, det.canonica)) {
-          const newId = String(paradasObjLinea[det.canonica] || '').trim();
-          if (newId && idsDeLinea.has(newId)) {
-            id_p_resuelto = newId;
-            paradaResueltaFinal = String(det.canonica || '').trim();
-            reResolved = true;
-            console.debug('[arrivals] Re-resuelto por tokens tras validación cruzada', {
-              linea: lineaNorm,
-              newId,
-              paradaResuelta: paradaResueltaFinal,
-            });
-            break;
-          }
-        }
-      }
-      if (!reResolved) {
-        id_p_resuelto = '';
-        paradaResueltaFinal = '';
-      }
-    }
-  }
-
-  const debugArrivals = {
-    linea: lineaNorm,
-    lineaApi,
-    lineaCandidatas,
-    paradaBase: paradaTxt,
-    paradaInput: paradaRes?.paradaInput || '',
-    paradaResuelta: paradaResueltaFinal || '',
-    url,
-    id_p_resuelto: String(id_p_resuelto || ''),
-    requestIntentada: false,
-    intentos: [],
-    candidatosParada: Array.isArray(candidatosParada) ? candidatosParada.slice(0, 8) : [],
-    paradasJsonError: _lastParadasPorLineaError,
-    urlsJsonError: _lastUrlsPorLineaError,
-    paradasLineaKey,
-    paradasLineaCount,
-    fallbackIdP: fallbackScore > 0 ? { score: fallbackScore, matchCount: fallbackMatchCount } : null,
-  };
-
-  if (!url || !id_p_resuelto) {
-    console.warn('[arrivals] ERROR: Falta resolver datos antes de fetch', {
-      linea: lineaNorm,
-      urlOk: Boolean(url),
-      urlResuelto: url ? url.substring(0, 80) : '(no encontrada)',
-      idPOk: Boolean(id_p_resuelto),
-      id_pResuelto: id_p_resuelto,
-      paradaBase: paradaTxt,
-      paradaResuelta: paradaResueltaFinal || '(no resuelta)',
-      lineaCandidatas,
-      paradasLineaKey,
-      paradasLineaCount,
-    });
-    return {
-      horarios: [],
-      headwaySecs: 0,
-      tipoDatos: 'error',
-      paradaConsultada: paradaResueltaFinal || paradaTxt,
-      mensajeApi: !url
-        ? `🔴 No se encontró URL para línea: ${lineaNorm}`
-        : `🔴 No se encontró parada: ${paradaTxt}`,
-      apiFallo: true,
-      linea: lineaNorm,
-      debugArrivals,
-    };
-  }
-
-  try {
-    try {
-      const candidatosIdP = await obtenerCandidatosIdParadaParaArrivals(lineaNorm, paradaTxt, paradaResueltaFinal || paradaTxt);
-      const listaCandidatos = candidatosIdP.length
-        ? candidatosIdP
-        : [{ paradaResuelta: paradaResueltaFinal || paradaTxt, id_p: id_p_resuelto }];
-
-      let bestParsed = null;
-      let bestScore = -1;
-      const maxIntentos = Math.max(1, Math.min(ARRIVALS_MAX_INTENTOS_PARADA, listaCandidatos.length));
-
-      for (let i = 0; i < maxIntentos; i++) {
-        const cand = listaCandidatos[i];
-        const idTry = String(cand?.id_p || '').trim();
-        const paradaTry = String(cand?.paradaResuelta || '').trim();
-        if (!idTry) continue;
-
-        // Registrar el intento incluso si el fetch falla antes de responder.
-        debugArrivals.intentos.push({
-          parada: paradaTry,
-          id_p: idTry,
-          http: '',
-          horariosLen: 0,
-          horarioEstimado: '',
-          mensajeApi: '',
-        });
-        const intentoIndex = debugArrivals.intentos.length - 1;
-
-        try {
-          try {
-            console.debug('[arrivals] POST /arrivals', {
-              linea: lineaNorm,
-              url: url.substring(0, 100),
-              id_p: idTry,
-              parada: paradaTry,
-              intento: i + 1,
-              total: maxIntentos,
-              timeout: ARRIVALS_TIMEOUT_MS,
-            });
-          } catch {
-            // noop
-          }
-
-          debugArrivals.requestIntentada = true;
-
-          console.debug('[arrivals] Enviando fetch a API', {
-            endpoint: ARRIVALS_API_URL,
-            url: url.substring(0, 80),
-            id_p: idTry,
-            payload: { url: url.substring(0, 80), id_p: idTry },
-          });
-
-          // Crear AbortController POR FETCH, con timeout individual
-          const fetchController = new AbortController();
-          const fetchTimeoutId = setTimeout(() => {
-            console.warn('[arrivals] Timeout en fetch individual, abortando...');
-            try { fetchController.abort(); } catch { /* noop */ }
-          }, ARRIVALS_TIMEOUT_MS);
-
-          let resp;
-          try {
-            resp = await fetch(ARRIVALS_API_URL, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify({
-                url,
-                id_p: idTry,
-              }),
-              cache: 'no-store',
-              signal: fetchController.signal,
-            });
-            clearTimeout(fetchTimeoutId);
-            console.debug('[arrivals] Fetch completado, esperando respuesta...');
-          } catch (e) {
-            clearTimeout(fetchTimeoutId);
-            console.error('[arrivals] Error durante fetch (antes de respuesta)', {
-              errorName: e?.name,
-              errorMessage: e?.message,
-              isAbort: e?.name === 'AbortError',
-            });
-            throw e;
-          }
-
-          const httpInfo = resp.ok ? 'ok' : `HTTP ${resp.status}`;
-          if (!resp.ok) {
-            console.warn('[arrivals] Response error HTTP', {
-              status: resp.status,
-              statusText: resp.statusText,
-              linea: lineaNorm,
-              id_p: idTry,
-            });
-            debugArrivals.intentos[intentoIndex] = { ...debugArrivals.intentos[intentoIndex], http: httpInfo, error: httpInfo };
-            continue;
-          }
-
-          const payload = await resp.json();
-          console.debug('[arrivals] Respuesta recibida', {
-            linea: lineaNorm,
-            id_p: idTry,
-            payloadKeys: Object.keys(payload),
-            horariosLen: payload?.horarios?.length || 0,
-            tieneHorarioEstimado: !!payload?.horario_estimado,
-          });
-          const parsed = extraerHorariosDesdePayloadArrivals(payload);
-
-          const horariosArr = Array.isArray(parsed?.horarios) ? parsed.horarios : [];
-          const horarioEstimado = typeof parsed?.horarioEstimado === 'string' ? parsed.horarioEstimado.trim() : '';
-          const mensajeApi = typeof parsed?.mensajeApi === 'string' ? parsed.mensajeApi.trim() : '';
-
-          debugArrivals.intentos[intentoIndex] = {
-            ...debugArrivals.intentos[intentoIndex],
-            http: httpInfo,
-            horariosLen: horariosArr.length,
-            horarioEstimado,
-            mensajeApi,
-          };
-
-          const score = (horariosArr.length * 100) + (horarioEstimado ? 10 : 0) + (mensajeApi ? 5 : 0);
-          if (score > bestScore) {
-            bestScore = score;
-            bestParsed = { ...parsed, paradaConsultada: paradaTry || paradaResuelta || paradaTxt };
-          }
-
-          // Si encontramos horarios concretos, nos quedamos con este intento.
-          if (horariosArr.length > 0) break;
-        } catch (errTry) {
-          const msg = (errTry && String(errTry.name) === 'AbortError')
-            ? 'AbortError'
-            : (errTry?.message ? String(errTry.message) : String(errTry));
-          console.error('[arrivals] ERROR en fetch/parse', {
-            errorName: errTry?.name,
-            errorMessage: msg,
-            linea: lineaNorm,
-            id_p: idTry,
-            intento: i + 1,
-          });
-          debugArrivals.intentos[intentoIndex] = { ...debugArrivals.intentos[intentoIndex], error: msg };
-          if (errTry && String(errTry.name) === 'AbortError') throw errTry;
-        }
-      }
-
-      if (!bestParsed) {
-        console.error('[arrivals] No se pudo obtener respuesta exitosa de API', {
-          linea: lineaNorm,
-          intentosTotales: debugArrivals.intentos.length,
-          paradasIntentadas: debugArrivals.intentos.map(it => `${it.parada || 'unknown'} (${it.id_p})`),
-        });
-        return {
-          horarios: [],
-          headwaySecs: 0,
-          tipoDatos: 'error',
-          paradaConsultada: paradaResueltaFinal || paradaTxt,
-          mensajeApi: '🔴 No se pudo obtener datos de la API de arrivals',
-          apiFallo: true,
-          linea: lineaNorm,
-          debugArrivals,
-        };
-      }
-
-      const horariosArr = Array.isArray(bestParsed?.horarios) ? bestParsed.horarios : [];
-      const horarioEstimado = typeof bestParsed?.horarioEstimado === 'string' ? bestParsed.horarioEstimado.trim() : '';
-      const mensajeApi = typeof bestParsed?.mensajeApi === 'string' ? bestParsed.mensajeApi.trim() : '';
-
-      // Si la API responde pero viene sin datos (arrivals vacío) y tampoco aporta
-      // un horario estimado o mensaje aprovechable, mostramos horarios aproximados.
-      if (horariosArr.length === 0 && !horarioEstimado && !mensajeApi) {
-        return {
-          ...bestParsed,
-          horarios: [],
-          headwaySecs: 0,
-          tipoDatos: 'error',
-          mensajeApi: 'No hay datos de arrivals disponibles',
-          apiFallo: true,
-          linea: lineaNorm,
-          paradaConsultada: bestParsed.paradaConsultada || paradaResueltaFinal || paradaTxt,
-          debugArrivals,
-        };
-      }
-
-      return { ...bestParsed, debugArrivals };
-    } finally {
-      // Limpieza general (ya no se usan AbortControllers globales)
-    }
-  } catch (err) {
-    console.warn('No se pudo consultar arrivals API:', err);
-    const msgAbort = (err && String(err.name) === 'AbortError') ? 'Tiempo de espera agotado al consultar arrivals API.' : 'Error consultando arrivals API.';
-    return {
-      horarios: [],
-      headwaySecs: 0,
-      tipoDatos: 'error',
-      paradaConsultada: paradaResueltaFinal || paradaTxt,
-      mensajeApi: msgAbort,
-      apiFallo: true,
-      linea: lineaNorm,
-      debugArrivals,
-    };
-  }
-}
 
 function estimarOffsetArriboParadaSegsDesdeRutas(rutas, paradaLat, paradaLng) {
   // Estima cuánto tarda el bus desde el “inicio” del recorrido hasta la parada,
