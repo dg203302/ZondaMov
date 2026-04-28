@@ -311,38 +311,6 @@
             align-items: flex-start;
           }
 
-          .sidepanel-credits-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #007BFF;
-            text-decoration: none;
-            padding: 14px;
-            border-radius: 16px;
-            border: 1px solid rgba(0, 123, 255, 0.2);
-            position: relative;
-            overflow: hidden;
-            isolation: isolate;
-            width: 100%;
-            min-height: 120px;
-            justify-content: center;
-          }
-
-          .sidepanel-credits-link::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background-image: url("Datos/logo_djsolutions.png");
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: cover;
-            opacity: 0.22;
-            pointer-events: none;
-            z-index: 0;
-          }
-
           .sidepanel-credits-link::after {
             content: "";
             position: absolute;
@@ -358,17 +326,6 @@
             z-index: 2;
           }
 
-          .sidepanel-credits-link img {
-            width: 22px;
-            height: 22px;
-            flex: 0 0 22px;
-            object-fit: contain;
-            display: block;
-            border-radius: 6px;
-          }
-          .sidepanel-credits-link:hover::after {
-            background-color: rgba(0, 123, 255, 0.08);
-          }
 
           .toggle-row {
             display: inline-flex;
@@ -524,17 +481,6 @@
           .dark-mode .sidepanel-credits {
             color: rgba(229, 231, 235, 0.75);
           }
-          .dark-mode .sidepanel-credits-link {
-            border-color: rgba(255, 255, 255, 0.14);
-            color: #93c5fd;
-          }
-          .dark-mode .sidepanel-credits-link::before {
-            opacity: 0.18;
-          }
-          .dark-mode .sidepanel-credits-link:hover::after {
-            background-color: rgba(147, 197, 253, 0.10);
-          }
-
           
           .btn-floating {
             position: fixed;
@@ -2164,7 +2110,8 @@
                   <p>Datos de arribos obtenidos desde <a href="https://github.com/dg203302/Proxy_RT" target="_blank" rel="noopener">Proxy_RT</a></p>
                 </div>
 
-                <a class="sidepanel-credits-link" href="https://djsolutions.lovable.app" target="_blank" rel="noopener"><span class="sidepanel-credits-link-text">Desarrollado por DJ Solutions</span></a>
+                <a href="https://diegogarcia-dev.com.ar" target="_blank" rel="noopener"><span class="sidepanel-credits-link-text">Desarrollado por Diego García</span></a>
+                <a href="https://djsolutions.lovable.app" target="_blank" rel="noopener"><span class="sidepanel-credits-link-text">Colaboración de DJ Solutions</span></a>
               </div>
             </div>
           </aside>
