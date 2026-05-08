@@ -65,6 +65,8 @@ const SHEET_DRAG_EXPAND_THRESHOLD = 70;
 const SHEET_DRAG_COLLAPSE_THRESHOLD = 90;
 const SHEET_DRAG_CLOSE_THRESHOLD = 90;
 const SHEET_DRAG_CLOSE_FROM_FULL_THRESHOLD = 220;
+const REALTIME_CENTER_INTERVAL_MS = 10000;
+const REALTIME_CENTER_LONG_PRESS_MS = 600;
 
 // ─── Ads (bloque externo) ─────────────────────────────────────────────────
 // Se monta en momentos puntuales (cargando arribos / mostrando líneas de parada)
@@ -245,6 +247,12 @@ function setBottomSheetState(state) {
   const bs = document.getElementById('bottom-sheet');
   if (!bs) return;
   bs.setAttribute('data-sheet-state', state);
+  // Añadir clase al body para indicar que un sheet está en estado full (útil para aplicar desenfoque)
+  if (state === BOTTOM_SHEET_STATE_FULL) {
+    try { document.body.classList.add('bottom-sheet-full'); } catch (e) { /* noop */ }
+  } else {
+    try { document.body.classList.remove('bottom-sheet-full'); } catch (e) { /* noop */ }
+  }
 }
 
 function getBottomSheetState() {
@@ -370,6 +378,13 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
 
 let _confirmCloseRouteOnConfirm = null;
 let _confirmCloseRouteKeydownBound = false;
+let _confirmRealtimeCenterOnConfirm = null;
+let _confirmRealtimeCenterKeydownBound = false;
+let _realtimeCenterIntervalId = null;
+let _realtimeCenterBusy = false;
+let _realtimeCenterLongPressTimer = null;
+let _realtimeCenterSuppressNextClick = false;
+let _realtimeCenterActive = false;
 
 function ocultarModalConfirmCerrarRuta() {
   const overlay = document.getElementById('confirm-close-route-overlay');
@@ -426,6 +441,209 @@ function setupModalConfirmCerrarRuta() {
       if (active) ocultarModalConfirmCerrarRuta();
     });
   }
+}
+
+function ocultarModalConfirmCentradoTiempoReal() {
+  const overlay = document.getElementById('confirm-realtime-center-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  overlay.setAttribute('aria-hidden', 'true');
+  _confirmRealtimeCenterOnConfirm = null;
+}
+
+function actualizarModalConfirmCentradoTiempoReal(activando) {
+  const title = document.getElementById('confirm-realtime-center-title');
+  const message = document.getElementById('confirm-realtime-center-message');
+  const warning = document.getElementById('confirm-realtime-center-warning');
+  const okBtn = document.getElementById('confirm-realtime-center-ok');
+  if (!title || !message || !warning || !okBtn) return;
+
+  if (activando) {
+    title.textContent = 'Activar centrado en tiempo real';
+    message.textContent = 'Cada 10 segundos se consultará tu ubicación para recentrar el mapa.';
+    warning.textContent = 'Advertencia: este modo puede consumir más datos y batería.';
+    okBtn.textContent = 'Activar';
+  } else {
+    title.textContent = 'Desactivar centrado en tiempo real';
+    message.textContent = 'El mapa dejará de seguir tu ubicación automáticamente.';
+    warning.textContent = 'Podés volver a activarlo manteniendo presionado el botón de centrar.';
+    okBtn.textContent = 'Desactivar';
+  }
+}
+
+function mostrarModalConfirmCentradoTiempoReal(onConfirm, activando) {
+  const overlay = document.getElementById('confirm-realtime-center-overlay');
+  const okBtn = document.getElementById('confirm-realtime-center-ok');
+  if (!overlay || !okBtn) {
+    const ok = confirm(
+      activando
+        ? 'Se consultará tu ubicación cada 10 segundos para recentrar el mapa. Puede consumir más datos y batería. ¿Activar?'
+        : 'El mapa dejará de seguir tu ubicación automáticamente. ¿Desactivar?'
+    );
+    if (ok && typeof onConfirm === 'function') onConfirm();
+    return;
+  }
+
+  actualizarModalConfirmCentradoTiempoReal(Boolean(activando));
+  _confirmRealtimeCenterOnConfirm = typeof onConfirm === 'function' ? onConfirm : null;
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  const cancelBtn = document.getElementById('confirm-realtime-center-cancel');
+  setTimeout(() => {
+    (cancelBtn || okBtn).focus?.();
+  }, 0);
+}
+
+function setupModalConfirmCentradoTiempoReal() {
+  const overlay = document.getElementById('confirm-realtime-center-overlay');
+  const cancelBtn = document.getElementById('confirm-realtime-center-cancel');
+  const okBtn = document.getElementById('confirm-realtime-center-ok');
+  if (!overlay || !cancelBtn || !okBtn) return;
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'confirm-realtime-center-overlay') {
+      ocultarModalConfirmCentradoTiempoReal();
+    }
+  });
+  cancelBtn.addEventListener('click', () => {
+    ocultarModalConfirmCentradoTiempoReal();
+  });
+  okBtn.addEventListener('click', () => {
+    const cb = _confirmRealtimeCenterOnConfirm;
+    ocultarModalConfirmCentradoTiempoReal();
+    if (typeof cb === 'function') cb();
+  });
+
+  if (!_confirmRealtimeCenterKeydownBound) {
+    _confirmRealtimeCenterKeydownBound = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const active = document.getElementById('confirm-realtime-center-overlay')?.classList.contains('active');
+      if (active) ocultarModalConfirmCentradoTiempoReal();
+    });
+  }
+}
+
+function actualizarEstadoBotonCentradoTiempoReal(activo) {
+  const btn = document.getElementById('btn-centrar');
+  if (!btn) return;
+  btn.classList.toggle('is-realtime-active', Boolean(activo));
+  btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
+  btn.setAttribute('title', activo ? 'Centrado en tiempo real activo' : 'Recentrar ubicación');
+  btn.setAttribute('aria-label', activo ? 'Desactivar centrado en tiempo real' : 'Recentrar ubicación');
+}
+
+async function ejecutarCentradoTiempoReal() {
+  if (_realtimeCenterBusy) return;
+  _realtimeCenterBusy = true;
+  try {
+    await Centrar();
+  } finally {
+    _realtimeCenterBusy = false;
+  }
+}
+
+function activarModoCentradoTiempoReal() {
+  if (_realtimeCenterIntervalId) {
+    clearInterval(_realtimeCenterIntervalId);
+    _realtimeCenterIntervalId = null;
+  }
+
+  _realtimeCenterActive = true;
+  actualizarEstadoBotonCentradoTiempoReal(true);
+  ejecutarCentradoTiempoReal();
+  _realtimeCenterIntervalId = setInterval(() => {
+    ejecutarCentradoTiempoReal();
+  }, REALTIME_CENTER_INTERVAL_MS);
+}
+
+function desactivarModoCentradoTiempoReal() {
+  if (_realtimeCenterIntervalId) {
+    clearInterval(_realtimeCenterIntervalId);
+    _realtimeCenterIntervalId = null;
+  }
+
+  _realtimeCenterActive = false;
+  actualizarEstadoBotonCentradoTiempoReal(false);
+}
+
+function setupBotonCentrarTiempoReal() {
+  const btn = document.getElementById('btn-centrar');
+  if (!btn) return;
+
+  const prevHandlers = btn._realtimeCenterHandlers;
+  if (prevHandlers) {
+    btn.removeEventListener('pointerdown', prevHandlers.handlePointerDown);
+    btn.removeEventListener('pointerup', prevHandlers.handlePointerUp);
+    btn.removeEventListener('pointercancel', prevHandlers.handlePointerCancel);
+    btn.removeEventListener('pointerleave', prevHandlers.handlePointerLeave);
+    btn.removeEventListener('click', prevHandlers.handleClick);
+  }
+
+  const clearLongPress = () => {
+    if (_realtimeCenterLongPressTimer) {
+      clearTimeout(_realtimeCenterLongPressTimer);
+      _realtimeCenterLongPressTimer = null;
+    }
+  };
+
+  const handlePointerDown = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    clearLongPress();
+    _realtimeCenterSuppressNextClick = false;
+
+    _realtimeCenterLongPressTimer = setTimeout(() => {
+      _realtimeCenterSuppressNextClick = true;
+      const activando = !_realtimeCenterActive;
+      mostrarModalConfirmCentradoTiempoReal(() => {
+        if (activando) {
+          activarModoCentradoTiempoReal();
+        } else {
+          desactivarModoCentradoTiempoReal();
+        }
+      }, activando);
+    }, REALTIME_CENTER_LONG_PRESS_MS);
+  };
+
+  const handlePointerUp = () => {
+    clearLongPress();
+  };
+
+  const handlePointerCancel = () => {
+    clearLongPress();
+    _realtimeCenterSuppressNextClick = false;
+  };
+
+  const handlePointerLeave = () => {
+    clearLongPress();
+  };
+
+  const handleClick = (e) => {
+    if (_realtimeCenterSuppressNextClick) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      _realtimeCenterSuppressNextClick = false;
+      return;
+    }
+    CentrarYOferécerGuardar();
+  };
+
+  btn.addEventListener('pointerdown', handlePointerDown);
+  btn.addEventListener('pointerup', handlePointerUp);
+  btn.addEventListener('pointercancel', handlePointerCancel);
+  btn.addEventListener('pointerleave', handlePointerLeave);
+  btn.addEventListener('click', handleClick);
+
+  btn._realtimeCenterHandlers = {
+    handlePointerDown,
+    handlePointerUp,
+    handlePointerCancel,
+    handlePointerLeave,
+    handleClick,
+  };
+
+  actualizarEstadoBotonCentradoTiempoReal(false);
 }
 
 function cerrarBottomSheet(force = false) {
@@ -587,6 +805,7 @@ function setupBottomSheetDrag() {
   const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
   const getHalfHeightPx = () => Math.round((window.innerHeight || 0) * 0.5);
   const getFullHeightPx = () => Math.round((window.innerHeight || 0) * 1.0);
+  const getSheetTranslate = (y) => `translate(-50%, ${y})`;
 
   const handleDragStart = (e) => {
     // No iniciar drag si el click es en un botón o elementos interactivos
@@ -632,7 +851,7 @@ function setupBottomSheetDrag() {
     const halfPx = getHalfHeightPx();
     const fullPx = getFullHeightPx();
 
-    // Límites de arrastre: permitir cerrar (min height 0) y exceder un poco el top (rubber band)
+    // Limites de arrastre: permitir cerrar (min height 0) y exceder un poco el top (rubber band)
     const minPx = 0;
     const maxLimit = fullPx + 50;
 
@@ -644,7 +863,8 @@ function setupBottomSheetDrag() {
     }
 
     bottomSheet.style.height = `${clamp(nextHeight, minPx, maxLimit)}px`;
-    bottomSheet.style.transform = 'translateY(0)';
+    // Mantener el mismo anclaje horizontal en móvil y escritorio.
+    bottomSheet.style.transform = getSheetTranslate('0');
   };
 
   const handleDragEnd = () => {
@@ -685,15 +905,21 @@ function setupBottomSheetDrag() {
       const distToHalf = Math.abs(currentHeight - halfPx);
       const distToClose = currentHeight;
 
-      if (distToClose < 120) {
+      if (distToClose < SHEET_DRAG_CLOSE_THRESHOLD) {
         targetState = 'close';
         targetHeight = 0;
-      } else if (distToFull < distToHalf) {
-        targetState = BOTTOM_SHEET_STATE_FULL;
-        targetHeight = fullPx;
-      } else {
+      } else if (startState === BOTTOM_SHEET_STATE_FULL && distToClose < SHEET_DRAG_CLOSE_FROM_FULL_THRESHOLD) {
         targetState = BOTTOM_SHEET_STATE_HALF;
         targetHeight = halfPx;
+      } else if (distToFull + SHEET_DRAG_EXPAND_THRESHOLD < distToHalf) {
+        targetState = BOTTOM_SHEET_STATE_FULL;
+        targetHeight = fullPx;
+      } else if (distToHalf + SHEET_DRAG_COLLAPSE_THRESHOLD < distToFull) {
+        targetState = BOTTOM_SHEET_STATE_HALF;
+        targetHeight = halfPx;
+      } else {
+        targetState = distToFull < distToHalf ? BOTTOM_SHEET_STATE_FULL : BOTTOM_SHEET_STATE_HALF;
+        targetHeight = targetState === BOTTOM_SHEET_STATE_FULL ? fullPx : halfPx;
       }
     }
 
@@ -702,7 +928,7 @@ function setupBottomSheetDrag() {
       // Para evitar el salto vertical, animamos el transform hacia abajo
       // en lugar de colapsar el height a 0px.
       bottomSheet.style.transition = 'transform 0.3s ease-in';
-      bottomSheet.style.transform = 'translateY(100%)';
+      bottomSheet.style.transform = getSheetTranslate('100%');
 
       // Desactivamos el overlay inmediatamente
       document.getElementById('bottom-sheet-overlay')?.classList.remove('active');
@@ -724,6 +950,8 @@ function setupBottomSheetDrag() {
         bottomSheet.style.transition = '';
         // Volver a dejar que el CSS maneje la altura reactiva (dvh) tras la animación
         bottomSheet.style.height = '';
+        // Asegurar el mismo transform en cualquier viewport tras el snapping.
+        bottomSheet.style.transform = getSheetTranslate('0');
       }, 350);
     }
 
@@ -765,11 +993,15 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     setupBottomSheetDrag();
     setupModalConfirmCerrarRuta();
+    setupModalConfirmCentradoTiempoReal();
+    setupBotonCentrarTiempoReal();
     setupSidepanelConfiguracion();
   });
 } else {
   setupBottomSheetDrag();
   setupModalConfirmCerrarRuta();
+  setupModalConfirmCentradoTiempoReal();
+  setupBotonCentrarTiempoReal();
   setupSidepanelConfiguracion();
 }
 
@@ -806,7 +1038,6 @@ async function Centrar() {
 
 async function CentrarYOferécerGuardar() {
   await Centrar();
-
 }
 
 function abrirGuardadoDesdeMarcadorUbicacion() {
@@ -1649,14 +1880,14 @@ function agregarParadasDeTodasLasOpciones(dataParadas, lineaRef) {
   const lineaNorm = normalizarLineaParaLookup(lineaRef);
   if (!lineaNorm) return paradasAgregadas;
 
-  const targetPrefix = lineaNorm.replace(/([ABC])$/, ''); 
+  const targetPrefix = lineaNorm.replace(/([ABC])$/, '');
 
   for (const [key, lineData] of Object.entries(dataParadas)) {
     if (!lineData?.paradas) continue;
-    
+
     let keyNorm = normalizarLineaParaLookup(key);
     keyNorm = keyNorm.replace(/OPCION[0-9]+$/i, '');
-    
+
     if (keyNorm === targetPrefix || keyNorm === lineaNorm) {
       for (const [pName, pId] of Object.entries(lineData.paradas)) {
         if (!paradasAgregadas[pName]) paradasAgregadas[pName] = pId;
