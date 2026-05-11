@@ -1157,9 +1157,9 @@
           .lineas-list .btn-linea {
             padding: 20px 16px;
             border-radius: 12px;
-            border: 2px solid #007BFF;
-            background: linear-gradient(135deg, #007BFF 0%, #0056cc 100%);
-            color: white;
+            border: 2px solid var(--line-color, #007BFF);
+            background: linear-gradient(135deg, var(--line-color, #007BFF) 0%, color-mix(in srgb, var(--line-color, #007BFF) 80%, black) 100%);
+            color: var(--line-text, white);
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -1168,7 +1168,7 @@
             align-items: center;
             justify-content: center;
             min-height: 90px;
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             text-align: center;
             word-break: break-word;
             white-space: normal;
@@ -1193,26 +1193,26 @@
           
           .lineas-list .btn-linea:hover {
             transform: translateY(-3px);
-            box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
-            background: linear-gradient(135deg, #0056cc 0%, #003d99 100%);
-            border-color: #003d99;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--line-color, #007BFF) 80%, black) 0%, color-mix(in srgb, var(--line-color, #007BFF) 60%, black) 100%);
+            border-color: color-mix(in srgb, var(--line-color, #007BFF) 60%, black);
           }
           
           .lineas-list .btn-linea:active {
             transform: translateY(0);
-            box-shadow: 0 1px 4px rgba(0, 123, 255, 0.2);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
           }
           
           .dark-mode .lineas-list .btn-linea {
-            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
-            border-color: #3b82f6;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--line-color, #1e40af) 60%, black) 0%, color-mix(in srgb, var(--line-color, #1e3a8a) 40%, black) 100%);
+            border-color: var(--line-color, #3b82f6);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           }
           
           .dark-mode .lineas-list .btn-linea:hover {
-            background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
-            border-color: #1e40af;
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--line-color, #1e3a8a) 40%, black) 0%, color-mix(in srgb, var(--line-color, #172554) 20%, black) 100%);
+            border-color: color-mix(in srgb, var(--line-color, #1e40af) 80%, black);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
           }
 
           /* Slot de anuncios (se inserta dinámicamente en bs-content) */
@@ -1961,6 +1961,17 @@
             -webkit-backdrop-filter: blur(1px) saturate(var(--glass-saturate));
             transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
           }
+          .search-result-item.has-line-color {
+            background-color: var(--line-color) !important;
+            border-color: var(--line-color) !important;
+          }
+          .search-result-item.has-line-color .search-result-item-title,
+          .search-result-item.has-line-color .search-result-item-info {
+            color: var(--line-text, #ffffff) !important;
+          }
+          .search-result-item.has-line-color:hover {
+            filter: brightness(1.1);
+          }
           .search-result-item:hover {
             background: rgba(0, 123, 255, 0.08);
             border-color: rgba(0, 123, 255, 0.45);
@@ -2075,6 +2086,23 @@
             box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55) !important;
           }
 
+          /* Restaurar el color azul cuando el boton centrar esta activo, aun sin transparencia */
+          .no-transparency .button-wrap > button.is-realtime-active,
+          .no-transparency .button-wrap .btn-floating.is-realtime-active,
+          .no-transparency footer .btn-floating.is-realtime-active {
+            background: linear-gradient(135deg, #007BFF 0%, #0056cc 100%) !important;
+            border-color: #007BFF !important;
+            box-shadow: 0 4px 16px rgba(0, 123, 255, 0.4) !important;
+          }
+          
+          .dark-mode.no-transparency .button-wrap > button.is-realtime-active,
+          .dark-mode.no-transparency .button-wrap .btn-floating.is-realtime-active,
+          .dark-mode.no-transparency footer .btn-floating.is-realtime-active {
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4) !important;
+          }
+
           /* Quitar efectos extra (brillo, outline y sombras) en modo no-transparency */
           .no-transparency .button-shadow {
             display: none !important;
@@ -2095,6 +2123,14 @@
               opacity: 1;
               transform: translateY(0);
             }
+          }
+          @keyframes pulse-halo-anim {
+            0% { opacity: 1; }
+            50% { opacity: 0.1; }
+            100% { opacity: 1; }
+          }
+          .user-marker-halo.pulse-halo {
+            animation: pulse-halo-anim 1.5s infinite ease-in-out;
           }
 
           </style>

@@ -149,23 +149,26 @@ const MAP_LONG_PRESS_MS = 650;
 const MAP_LONG_PRESS_MOVE_TOL_M = 25;
 let _longPressMapSetupDone = false;
 
-const PARADA_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ffffff" stroke="#007BFF" stroke-width="3"/><circle cx="12" cy="12" r="2.5" fill="#007BFF"/></svg>';
-const PARADA_ICON_URL = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(PARADA_ICON_SVG)}`;
 const USER_WAYPOINT_ICON_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGluLWljb24gbHVjaWRlLW1hcC1waW4iPjxwYXRoIGQ9Ik0yMCAxMGMwIDQuOTkzLTUuNTM5IDEwLjE5My03LjM5OSAxMS43OTlhMSAxIDAgMCAxLTEuMjAyIDBDOS41MzkgMjAuMTkzIDQgMTQuOTkzIDQgMTBhOCA4IDAgMCAxIDE2IDAiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSIzIi8+PC9zdmc+';
-let _iconoParadaLeaflet = null;
 let _iconoUserWaypointLeaflet = null;
 
-function obtenerIconoParadaLeaflet() {
-  if (!leafletMap || typeof L === 'undefined') return null;
-  if (_iconoParadaLeaflet) return _iconoParadaLeaflet;
+const _iconosParadaLeafletCache = new Map();
 
-  _iconoParadaLeaflet = L.icon({
-    iconUrl: PARADA_ICON_URL,
+function obtenerIconoParadaLeaflet(colorHex = '#007BFF') {
+  if (!leafletMap || typeof L === 'undefined') return null;
+  if (_iconosParadaLeafletCache.has(colorHex)) return _iconosParadaLeafletCache.get(colorHex);
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ffffff" stroke="${colorHex}" stroke-width="3"/><circle cx="12" cy="12" r="2.5" fill="${colorHex}"/></svg>`;
+  const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+
+  const icon = L.icon({
+    iconUrl: url,
     iconSize: [22, 22],
     iconAnchor: [11, 11],
     popupAnchor: [0, -11],
   });
-  return _iconoParadaLeaflet;
+  _iconosParadaLeafletCache.set(colorHex, icon);
+  return icon;
 }
 
 function asegurarMarcadorUsuario(lat, lng) {
@@ -182,9 +185,14 @@ function asegurarMarcadorUsuario(lat, lng) {
       fillColor: '#007BFF',
       fillOpacity: 0.18,
       interactive: false,
+      className: 'user-marker-halo',
     }).addTo(leafletMap);
   } else {
     userMarkerHalo.setLatLng(latLng);
+    if (typeof _realtimeCenterActive !== 'undefined' && _realtimeCenterActive) {
+      const el = userMarkerHalo.getElement ? userMarkerHalo.getElement() : null;
+      if (el) el.classList.add('pulse-halo');
+    }
   }
 
   if (!userMarker) {
@@ -532,6 +540,13 @@ function actualizarEstadoBotonCentradoTiempoReal(activo) {
   btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
   btn.setAttribute('title', activo ? 'Centrado en tiempo real activo' : 'Recentrar ubicación');
   btn.setAttribute('aria-label', activo ? 'Desactivar centrado en tiempo real' : 'Recentrar ubicación');
+
+  if (typeof userMarkerHalo !== 'undefined' && userMarkerHalo && userMarkerHalo.getElement) {
+    const el = userMarkerHalo.getElement();
+    if (el) {
+      el.classList.toggle('pulse-halo', Boolean(activo));
+    }
+  }
 }
 
 async function ejecutarCentradoTiempoReal() {
@@ -752,15 +767,19 @@ async function dibujarParadasDeLineaCercanasAlOrigen(relIds, origenLat, origenLn
   cercanas.sort((a, b) => a.d - b.d);
   const seleccion = cercanas.slice(0, MAX_PARADAS_MOSTRAR);
 
-  for (const item of seleccion) {
-    const icon = obtenerIconoParadaLeaflet();
-    const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layerParadas);
-    marker.on('click', () => {
-      // Consultar arribos directamente al tocar la parada.
-      const ref = String(lineaRef || '').trim() || String(recorridoActivo?.ref || '').trim();
-      const name = String(lineaNombre || '').trim() || String(recorridoActivo?.name || '').trim();
-      void mostrarArribosParaParadaYLinea(item.feature, ref, name);
-    });
+  const shouldDraw = !(opts && typeof opts === 'object' && opts.draw === false);
+  if (shouldDraw) {
+    const cColor = getColorForLinea(lineaRef || recorridoActivo?.ref);
+    for (const item of seleccion) {
+      const icon = obtenerIconoParadaLeaflet(cColor);
+      const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layerParadas);
+      marker.on('click', () => {
+        // Consultar arribos directamente al tocar la parada.
+        const ref = String(lineaRef || '').trim() || String(recorridoActivo?.ref || '').trim();
+        const name = String(lineaNombre || '').trim() || String(recorridoActivo?.name || '').trim();
+        void mostrarArribosParaParadaYLinea(item.feature, ref, name);
+      });
+    }
   }
 
   return seleccion;
@@ -1132,6 +1151,31 @@ function obtenerLineasDesdeRelations(feature) {
     if (typeof ref === 'string' && ref.trim()) refs.add(ref.trim());
   }
   return Array.from(refs);
+}
+
+function getTextColorForBg(hex) {
+  if (hex === '#fbc02d' || hex === '#8bc34a' || hex === '#03a9f4') return '#111827';
+  return '#ffffff';
+}
+
+function getColorForLinea(ref) {
+  if (!ref) return '#007BFF';
+  const refStr = String(ref).toUpperCase();
+  const match = refStr.match(/\d+/);
+  if (match) {
+    const num = parseInt(match[0], 10);
+    if (num >= 10 && num <= 20) return '#e53935';
+    if (num >= 100 && num <= 130) return '#e91e63';
+    if (num >= 140 && num <= 162) return '#8e24aa';
+    if (num >= 200 && num <= 266) return '#fbc02d';
+    if (num >= 300 && num <= 364) return '#03a9f4';
+    if (num >= 400 && num <= 462) return '#8bc34a';
+    if (num >= 500 && num <= 850) return '#ff9800';
+  } else {
+    if (refStr.startsWith('TEO')) return '#8bc34a';
+    if (refStr.startsWith('T')) return '#e53935';
+  }
+  return '#007BFF';
 }
 
 function escapeHtml(text) {
@@ -2986,8 +3030,9 @@ async function dibujarParadasDelRecorrido(relIds) {
   }
   paradasRecorrido = seleccion;
 
+  const cColor = getColorForLinea(recorridoActivo?.ref);
   for (const item of seleccion) {
-    const icon = obtenerIconoParadaLeaflet();
+    const icon = obtenerIconoParadaLeaflet(cColor);
     const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layerParadas);
     marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
     if (paradasRecorridoMarkers && item.paradaId) {
@@ -3029,8 +3074,9 @@ async function dibujarParadasDelRecorridoRecortadas(relIds, latLngsRuta, startIn
 
   paradasRecorrido = seleccion;
 
+  const cColor = getColorForLinea(recorridoActivo?.ref);
   for (const item of seleccion) {
-    const icon = obtenerIconoParadaLeaflet();
+    const icon = obtenerIconoParadaLeaflet(cColor);
     const marker = L.marker([item.lat, item.lng], icon ? { icon } : undefined).addTo(layerParadas);
     marker.on('click', () => mostrarLineasEnContenedorParadas(item.feature));
     if (paradasRecorridoMarkers && item.paradaId) {
@@ -3137,8 +3183,11 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
   const layerParadas = asegurarParadasLayer();
   layerParadas?.clearLayers();
 
+  const lineColor = getColorForLinea(ref);
   for (const f of rutas) {
-    L.geoJSON(f).addTo(layerRec);
+    L.geoJSON(f, {
+      style: { color: lineColor, weight: 4, opacity: 0.95 }
+    }).addTo(layerRec);
   }
 
   await dibujarParadasDelRecorrido(relIds);
@@ -3216,7 +3265,9 @@ function mostrarLineasEnContenedorParadas(feature) {
       const refAttr = escapeHtml(l.ref || '');
       const nameAttr = escapeHtml(l.name || '');
       const nameDisplay = name ? `<span class="linea-button-name">${name}</span>` : '';
-      return `<li><button type="button" class="btn-linea" data-linea-ref="${refAttr}" data-linea-name="${nameAttr}"><span class="linea-button-ref">${ref}</span>${nameDisplay}</button></li>`;
+      const c = getColorForLinea(refAttr);
+      const tc = getTextColorForBg(c);
+      return `<li><button type="button" class="btn-linea" style="--line-color: ${c}; --line-text: ${tc};" data-linea-ref="${refAttr}" data-linea-name="${nameAttr}"><span class="linea-button-ref">${ref}</span>${nameDisplay}</button></li>`;
     })
     .join('');
 
@@ -3741,6 +3792,12 @@ function renderHistorialBusqueda() {
         btn.dataset.lng = String(Number(item.lng));
       }
 
+      const c = getColorForLinea(ref);
+      const tc = getTextColorForBg(c);
+      btn.style.setProperty('--line-color', c);
+      btn.style.setProperty('--line-text', tc);
+      btn.classList.add('has-line-color');
+
       const title = document.createElement('div');
       title.className = 'search-result-item-title';
       title.textContent = `Línea ${ref}`;
@@ -4097,6 +4154,12 @@ function renderResultadosBusqueda(resultados) {
         btn.dataset.lng = String(item.centro.lng);
       }
 
+      const c = getColorForLinea(item.ref);
+      const tc = getTextColorForBg(c);
+      btn.style.setProperty('--line-color', c);
+      btn.style.setProperty('--line-text', tc);
+      btn.classList.add('has-line-color');
+
       const title = document.createElement('div');
       title.className = 'search-result-item-title';
       title.textContent = `Línea ${item.ref}`;
@@ -4357,6 +4420,77 @@ function calcularDistancia(lat1, lng1, lat2, lng2) {
   return R * c;
 }
 
+function ordenarYUnirMultiLineString(lines) {
+  if (!lines || lines.length === 0) return [];
+  if (lines.length === 1) return lines[0];
+
+  const pool = [...lines];
+  let out = pool.shift(); // Tomar el primer segmento tal como viene
+
+  // Verificar si el primer segmento está invertido respecto al resto de la ruta
+  if (pool.length > 0) {
+    const outStart = out[0];
+    const outEnd = out[out.length - 1];
+    let startC = false;
+    let endC = false;
+    const match = (p1, p2) => calcularDistancia(p1[0], p1[1], p2[0], p2[1]) < 10;
+
+    for (const line of pool) {
+      if (match(outStart, line[0]) || match(outStart, line[line.length - 1])) startC = true;
+      if (match(outEnd, line[0]) || match(outEnd, line[line.length - 1])) endC = true;
+    }
+    // Si el inicio conecta pero el final no, es probable que esté dibujado al revés en OSM
+    if (startC && !endC) {
+      out.reverse();
+    }
+  }
+
+  while (pool.length > 0) {
+    let outEnd = out[out.length - 1];
+    let found = false;
+
+    for (let i = 0; i < pool.length; i++) {
+      const line = pool[i];
+      const lineStart = line[0];
+      const lineEnd = line[line.length - 1];
+
+      // Tolerate tiny rounding differences
+      const match = (p1, p2) => calcularDistancia(p1[0], p1[1], p2[0], p2[1]) < 10;
+
+      if (match(outEnd, lineStart)) {
+        out = out.concat(line.slice(1));
+        pool.splice(i, 1);
+        found = true;
+        break;
+      } else if (match(outEnd, lineEnd)) {
+        out = out.concat(line.slice().reverse().slice(1));
+        pool.splice(i, 1);
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      // Si hay saltos, tomar el siguiente y verificar su orientación
+      let next = pool.shift();
+      if (pool.length > 0) {
+        const nextStart = next[0];
+        const nextEnd = next[next.length - 1];
+        let startC = false;
+        let endC = false;
+        const match = (p1, p2) => calcularDistancia(p1[0], p1[1], p2[0], p2[1]) < 10;
+        for (const line of pool) {
+          if (match(nextStart, line[0]) || match(nextStart, line[line.length - 1])) startC = true;
+          if (match(nextEnd, line[0]) || match(nextEnd, line[line.length - 1])) endC = true;
+        }
+        if (startC && !endC) next.reverse();
+      }
+      out = out.concat(next);
+    }
+  }
+  return out;
+}
+
 function extraerLatLngsDeGeometria(geom) {
   if (!geom) return [];
   const type = geom.type;
@@ -4375,10 +4509,21 @@ function extraerLatLngsDeGeometria(geom) {
   if (type === 'LineString') {
     for (const c of coords) pushCoord(c);
   } else if (type === 'MultiLineString') {
+    const lines = [];
     for (const line of coords) {
       if (!Array.isArray(line)) continue;
-      for (const c of line) pushCoord(c);
+      const currLine = [];
+      for (const c of line) {
+        if (!Array.isArray(c) || c.length < 2) continue;
+        const lng = Number(c[0]);
+        const lat = Number(c[1]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        currLine.push([lat, lng]);
+      }
+      if (currLine.length > 0) lines.push(currLine);
     }
+    const joined = ordenarYUnirMultiLineString(lines);
+    for (const p of joined) out.push(p);
   }
   return out;
 }
@@ -4460,10 +4605,10 @@ function distanciaAcumuladaEnCamino(latLngs, startIndex, endIndex) {
   if (!Number.isFinite(s) || !Number.isFinite(e)) return 0;
   if (s === e) return 0;
 
-  const from = Math.min(s, e);
-  const to = Math.max(s, e);
+  if (s > e) return Infinity; // No se puede viajar hacia atrás en una línea de colectivo
+
   let total = 0;
-  for (let i = from; i < to; i++) {
+  for (let i = s; i < e; i++) {
     const a = latLngs[i];
     const b = latLngs[i + 1];
     if (!a || !b) continue;
@@ -4544,6 +4689,8 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
 
     const scoreSecs = estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs: 0 });
 
+    if (scoreSecs === Infinity) continue; // Ignorar rutas donde el usuario iría hacia atrás
+
     if (!mejor || scoreSecs < mejor.scoreSecs) {
       const name = typeof props.name === 'string' ? props.name.trim() : '';
       mejor = { ref, name, scoreSecs, dO, dD, iO, iD, rideDist, waitSecs: 0 };
@@ -4556,9 +4703,7 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
     return;
   }
 
-  const colorLinea = (typeof colorPorLinea === 'object' && colorPorLinea)
-    ? (colorPorLinea[mejor.ref] || '#007BFF')
-    : '#007BFF';
+  const colorLinea = getColorForLinea(mejor.ref);
 
   // Dibujar solo el tramo (ida) del recorrido entre origen y destino.
   // Importante: NO renderizar la ruta completa ni paradas adicionales.
@@ -4590,46 +4735,41 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
   let endIndex = null;
 
   if (iO >= 0 && iDMin >= 0 && latLngs.length >= 2) {
-    // Recorte “bien cortado”: termina en el punto más cercano al destino.
-    // Si además se alcanza el umbral de cercanía, intentamos cortar en el primer punto que entra al umbral
-    // y luego no sigue acercándose (evita que el trazado pase de largo).
-    const forward = iO <= iDMin;
-    const step = forward ? 1 : -1;
-    let end = iDMin;
+    if (iO <= iDMin) {
+      // Recorte “bien cortado”: termina en el punto más cercano al destino.
+      // Si además se alcanza el umbral de cercanía, intentamos cortar en el primer punto que entra al umbral
+      // y luego no sigue acercándose (evita que el trazado pase de largo).
+      let end = iDMin;
+      let bestSeen = Infinity;
+      let cutCandidate = null;
 
-    // Buscar un punto de corte “suficientemente cerca” del destino
-    let bestSeen = Infinity;
-    let cutCandidate = null;
-    for (let i = iO; forward ? i <= iDMin : i >= iDMin; i += step) {
-      const p = latLngs[i];
-      if (!p) continue;
-      const d = calcularDistancia(latD, lngD, p[0], p[1]);
-      if (d < bestSeen) bestSeen = d;
-      // Si entramos al umbral, marcamos un candidato y seguimos un poco
-      if (d <= DESTINO_UMBRAL_CORTE_M) {
-        cutCandidate = i;
-        // Si ya estamos prácticamente en el mínimo local, podemos cortar acá
-        if (bestSeen <= DESTINO_UMBRAL_CORTE_M * 0.6) break;
+      for (let i = iO; i <= iDMin; i++) {
+        const p = latLngs[i];
+        if (!p) continue;
+        const d = calcularDistancia(latD, lngD, p[0], p[1]);
+        if (d < bestSeen) bestSeen = d;
+        // Si entramos al umbral, marcamos un candidato y seguimos un poco
+        if (d <= DESTINO_UMBRAL_CORTE_M) {
+          cutCandidate = i;
+          // Si ya estamos prácticamente en el mínimo local, podemos cortar acá
+          if (bestSeen <= DESTINO_UMBRAL_CORTE_M * 0.6) break;
+        }
       }
-    }
-    if (cutCandidate != null) end = cutCandidate;
+      if (cutCandidate != null) end = cutCandidate;
 
-    startIndex = Math.min(iO, end);
-    endIndex = Math.max(iO, end);
-    const tramo = latLngs.slice(startIndex, endIndex + 1);
-    const tramoDir = forward ? tramo : tramo.slice().reverse();
-    if (tramoDir.length >= 2) {
-      L.polyline(tramoDir, { color: colorLinea, weight: 4, opacity: 0.95 }).addTo(layerRec);
+      const tramo = latLngs.slice(iO, end + 1);
+      if (tramo.length >= 2) {
+        L.polyline(tramo, { color: colorLinea, weight: 4, opacity: 0.95 }).addTo(layerRec);
+      }
     }
   }
 
-  // Dibujar paradas de la línea seleccionada (por relación)
+  // Asignar los IDs de relación y cargar paradas cercanas sin dibujarlas en el mapa
   try {
     const relIds = obtenerRelIdsDeRutas([mejorFeature]);
     if (recorridoActivo) recorridoActivo.relIds = relIds;
     if (relIds && relIds.size > 0) {
-      // En planeo de ruta: mostrar paradas cercanas al origen (usuario o trasbordo)
-      const seleccion = await dibujarParadasDeLineaCercanasAlOrigen(relIds, latO, lngO, mejor.ref, mejor.name);
+      const seleccion = await dibujarParadasDeLineaCercanasAlOrigen(relIds, latO, lngO, mejor.ref, mejor.name, { draw: false });
       if (recorridoActivo && Array.isArray(seleccion)) recorridoActivo.nearbyStops = seleccion;
     }
   } catch {
@@ -4705,7 +4845,9 @@ function renderListaParadasPlaneo({ tituloIzq = 'Paradas cercanas', stops = [], 
       const lineaName = p.lineaName || '';
       const refLabel = lineaRef ? `Línea ${String(lineaRef)}` : 'Línea';
       const nameLabel = lineaName ? ` — ${String(lineaName)}` : '';
-      return `<li><button type="button" class="btn-linea btn-parada-planeo" data-plane-stop-id="${escapeHtml(String(paradaId))}" data-plane-line-ref="${escapeHtml(String(lineaRef))}" data-plane-line-name="${escapeHtml(String(lineaName))}"><span class="linea-button-ref">${escapeHtml(String(etiqueta))}</span><span class="linea-button-name">${escapeHtml(refLabel + nameLabel)}</span></button></li>`;
+      const c = getColorForLinea(lineaRef);
+      const tc = getTextColorForBg(c);
+      return `<li><button type="button" class="btn-linea btn-parada-planeo" style="--line-color: ${c}; --line-text: ${tc};" data-plane-stop-id="${escapeHtml(String(paradaId))}" data-plane-line-ref="${escapeHtml(String(lineaRef))}" data-plane-line-name="${escapeHtml(String(lineaName))}"><span class="linea-button-ref">${escapeHtml(String(etiqueta))}</span><span class="linea-button-name">${escapeHtml(refLabel + nameLabel)}</span></button></li>`;
     })
     .join('');
 
@@ -4796,6 +4938,9 @@ async function elegirMejorRutaFeatureEntre(latO, lngO, latD, lngD, allowedRefs) 
     const rideDist = (iO >= 0 && iD >= 0) ? distanciaAcumuladaEnCamino(latLngs, iO, iD) : Infinity;
 
     const scoreSecs = estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs: 0 });
+
+    if (scoreSecs === Infinity) continue;
+
     if (!mejor || scoreSecs < mejor.scoreSecs) {
       const name = typeof props.name === 'string' ? props.name.trim() : '';
       mejor = { ref, name, scoreSecs, dO, dD, iO, iD, rideDist };
@@ -4813,15 +4958,13 @@ function calcularTramoRecortado(latO, lngO, latD, lngD, feature, mejor) {
 
   const iO = Number.isFinite(mejor?.iO) ? mejor.iO : indiceMasCercanoEnCaminoPreciso(latO, lngO, latLngs);
   const iDMin = indiceMasCercanoEnCaminoPreciso(latD, lngD, latLngs);
-  if (iO < 0 || iDMin < 0) return null;
+  if (iO < 0 || iDMin < 0 || iO > iDMin) return null;
 
-  const forward = iO <= iDMin;
-  const step = forward ? 1 : -1;
   let end = iDMin;
-
   let bestSeen = Infinity;
   let cutCandidate = null;
-  for (let i = iO; forward ? i <= iDMin : i >= iDMin; i += step) {
+
+  for (let i = iO; i <= iDMin; i++) {
     const p = latLngs[i];
     if (!p) continue;
     const d = calcularDistancia(latD, lngD, p[0], p[1]);
@@ -4833,12 +4976,9 @@ function calcularTramoRecortado(latO, lngO, latD, lngD, feature, mejor) {
   }
   if (cutCandidate != null) end = cutCandidate;
 
-  const startIndex = Math.min(iO, end);
-  const endIndex = Math.max(iO, end);
-  const tramo = latLngs.slice(startIndex, endIndex + 1);
-  const tramoDir = forward ? tramo : tramo.slice().reverse();
-  if (tramoDir.length < 2) return null;
-  return tramoDir;
+  const tramo = latLngs.slice(iO, end + 1);
+  if (tramo.length < 2) return null;
+  return tramo;
 }
 
 async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
@@ -4874,8 +5014,8 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
     return;
   }
 
-  const colorA = (typeof colorPorLinea === 'object' && colorPorLinea) ? (colorPorLinea[aRef] || '#007BFF') : '#007BFF';
-  const colorB = (typeof colorPorLinea === 'object' && colorPorLinea) ? (colorPorLinea[bRef] || '#007BFF') : '#007BFF';
+  const colorA = getColorForLinea(aRef);
+  const colorB = getColorForLinea(bRef);
 
   limpiarRecorrido();
   recorridoActivo = { planned: true, mode: 'transfer', legs: [], transferName: String(transfer?.name || '').trim() };
@@ -4894,10 +5034,10 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
   const relIds2 = obtenerRelIdsDeRutas([tramo2.feature]);
 
   const sel1 = (relIds1 && relIds1.size > 0)
-    ? await dibujarParadasDeLineaCercanasAlOrigen(relIds1, latO, lngO, aRef, tramo1.mejor?.name || '', { clear: true })
+    ? await dibujarParadasDeLineaCercanasAlOrigen(relIds1, latO, lngO, aRef, tramo1.mejor?.name || '', { clear: true, draw: false })
     : [];
   const sel2 = (relIds2 && relIds2.size > 0)
-    ? await dibujarParadasDeLineaCercanasAlOrigen(relIds2, tLat, tLng, bRef, tramo2.mejor?.name || '', { clear: false })
+    ? await dibujarParadasDeLineaCercanasAlOrigen(relIds2, tLat, tLng, bRef, tramo2.mejor?.name || '', { clear: false, draw: false })
     : [];
 
   recorridoActivo.legs = [
@@ -5097,6 +5237,10 @@ function iniciarPlaneoRutaHastaParadaSeleccionada(featureParada) {
 }
 
 async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
+  limpiarRecorrido();
+  const layerParadas = asegurarParadasLayer();
+  if (layerParadas) layerParadas.clearLayers();
+
   _routePlanLastAllowTransfer = Boolean(permitirTrasbordo);
   if (!_routePlanTarget || !Number.isFinite(_routePlanTarget.lat) || !Number.isFinite(_routePlanTarget.lng)) {
     alert('No hay destino seleccionado.');
@@ -5159,9 +5303,17 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
   // Si no hay relations, no hay forma confiable de listar líneas para esa parada.
 
   // "Sin trasbordo" = cualquier línea que pase por la parada destino.
-  // La optimización por cercanía al origen se hace al tocar el botón (ahí se calcula/dibuja).
   destinoRefs = Array.from(new Set(destinoRefs));
-  const directLimited = destinoRefs.slice(0, ROUTE_MAX_OPCIONES_DIRECTAS);
+
+  const directValid = [];
+  for (const ref of destinoRefs) {
+    if (directValid.length >= ROUTE_MAX_OPCIONES_DIRECTAS) break;
+    const result = await elegirMejorRutaFeatureEntre(ubicacion.lat, ubicacion.lng, _routePlanTarget.lat, _routePlanTarget.lng, [ref]);
+    if (result) {
+      directValid.push(ref);
+    }
+  }
+  const directLimited = directValid;
 
   const combos = [];
   if (permitirTrasbordo && destinoRefs.length && origenRefs.size) {
@@ -5200,6 +5352,13 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
         }
 
         if (!best) continue;
+
+        // Verificar validez geométrica y dirección de ambos tramos
+        const tramo1 = await elegirMejorRutaFeatureEntre(latO, lngO, best.lat, best.lng, [a]);
+        if (!tramo1) continue;
+        const tramo2 = await elegirMejorRutaFeatureEntre(best.lat, best.lng, latD, lngD, [b]);
+        if (!tramo2) continue;
+
         combos.push({ a, b, transfer: { id: best.id, lat: best.lat, lng: best.lng, name: best.name } });
         count++;
         if (count >= ROUTE_MAX_OPCIONES_TRASBORDO) break;
@@ -5215,7 +5374,9 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
       const refAttr = escapeHtml(ref);
       const nameAttr = escapeHtml(name);
       const nameDisplay = name ? `<span class="linea-button-name">${escapeHtml(name)}</span>` : '';
-      return `<li><button type="button" class="btn-linea" data-route-line-ref="${refAttr}" data-route-line-name="${nameAttr}"><span class="linea-button-ref">${escapeHtml(ref)}</span>${nameDisplay}</button></li>`;
+      const c = getColorForLinea(refAttr);
+      const tc = getTextColorForBg(c);
+      return `<li><button type="button" class="btn-linea" style="--line-color: ${c}; --line-text: ${tc};" data-route-line-ref="${refAttr}" data-route-line-name="${nameAttr}"><span class="linea-button-ref">${escapeHtml(ref)}</span>${nameDisplay}</button></li>`;
     })
     .join('');
 
@@ -5228,7 +5389,9 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
       const labelRef = `${c.a} + ${c.b}`;
       const transferName = String(c.transfer.name || c.transfer.id || '').trim();
       const nameDisplay = transferName ? `<span class="linea-button-name">Trasbordo: ${escapeHtml(transferName)}</span>` : '';
-      return `<li><button type="button" class="btn-linea" data-route-combo="1" data-linea-a="${escapeHtml(c.a)}" data-linea-b="${escapeHtml(c.b)}" data-transfer-lat="${String(c.transfer.lat)}" data-transfer-lng="${String(c.transfer.lng)}" data-transfer-name="${escapeHtml(transferName)}"><span class="linea-button-ref">${escapeHtml(labelRef)}</span>${nameDisplay}</button></li>`;
+      const colorA = getColorForLinea(c.a);
+      const tc = getTextColorForBg(colorA);
+      return `<li><button type="button" class="btn-linea" style="--line-color: ${colorA}; --line-text: ${tc};" data-route-combo="1" data-linea-a="${escapeHtml(c.a)}" data-linea-b="${escapeHtml(c.b)}" data-transfer-lat="${String(c.transfer.lat)}" data-transfer-lng="${String(c.transfer.lng)}" data-transfer-name="${escapeHtml(transferName)}"><span class="linea-button-ref">${escapeHtml(labelRef)}</span>${nameDisplay}</button></li>`;
     })
     .join('');
 
