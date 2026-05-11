@@ -321,7 +321,11 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
     bsSubtitle.textContent = s;
     bsSubtitle.style.display = s ? '' : 'none';
   }
-  if (bsContent) bsContent.innerHTML = inyectarFilasNavegacionBottomSheet(titulo, tipo, contenidoHtml);
+  if (bsContent) {
+    bsContent.innerHTML = inyectarFilasNavegacionBottomSheet(titulo, tipo, contenidoHtml);
+    // Volver al inicio del contenido al cambiar de vista
+    bsContent.scrollTop = 0;
+  }
 
   // Montar anuncio si el HTML incluyó el placeholder.
   montarAdsEnBottomSheetSiCorresponde();
@@ -393,6 +397,7 @@ let _realtimeCenterBusy = false;
 let _realtimeCenterLongPressTimer = null;
 let _realtimeCenterSuppressNextClick = false;
 let _realtimeCenterActive = false;
+let _arrivalsAbortController = null; // AbortController activo mientras se consulta la API de arribos
 
 function ocultarModalConfirmCerrarRuta() {
   const overlay = document.getElementById('confirm-close-route-overlay');
@@ -449,6 +454,55 @@ function setupModalConfirmCerrarRuta() {
       if (active) ocultarModalConfirmCerrarRuta();
     });
   }
+}
+
+let _confirmCloseArrivalsOnConfirm = null;
+
+function ocultarModalConfirmCerrarArribos() {
+  const overlay = document.getElementById('confirm-close-arrivals-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  overlay.setAttribute('aria-hidden', 'true');
+  _confirmCloseArrivalsOnConfirm = null;
+}
+
+function mostrarModalConfirmCerrarArribos(onConfirm) {
+  const overlay = document.getElementById('confirm-close-arrivals-overlay');
+  const okBtn = document.getElementById('confirm-close-arrivals-ok');
+  if (!overlay || !okBtn) {
+    const ok = confirm('Hay una consulta de arribos en curso. ¿Querés cancelarla y cerrar?');
+    if (ok && typeof onConfirm === 'function') onConfirm();
+    return;
+  }
+  _confirmCloseArrivalsOnConfirm = typeof onConfirm === 'function' ? onConfirm : null;
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  const cancelBtn = document.getElementById('confirm-close-arrivals-cancel');
+
+  const onOk = () => {
+    overlay.removeEventListener('click', onOverlay);
+    cancelBtn?.removeEventListener('click', onCancel);
+    okBtn.removeEventListener('click', onOk);
+    const cb = _confirmCloseArrivalsOnConfirm;
+    ocultarModalConfirmCerrarArribos();
+    if (typeof cb === 'function') cb();
+  };
+  const onCancel = () => {
+    overlay.removeEventListener('click', onOverlay);
+    okBtn.removeEventListener('click', onOk);
+    cancelBtn?.removeEventListener('click', onCancel);
+    ocultarModalConfirmCerrarArribos();
+  };
+  const onOverlay = (e) => {
+    if (e.target && e.target.id === 'confirm-close-arrivals-overlay') onCancel();
+  };
+
+  overlay.addEventListener('click', onOverlay);
+  cancelBtn?.addEventListener('click', onCancel);
+  okBtn.addEventListener('click', onOk);
+
+  setTimeout(() => { (cancelBtn || okBtn).focus?.(); }, 0);
 }
 
 function ocultarModalConfirmCentradoTiempoReal() {
@@ -667,6 +721,16 @@ function cerrarBottomSheet(force = false) {
   const favBtn = document.getElementById('bs-fav-btn');
   const planBtn = document.getElementById('bs-plan-btn');
 
+  // Si hay una petición de arribos en curso, pedir confirmación antes de cerrar.
+  if (!force && _arrivalsAbortController) {
+    mostrarModalConfirmCerrarArribos(() => {
+      try { _arrivalsAbortController?.abort(); } catch { }
+      _arrivalsAbortController = null;
+      cerrarBottomSheet(true);
+    });
+    return;
+  }
+
   // Si hay un recorrido planeado activo, confirmar antes de cerrarlo.
   if (!force && recorridoActivo && recorridoActivo.planned) {
     mostrarModalConfirmCerrarRuta(() => cerrarBottomSheet(true));
@@ -714,6 +778,8 @@ async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNomb
 
   try {
     const arrivalsResp = await consultarArribosApi(ref, paradaNombreBase, { paradaFeature });
+    // Si mientras esperábamos el usuario canceló y cerró el sheet, no lo reabrimos.
+    if (!document.getElementById('bottom-sheet')?.classList.contains('active')) return;
     const html = renderHorariosLlegada(
       arrivalsResp.horarios,
       ref,
@@ -730,7 +796,9 @@ async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNomb
       }
     );
     abrirBottomSheet(`Línea ${ref}`, html, 'linea', subtitulo);
-  } catch {
+  } catch (err) {
+    // Si la petición fue abortada por el usuario (cerró el sheet), no hacer nada.
+    if (err?.name === 'AbortError' || !document.getElementById('bottom-sheet')?.classList.contains('active')) return;
     const errHtml = '<p style="text-align:center; color: var(--text-secondary,#666);">No se pudieron consultar los arribos.</p>';
     abrirBottomSheet(`Línea ${ref}`, errHtml, 'linea', subtitulo);
   }
@@ -944,6 +1012,35 @@ function setupBottomSheetDrag() {
 
     // Aplicar transición suave
     if (targetState === 'close') {
+      // Si hay una petición de arribos en curso, mostrar confirmación ANTES de animar el cierre
+      if (_arrivalsAbortController) {
+        // Revertir la posición del sheet a su estado anterior
+        bottomSheet.style.transition = 'height 0.25s cubic-bezier(0.33, 1, 0.68, 1)';
+        bottomSheet.style.height = `${startHeightPx}px`;
+        bottomSheet.style.transform = getSheetTranslate('0');
+        document.getElementById('bottom-sheet-overlay')?.classList.add('active');
+        setTimeout(() => {
+          bottomSheet.style.transition = '';
+          bottomSheet.style.height = '';
+        }, 250);
+
+        mostrarModalConfirmCerrarArribos(() => {
+          try { _arrivalsAbortController?.abort(); } catch { }
+          _arrivalsAbortController = null;
+          // Animar el cierre ahora que el usuario confirmó
+          bottomSheet.style.transition = 'transform 0.3s ease-in';
+          bottomSheet.style.transform = getSheetTranslate('100%');
+          document.getElementById('bottom-sheet-overlay')?.classList.remove('active');
+          setTimeout(() => {
+            cerrarBottomSheet(true);
+            bottomSheet.style.transform = '';
+            bottomSheet.style.height = '';
+            bottomSheet.style.transition = '';
+          }, 300);
+        });
+        return;
+      }
+
       // Para evitar el salto vertical, animamos el transform hacia abajo
       // en lugar de colapsar el height a 0px.
       bottomSheet.style.transition = 'transform 0.3s ease-in';
@@ -2162,6 +2259,7 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
         debugArrivals.requestIntentada = true;
 
         const fetchController = new AbortController();
+        _arrivalsAbortController = fetchController;
         const fetchTimeoutId = setTimeout(() => {
           try { fetchController.abort(); } catch { }
         }, ARRIVALS_TIMEOUT_MS);
@@ -2179,8 +2277,10 @@ async function consultarArribosApi(linea, paradaNombre, opts = {}) {
             signal: fetchController.signal,
           });
           clearTimeout(fetchTimeoutId);
+          _arrivalsAbortController = null;
         } catch (e) {
           clearTimeout(fetchTimeoutId);
+          _arrivalsAbortController = null;
           throw e;
         }
 
