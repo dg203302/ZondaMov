@@ -1,8 +1,5 @@
-const { chromium } = require('playwright-extra');
-const stealth = require('puppeteer-extra-plugin-stealth')();
+const { chromium } = require('playwright-core');
 const chromiumSparticuz = require('@sparticuz/chromium');
-
-chromium.use(stealth);
 
 const LATITUD = parseFloat(process.env.LATITUD || "-31.5375");
 const LONGITUD = parseFloat(process.env.LONGITUD || "-68.5364");
@@ -36,11 +33,10 @@ async function doLookup(page, url, id_p) {
 
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUT_DEFAULT_MS * 8 });
 
-  // Optimización: Esperar dinámicamente a que aparezca al menos una parada en vez de esperar un timeout fijo de 2 segundos.
+  // Optimización: Esperar dinámicamente a que aparezca al menos una parada
   try {
     await page.waitForSelector('[id^="stop-"]', { state: 'attached', timeout: TIMEOUT_DEFAULT_MS * 6 });
   } catch (e) {
-    // Si falla, permitimos continuar por si el selector final ya está listo o para lanzar el error detallado abajo.
     console.log("[arrivals] Aviso: Timeout esperando cargador de paradas genérico.");
   }
 
@@ -118,7 +114,6 @@ async function doLookup(page, url, id_p) {
 }
 
 exports.handler = async (event, context) => {
-  // Configuración de CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -168,7 +163,10 @@ exports.handler = async (event, context) => {
     if (!cachedBrowser || !cachedBrowser.isConnected()) {
       console.log("[arrivals] Lanzando nueva instancia de Chromium...");
       cachedBrowser = await chromium.launch({
-        args: chromiumSparticuz.args,
+        args: [
+          ...chromiumSparticuz.args,
+          '--disable-blink-features=AutomationControlled'
+        ],
         executablePath: await chromiumSparticuz.executablePath(),
         headless: true,
       });
@@ -185,7 +183,6 @@ exports.handler = async (event, context) => {
 
     const result = await doLookup(page, url, id_p);
 
-    // Cerrar el contexto de navegación (libera memoria y borra cookies/pestanas) pero mantener vivo el navegador maestro
     await browserContext.close();
 
     return {
