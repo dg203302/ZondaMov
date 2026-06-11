@@ -2,6 +2,14 @@
   publish = "."
   functions = "netlify/functions"
 
+[build.environment]
+  NODE_VERSION = "18"
+
+[functions]
+  node_version = "18"
+  node_bundler = "esbuild"
+  external_node_modules = ["@sparticuz/chromium", "playwright-extra"]
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
