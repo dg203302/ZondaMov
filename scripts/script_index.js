@@ -43,7 +43,7 @@ const RED_TULUM_PARADAS_URL = encodeURI('Datos/red_tulum_paradas.json' + JSON_VE
 const PARADAS_POR_LINEA_URL = encodeURI('Datos/paradas_por_linea.json' + JSON_VERSION);
 const URLS_POR_LINEA_URL = encodeURI('Datos/urls_por_linea.json' + JSON_VERSION);
 const CORRESPONDENCIA_PARADAS_URL = encodeURI('Datos/correspondencia_paradas.json' + JSON_VERSION);
-const ARRIVALS_API_URL = 'https://proxyrt-production.up.railway.app/arrivals';
+const ARRIVALS_API_URL = '/api/arrivals';
 const ARRIVALS_TIMEOUT_MS = 30000;
 const ARRIVALS_MAX_INTENTOS_PARADA = 3; // cuando hay paradas duplicadas por sufijos, probar varias variantes
 const RADIO_PARADAS_METROS = 700;
@@ -1258,7 +1258,7 @@ function getTextColorForBg(hex) {
 function getColorForLinea(ref) {
   if (!ref) return '#7c7c7cff';
   const refStr = String(ref).toUpperCase().trim();
-  
+
   if (refStr.startsWith('TEO')) return '#8bc34a'; // Verde (Troncal Este-Oeste)
   if (refStr.startsWith('TNS') || refStr === 'T' || refStr.startsWith('T-') || refStr.startsWith('T ')) return '#e53935'; // Rojo (Troncal Norte-Sur)
   if (refStr === 'A' || refStr.startsWith('A-') || refStr.startsWith('A ')) return '#8e24aa'; // Violeta (Corredor Interhospitalario)
@@ -1269,7 +1269,7 @@ function getColorForLinea(ref) {
     if (num === 10 || num === 20) return '#fbc02d'; // Amarillo (Perimetrales Suroeste/Sureste)
     if (num === 30) return '#03a9f4'; // Celeste (Perimetral Este)
     if (num === 40) return '#8bc34a'; // Verde manzana (Perimetral Norte)
-    
+
     if (num >= 100 && num <= 130) return '#e91e63';
     if (num >= 140 && num <= 162) return '#8e24aa';
     if (num >= 200 && num <= 266) return '#fbc02d';
@@ -1277,7 +1277,7 @@ function getColorForLinea(ref) {
     if (num >= 400 && num <= 462) return '#8bc34a';
     if (num >= 500 && num <= 850) return '#ff9800';
   }
-  
+
   return '#007BFF'; // Default fallback
 }
 

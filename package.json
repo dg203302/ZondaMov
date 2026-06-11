@@ -1,0 +1,14 @@
+{
+  "name": "transitsj-api",
+  "version": "1.0.0",
+  "description": "TransitSJ Netlify Functions",
+  "scripts": {
+    "build": "echo 'No build step'"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "^122.0.0",
+    "playwright-core": "^1.42.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}
