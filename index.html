@@ -607,48 +607,48 @@
     }
 
 
-    /* Agrandar botones principales (centrar, favoritos, configuración) */
+    /* Dimensiones consistentes para todos los botones principales flotantes */
     #btn-centrar,
     #btn-favs,
     #btn-settings {
-      width: 72px !important;
-      height: 72px !important;
-      min-width: 72px !important;
-      min-height: 72px !important;
+      width: 64px !important;
+      height: 64px !important;
+      min-width: 64px !important;
+      min-height: 64px !important;
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
       border-radius: 999vw !important;
       padding: 0 !important;
-      font-size: 26px !important;
+      font-size: 24px !important;
     }
 
     /* Iconos dentro de los botones principales */
     #btn-centrar .icon,
     #btn-favs .icon,
     #btn-settings .icon {
-      width: 36px !important;
-      height: 36px !important;
+      width: 32px !important;
+      height: 32px !important;
     }
 
-    /* Tamaño ligeramente mayor en pantallas de escritorio */
+    /* En pantallas de escritorio se agranda proporcionalmente */
     @media (min-width: 900px) {
 
       #btn-centrar,
       #btn-favs,
       #btn-settings {
-        width: 80px !important;
-        height: 80px !important;
-        min-width: 80px !important;
-        min-height: 80px !important;
-        font-size: 28px !important;
+        width: 72px !important;
+        height: 72px !important;
+        min-width: 72px !important;
+        min-height: 72px !important;
+        font-size: 26px !important;
       }
 
       #btn-centrar .icon,
       #btn-favs .icon,
       #btn-settings .icon {
-        width: 40px !important;
-        height: 40px !important;
+        width: 36px !important;
+        height: 36px !important;
       }
     }
 
@@ -1733,7 +1733,7 @@
       justify-content: space-between;
       border-top: none;
       box-shadow: none;
-      z-index: 500;
+      z-index: 1080;
       flex-wrap: wrap;
       pointer-events: none;
     }
@@ -1767,16 +1767,19 @@
         flex-wrap: nowrap;
         gap: 16px;
         padding: 12px 16px;
-        z-index: 1003;
+        z-index: 1080;
       }
 
       .search-bar-container {
         margin-bottom: 0;
-        min-width: 420px;
+        flex: 0 0 72px;
+        width: 72px;
+        height: 72px;
+        min-width: 72px;
+        padding: 0 !important;
       }
 
-
-      /* Agrandar botones principales (centrar, favoritos, configuración) */
+      /* Dimensiones consistentes para todos los botones principales flotantes en escritorio */
       #btn-centrar,
       #btn-favs,
       #btn-settings {
@@ -1798,27 +1801,6 @@
       #btn-settings .icon {
         width: 36px !important;
         height: 36px !important;
-      }
-
-      /* Tamaño ligeramente mayor en pantallas de escritorio */
-      @media (min-width: 900px) {
-
-        #btn-centrar,
-        #btn-favs,
-        #btn-settings {
-          width: 80px !important;
-          height: 80px !important;
-          min-width: 80px !important;
-          min-height: 80px !important;
-          font-size: 28px !important;
-        }
-
-        #btn-centrar .icon,
-        #btn-favs .icon,
-        #btn-settings .icon {
-          width: 40px !important;
-          height: 40px !important;
-        }
       }
 
       .footer-buttons {
@@ -1843,55 +1825,60 @@
         top: 16px !important;
         left: 16px !important;
         right: 16px !important;
-        min-width: 0 !important;
-        margin: 0 !important;
+        width: 64px !important;
+        height: 64px !important;
+        min-width: 64px !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
         z-index: 1003;
+        transform: none !important;
+        transition: width 0.24s ease, height 0.24s ease, border-radius 0.24s ease, padding 0.24s ease, gap 0.24s ease !important;
+      }
+
+      .search-bar-container.is-open {
+        width: calc(100% - 32px) !important;
+        height: 64px !important;
+        min-width: 0 !important;
+        padding: 0 16px !important;
+      }
+
+      .search-modal-content {
+        position: fixed !important;
+        top: 88px !important;
+        left: 16px !important;
+        right: 16px !important;
+        width: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        transform: none !important;
+        border-radius: 18px !important;
+        max-height: calc(100vh - 130px) !important;
+        border: 1px solid var(--glass-border) !important;
       }
 
 
-      /* Agrandar botones principales (centrar, favoritos, configuración) */
+      /* Dimensiones consistentes para todos los botones principales flotantes en móvil */
       #btn-centrar,
       #btn-favs,
       #btn-settings {
-        width: 72px !important;
-        height: 72px !important;
-        min-width: 72px !important;
-        min-height: 72px !important;
+        width: 64px !important;
+        height: 64px !important;
+        min-width: 64px !important;
+        min-height: 64px !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         border-radius: 999vw !important;
         padding: 0 !important;
-        font-size: 26px !important;
+        font-size: 24px !important;
       }
 
       /* Iconos dentro de los botones principales */
       #btn-centrar .icon,
       #btn-favs .icon,
       #btn-settings .icon {
-        width: 36px !important;
-        height: 36px !important;
-      }
-
-      /* Tamaño ligeramente mayor en pantallas de escritorio */
-      @media (min-width: 900px) {
-
-        #btn-centrar,
-        #btn-favs,
-        #btn-settings {
-          width: 80px !important;
-          height: 80px !important;
-          min-width: 80px !important;
-          min-height: 80px !important;
-          font-size: 28px !important;
-        }
-
-        #btn-centrar .icon,
-        #btn-favs .icon,
-        #btn-settings .icon {
-          width: 40px !important;
-          height: 40px !important;
-        }
+        width: 32px !important;
+        height: 32px !important;
       }
 
       .footer-buttons {
@@ -1909,40 +1896,95 @@
     }
 
     .search-bar-container {
-      flex: 1;
+      flex: 0 0 64px;
+      width: 64px;
+      min-width: 64px;
       display: flex;
-      gap: 8px;
-      min-width: 250px;
+      align-items: center;
+      gap: 0;
       margin-bottom: 16px;
       background: var(--glass-bg-strong);
       backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
       -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-      padding: 12px;
-      border-radius: 34px;
+      padding: 8px;
+      border-radius: 999px;
       box-shadow: var(--glass-shadow);
       border: 1px solid var(--glass-border);
+      overflow: hidden;
+      transition: width 0.24s ease, flex-basis 0.24s ease, border-radius 0.24s ease, padding 0.24s ease, gap 0.24s ease;
     }
 
     /* Cuando el dropdown está abierto: que se vea como una extensión */
     .search-bar-container.is-open {
-      border-radius: 34px 34px 0 0;
+      flex: 1 1 420px;
+      width: auto;
+      min-width: 250px;
+      gap: 0;
+      padding: 12px;
+      border-radius: 34px;
       border-bottom: none;
+    }
+
+    .search-toggle-btn {
+      display: flex;
+      flex: 220px;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--glass-fg);
+      cursor: pointer;
+      transition: transform 0.18s ease, opacity 0.24s ease, width 0.24s ease, flex-basis 0.24s ease;
+    }
+
+    .search-toggle-btn:hover {
+      transform: scale(1.08);
+    }
+
+    .search-toggle-btn:active {
+      transform: scale(0.92);
+    }
+
+    .search-bar-container.is-open .search-toggle-btn {
+      width: 0;
+      height: 0;
+      opacity: 0;
+      padding: 0;
+      margin: 0;
+      pointer-events: none;
+      overflow: hidden;
+      flex: 0 0 0;
     }
 
     .search-bar {
       flex: 1;
-      padding: 14px 18px;
+      min-width: 0;
+      width: 0;
+      height: 100%;
+      opacity: 0;
+      pointer-events: none;
+      padding: 0;
       border: none;
       border-radius: 20px;
       font-size: 16px;
       background: transparent;
       box-shadow: none;
       outline: none;
-      transition: all 0.2s ease;
-      color: #333;
+      transition: opacity 0.18s ease, width 0.24s ease, padding 0.24s ease, background 0.18s ease;
+      color: var(--glass-fg);
       text-align: center;
       position: relative;
       z-index: 2;
+    }
+
+    .search-bar-container.is-open .search-bar {
+      width: auto;
+      opacity: 1;
+      pointer-events: auto;
+      padding: 0 18px;
     }
 
     .search-bar:focus {
@@ -1952,7 +1994,7 @@
     }
 
     .search-bar::placeholder {
-      color: #000000;
+      color: var(--text-secondary);
     }
 
 
@@ -1987,10 +2029,9 @@
       max-height: calc(70vh);
       display: flex;
       flex-direction: column;
-      border-radius: 0 0 18px 18px;
+      border-radius: 18px;
       box-shadow: var(--glass-shadow);
       border: 1px solid var(--glass-border);
-      border-top: none;
       animation: slideDown 0.24s ease;
       align-self: center;
       margin: 0 auto;
@@ -2105,10 +2146,30 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.10) !important;
     }
 
+    .no-transparency .search-toggle-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: var(--glass-fg) !important;
+    }
+
     .dark-mode.no-transparency .search-bar-container {
       background: #0b1220 !important;
       border: 1px solid rgba(255, 255, 255, 0.10) !important;
       box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55) !important;
+    }
+
+    .dark-mode.no-transparency .search-toggle-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: var(--glass-fg) !important;
+    }
+
+    .dark-mode .search-toggle-btn {
+      background: transparent;
+      color: var(--glass-fg);
+      box-shadow: none;
     }
 
     .no-transparency .search-modal-content,
@@ -2376,6 +2437,13 @@
   </main>
   <footer>
     <div class="search-bar-container">
+      <button id="search-toggle-btn" class="search-toggle-btn" type="button" aria-label="Abrir búsqueda"
+        aria-expanded="false">
+        <img class="icon light" alt=""
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zZWFyY2gtaWNvbiBsdWNpZGUtc2VhcmNoIj48cGF0aCBkPSJtMjEgMjEtNC4zNC00LjM0Ii8+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iOCIvPjwvc3ZnPg==" />
+        <img class="icon dark" alt=""
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zZWFyY2gtaWNvbiBsdWNpZGUtc2VhcmNoIj48cGF0aCBkPSJtMjEgMjEtNC4zNC00LjM0Ii8+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iOCIvPjwvc3ZnPg==" />
+      </button>
       <input type="text" id="search-input" class="search-bar" placeholder="Toca aquí para buscar"
         oninput="buscarLugaresEnTiempoReal()" onkeydown="if(event.key==='Escape') cerrarModalBusqueda()">
     </div>

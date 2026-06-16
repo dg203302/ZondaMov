@@ -763,45 +763,30 @@ function cerrarBottomSheet(force = false) {
 
 async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNombre = '') {
   const ref = String(lineaRef || '').trim();
-  if (!ref) return;
   const name = String(lineaNombre || '').trim();
-
-  const paradaNombreBase = obtenerNombreParadaBase(paradaFeature);
+  const paradaNombreBase = obtenerNombreParadaBase(paradaFeature || window._currentFeature);
   const subtitulo = paradaNombreBase ? `Parada: ${paradaNombreBase}` : '';
 
-  try {
-    const loadingHtml = renderEstadoCargaArribos(ref, name);
-    abrirBottomSheet(`Línea ${ref}`, loadingHtml, 'linea', subtitulo);
-  } catch {
-    // noop
-  }
-
-  try {
-    const arrivalsResp = await consultarArribosApi(ref, paradaNombreBase, { paradaFeature });
-    // Si mientras esperábamos el usuario canceló y cerró el sheet, no lo reabrimos.
-    if (!document.getElementById('bottom-sheet')?.classList.contains('active')) return;
-    const html = renderHorariosLlegada(
-      arrivalsResp.horarios,
-      ref,
-      name,
-      Number(arrivalsResp.headwaySecs) > 0 ? Number(arrivalsResp.headwaySecs) : 0,
-      false,
-      {
-        tipoDatos: arrivalsResp.tipoDatos,
-        apiFallo: Boolean(arrivalsResp.apiFallo),
-        paradaConsultada: arrivalsResp.paradaConsultada,
-        mensajeApi: arrivalsResp.mensajeApi,
-        horarioEstimado: arrivalsResp.horarioEstimado,
-        debugArrivals: arrivalsResp.debugArrivals,
-      }
-    );
-    abrirBottomSheet(`Línea ${ref}`, html, 'linea', subtitulo);
-  } catch (err) {
-    // Si la petición fue abortada por el usuario (cerró el sheet), no hacer nada.
-    if (err?.name === 'AbortError' || !document.getElementById('bottom-sheet')?.classList.contains('active')) return;
-    const errHtml = '<p style="text-align:center; color: var(--text-secondary,#666);">No se pudieron consultar los arribos.</p>';
-    abrirBottomSheet(`Línea ${ref}`, errHtml, 'linea', subtitulo);
-  }
+  const html = `
+    <ul class="bs-nav-rows">
+      <li>
+        <button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button>
+      </li>
+    </ul>
+    <div style="
+      padding: 16px 14px;
+      border-radius: 14px;
+      background: var(--glass-bg-strong);
+      border: 1px solid var(--glass-border);
+      margin: 12px 0;
+      text-align: center;
+    ">
+      <p style="margin: 0; font-size: 14px; color: var(--glass-fg); font-weight: 500;">
+        ⏱ Los tiempos de llegada en vivo se implementarán pronto.
+      </p>
+    </div>
+  `;
+  abrirBottomSheet(`Línea ${ref}`, html, 'linea', subtitulo);
 }
 
 async function dibujarParadasDeLineaCercanasAlOrigen(relIds, origenLat, origenLng, lineaRef, lineaNombre = '', opts = {}) {
@@ -3310,37 +3295,35 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
   window._currentLineaRef = ref;
   window._currentLineaName = name;
 
-  // Si venimos desde una parada, mostrar horarios de llegada
-  if (paradaOrigen) {
-    abrirBottomSheet(`Línea ${escapeHtml(ref)}`, renderEstadoCargaArribos(ref, name), 'linea');
+  // Mostrar recorrido con paradas y botón de volver si venimos desde una parada
+  const tituloLinea = ref ? `Línea ${escapeHtml(ref)}` : (name ? escapeHtml(name) : 'Línea');
+  const listaParadasHtml = renderListaParadasRecorrido({ mostrarTodas: true });
+  
+  const volverHtml = paradaOrigen
+    ? '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>'
+    : '';
 
-    const paradaNombreBase = obtenerNombreParadaBase(paradaOrigen);
-    const arrivalsResp = await consultarArribosApi(ref, paradaNombreBase, { paradaFeature: paradaOrigen, rutas });
-    const html = renderHorariosLlegada(
-      arrivalsResp.horarios,
-      ref,
-      name,
-      Number(arrivalsResp.headwaySecs) > 0 ? Number(arrivalsResp.headwaySecs) : 0,
-      true,
-      {
-        tipoDatos: arrivalsResp.tipoDatos,
-        apiFallo: Boolean(arrivalsResp.apiFallo),
-        paradaConsultada: arrivalsResp.paradaConsultada,
-        mensajeApi: arrivalsResp.mensajeApi,
-        horarioEstimado: arrivalsResp.horarioEstimado,
-        debugArrivals: arrivalsResp.debugArrivals,
-      }
-    );
-    abrirBottomSheet(`Línea ${escapeHtml(ref)}`, html, 'linea');
-  } else {
-    // Sin parada de origen: mostrar recorrido con paradas (comportamiento anterior)
-    const tituloLinea = ref ? `Línea ${escapeHtml(ref)}` : (name ? escapeHtml(name) : 'Línea');
-    const listaParadasHtml = renderListaParadasRecorrido({ mostrarTodas: true });
-    const html = `
-      ${listaParadasHtml}
-    `;
-    abrirBottomSheet(tituloLinea, html, 'linea');
-  }
+  const infoArribosHtml = paradaOrigen
+    ? `<div style="
+         padding: 12px;
+         border-radius: 12px;
+         background: var(--glass-bg-strong);
+         border: 1px solid var(--glass-border);
+         margin: 12px 0;
+         text-align: center;
+       ">
+         <p style="margin: 0; font-size: 13px; color: var(--glass-fg); font-weight: 500;">
+           ⏱ Los tiempos de llegada en vivo se implementarán pronto.
+         </p>
+       </div>`
+    : '';
+
+  const html = `
+    ${volverHtml}
+    ${infoArribosHtml}
+    ${listaParadasHtml}
+  `;
+  abrirBottomSheet(tituloLinea, html, 'linea');
 }
 
 function mostrarLineasEnContenedorParadas(feature) {
