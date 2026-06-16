@@ -3921,7 +3921,13 @@ function cerrarModalBusqueda() {
     modal.classList.remove('active');
   }
   document.querySelector('.search-bar-container')?.classList.remove('is-open');
-  document.getElementById('search-input').value = '';
+  
+  const input = document.getElementById('search-input');
+  if (input) {
+    input.value = '';
+    input.blur();
+  }
+  
   document.getElementById('search-results').innerHTML = '<p class="search-results-hint">Escribe para buscar</p>';
 
   if (searchTimeout) {
@@ -4321,27 +4327,61 @@ async function buscarLugaresEnTiempoReal() {
   searchTimeout = setTimeout(() => buscarLugares(query), SEARCH_DEBOUNCE_MS);
 }
 
-// Abrir modal con historial al tocar la barra (sin texto)
+// Abrir modal con historial al tocar la barra (sin texto) o al tocar el botón/contenedor
 const searchInputEl = document.getElementById('search-input');
+const searchToggleBtnEl = document.getElementById('search-toggle-btn');
+const searchContainerEl = document.querySelector('.search-bar-container');
+
 if (searchInputEl) {
   const openIfNeeded = () => {
     const q = String(searchInputEl.value || '').trim();
     const modal = document.getElementById('search-modal');
     if (!modal) return;
     if (!modal.classList.contains('active')) modal.classList.add('active');
-    document.querySelector('.search-bar-container')?.classList.add('is-open');
+    
+    const container = document.querySelector('.search-bar-container');
+    if (container) {
+      container.classList.add('is-open');
+    }
+    
     posicionarModalBusqueda();
     if (!q) {
       renderHistorialBusqueda();
     } else if (q.length >= SEARCH_MIN_CHARS) {
       void buscarLugares(q);
     }
+    
+    // Enfocar el input para habilitar la escritura inmediata
+    if (document.activeElement !== searchInputEl) {
+      searchInputEl.focus();
+    }
   };
 
   // En móvil, abrir en touchstart puede hacer que el mismo tap termine cerrando el modal.
   // Abrimos en focus/click, y en click lo diferimos un tick para evitar carreras con el tap.
   searchInputEl.addEventListener('focus', openIfNeeded);
-  searchInputEl.addEventListener('click', () => setTimeout(openIfNeeded, 0));
+  searchInputEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setTimeout(openIfNeeded, 0);
+  });
+
+  // Al hacer click en el botón del buscador (lupa) cuando está cerrado
+  if (searchToggleBtnEl) {
+    searchToggleBtnEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openIfNeeded();
+    });
+  }
+
+  // Al hacer click en cualquier parte del contenedor cerrado
+  if (searchContainerEl) {
+    searchContainerEl.addEventListener('click', (e) => {
+      if (!searchContainerEl.classList.contains('is-open')) {
+        e.stopPropagation();
+        openIfNeeded();
+      }
+    });
+  }
 }
 
 async function buscarLugares(queryOverride = '') {
