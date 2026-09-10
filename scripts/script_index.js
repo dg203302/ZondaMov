@@ -61,10 +61,7 @@ const STORAGE_DARK_MODE_KEY = 'transitsj_dark_mode_v1';
 const STORAGE_TRANSPARENCY_KEY = 'transitsj_transparency_v1';
 const BOTTOM_SHEET_STATE_HALF = 'half';
 const BOTTOM_SHEET_STATE_FULL = 'full';
-const SHEET_DRAG_EXPAND_THRESHOLD = 70;
-const SHEET_DRAG_COLLAPSE_THRESHOLD = 90;
-const SHEET_DRAG_CLOSE_THRESHOLD = 90;
-const SHEET_DRAG_CLOSE_FROM_FULL_THRESHOLD = 220;
+
 const REALTIME_CENTER_INTERVAL_MS = 10000;
 const REALTIME_CENTER_LONG_PRESS_MS = 600;
 
@@ -158,17 +155,59 @@ function obtenerIconoParadaLeaflet(colorHex = '#007BFF') {
   if (!leafletMap || typeof L === 'undefined') return null;
   if (_iconosParadaLeafletCache.has(colorHex)) return _iconosParadaLeafletCache.get(colorHex);
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ffffff" stroke="${colorHex}" stroke-width="3"/><circle cx="12" cy="12" r="2.5" fill="${colorHex}"/></svg>`;
+  const filterId = 'pStopSh_' + String(colorHex).replace(/[^a-zA-Z0-9]/g, '');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    <defs>
+      <filter id="${filterId}" x="-25%" y="-25%" width="150%" height="150%">
+        <feDropShadow dx="0" dy="1.8" stdDeviation="1.8" flood-color="#000000" flood-opacity="0.38"/>
+      </filter>
+    </defs>
+    <g filter="url(#${filterId})">
+      <circle cx="16" cy="16" r="13" fill="#ffffff" stroke="${colorHex}" stroke-width="3.2"/>
+      <path d="M11 9 C11 8 11.8 7.2 12.8 7.2 L19.2 7.2 C20.2 7.2 21 8 21 9 L21 17.5 C21 18.5 20.2 19.2 19.2 19.2 L19.2 20.8 C19.2 21.4 18.4 21.4 18.4 20.8 L18.4 19.2 L13.6 19.2 L13.6 20.8 C13.6 21.4 12.8 21.4 12.8 20.8 L12.8 19.2 C11.8 19.2 11 18.5 11 17.5 Z M12.5 9.2 L19.5 9.2 C19.8 9.2 20 9.4 20 9.8 L20 13.2 L12 13.2 L12 9.8 C12 9.4 12.2 9.2 12.5 9.2 Z M13.5 16.5 A 0.9 0.9 0 1 0 13.5 14.7 A 0.9 0.9 0 1 0 13.5 16.5 Z M18.5 16.5 A 0.9 0.9 0 1 0 18.5 14.7 A 0.9 0.9 0 1 0 18.5 16.5 Z" fill="${colorHex}"/>
+    </g>
+  </svg>`;
   const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 
   const icon = L.icon({
     iconUrl: url,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -11],
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
   });
   _iconosParadaLeafletCache.set(colorHex, icon);
   return icon;
+}
+
+function obtenerIconoUserWaypoint() {
+  if (_iconoUserWaypointLeaflet) return _iconoUserWaypointLeaflet;
+
+  _iconoUserWaypointLeaflet = L.divIcon({
+    className: 'user-waypoint-marker-icon',
+    iconSize: [36, 44],
+    iconAnchor: [18, 42],
+    popupAnchor: [0, -42],
+    html: `
+      <div class="user-waypoint-wrap" title="Tu ubicación actual">
+        <div class="user-waypoint-radar-ring"></div>
+        <div class="user-waypoint-pin">
+          <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+            <defs>
+              <linearGradient id="userPinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#0284c7"/>
+              </linearGradient>
+            </defs>
+            <path d="M17 1 C8.16 1 1 8.16 1 17 C1 27.5 17 41 17 41 C17 41 33 27.5 33 17 C33 8.16 25.84 1 17 1 Z" fill="url(#userPinGrad)" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
+            <circle cx="17" cy="17" r="8" fill="#ffffff"/>
+            <circle cx="17" cy="17" r="4.5" fill="#0284c7"/>
+            <circle cx="17" cy="17" r="2" fill="#38bdf8"/>
+          </svg>
+        </div>
+      </div>
+    `
+  });
+  return _iconoUserWaypointLeaflet;
 }
 
 function asegurarMarcadorUsuario(lat, lng) {
@@ -196,16 +235,39 @@ function asegurarMarcadorUsuario(lat, lng) {
   }
 
   if (!userMarker) {
-    userMarker = L.circleMarker(latLng, {
-      radius: 7,
-      weight: 3,
-      color: '#ffffff',
-      fillColor: '#007BFF',
-      fillOpacity: 1,
+    userMarker = L.marker(latLng, {
+      icon: obtenerIconoUserWaypoint(),
+      zIndexOffset: 1200,
     }).addTo(leafletMap);
   } else {
     userMarker.setLatLng(latLng);
   }
+}
+
+function centrarMapaEnPunto(lat, lng, zoom = ZOOM_CALLE) {
+  const safeLat = Number(lat);
+  const safeLng = Number(lng);
+  if (!Number.isFinite(safeLat) || !Number.isFinite(safeLng)) return;
+
+  const z = Number.isFinite(Number(zoom)) ? Number(zoom) : ZOOM_CALLE;
+  window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: z };
+
+  if (!leafletMap) return;
+
+  const aplicarCentrado = () => {
+    if (!leafletMap) return;
+    if (typeof leafletMap.invalidateSize === 'function') {
+      leafletMap.invalidateSize({ animate: false });
+    }
+    leafletMap.setView([safeLat, safeLng], z, { animate: false });
+  };
+
+  aplicarCentrado();
+  requestAnimationFrame(aplicarCentrado);
+  setTimeout(aplicarCentrado, 50);
+  setTimeout(aplicarCentrado, 150);
+  setTimeout(aplicarCentrado, 250);
+  setTimeout(aplicarCentrado, 380);
 }
 
 function obtenerIconoUserWaypointLeaflet() {
@@ -242,13 +304,49 @@ function actualizarEstadoBotonFavoritos() {
   } else if (favBtn.dataset.tipo === 'linea') {
     const ref = window._currentLineaRef || '';
     const favs = obtenerLineasFavs();
-    esFavorita = favs.some((f) => f?.ref === ref);
+    esFavorita = favs.some((f) => (f?.ref && ref && f.ref === ref) || (typeof f === 'string' && f === ref));
+  } else if (favBtn.dataset.tipo === 'lugar' || favBtn.dataset.tipo === 'ubicacion') {
+    const lugar = window._currentLugar;
+    if (lugar && Number.isFinite(lugar.lat) && Number.isFinite(lugar.lng)) {
+      const favs = obtenerLugaresFavs();
+      esFavorita = favs.some((f) => esMismoLugarGuardado(f, lugar) || f.nombre === lugar.nombre);
+    }
   }
 
-  favBtn.classList.toggle('is-fav', esFavorita);
-  favBtn.style.opacity = '1';
-  favBtn.style.cursor = 'pointer';
-  favBtn.setAttribute('aria-label', esFavorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
+  if (esFavorita) {
+    favBtn.style.display = '';
+    favBtn.classList.add('is-fav');
+    favBtn.style.opacity = '1';
+    favBtn.style.cursor = 'pointer';
+    favBtn.setAttribute('aria-label', 'Quitar de guardados');
+  } else {
+    favBtn.style.display = 'none';
+    favBtn.classList.remove('is-fav');
+    favBtn.setAttribute('aria-label', 'Guardar en favoritos');
+  }
+
+  // Actualizar subtítulo del bottom sheet según corresponda
+  const bsSub = document.getElementById('bs-subtitle');
+  if (bsSub) {
+    if (favBtn.dataset.tipo === 'parada') {
+      bsSub.textContent = esFavorita ? 'Parada guardada' : '';
+      bsSub.style.display = esFavorita ? '' : 'none';
+    } else if (favBtn.dataset.tipo === 'linea') {
+      bsSub.textContent = esFavorita ? 'Línea guardada' : '';
+      bsSub.style.display = esFavorita ? '' : 'none';
+    } else if (favBtn.dataset.tipo === 'lugar' || favBtn.dataset.tipo === 'ubicacion') {
+      bsSub.textContent = esFavorita ? 'Ubicación guardada' : '';
+      bsSub.style.display = esFavorita ? '' : 'none';
+    }
+  }
+
+  // Sincronizar contenedores de guardado en el cuerpo
+  const saveBoxLugar = document.getElementById('save-lugar-container');
+  if (saveBoxLugar) saveBoxLugar.style.display = esFavorita ? 'none' : 'flex';
+  const saveBoxLinea = document.getElementById('save-linea-container');
+  if (saveBoxLinea) saveBoxLinea.style.display = esFavorita ? 'none' : 'flex';
+  const saveBoxParada = document.getElementById('save-parada-container');
+  if (saveBoxParada) saveBoxParada.style.display = esFavorita ? 'none' : 'flex';
 }
 
 function setBottomSheetState(state) {
@@ -330,25 +428,60 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
   // Montar anuncio si el HTML incluyó el placeholder.
   montarAdsEnBottomSheetSiCorresponde();
 
-  // Limpiar estilos transform previos
   if (bs) {
-    setBottomSheetState(BOTTOM_SHEET_STATE_HALF);
-    bs.style.transform = '';
-    bs.style.transition = '';
+    bs.classList.add('active');
   }
 
-  bs?.classList.add('active');
-  overlay?.classList.add('active');
+  const hud = document.getElementById('map-nearest-stop-hud');
+  if (hud) hud.classList.remove('visible');
 
-  // Reinicializar el drag después de un pequeño delay para asegurar que el DOM está actualizado
-  setTimeout(() => {
-    setupBottomSheetDrag();
-  }, 50);
+  const viewMap = document.getElementById('view-map');
+  viewMap?.classList.add('has-detail-open');
 
-  // Mostrar/ocultar botón de favoritos según el tipo
+  // Actualizar icono en cabecera según el tipo
+  const iconEl = document.getElementById('panel-header-icon');
+  if (iconEl) {
+    if (tipo === 'parada') {
+      iconEl.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span class="panel-btn-label" id="panel-header-badge-label">Parada</span>';
+    } else if (tipo === 'linea') {
+      iconEl.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.2 6 18.1 6H5.9C4.8 6 3.9 6.8 3.6 7.8l-1.4 5c-.1.4-.2.8-.2 1.2 0 .4.1.8.2 1.2.3 1.1.8 2.8.8 2.8h3"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="panel-btn-label" id="panel-header-badge-label">Línea</span>';
+    } else {
+      iconEl.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" x2="9" y1="3" y2="18"></line><line x1="15" x2="15" y1="6" y2="21"></line></svg><span class="panel-btn-label" id="panel-header-badge-label">Lugar</span>';
+    }
+  }
+
+  const recentrarFeature = () => {
+    let targetLat = null;
+    let targetLng = null;
+    let targetZoom = null;
+
+    if (window._activeMapCenter && Number.isFinite(window._activeMapCenter.lat) && Number.isFinite(window._activeMapCenter.lng)) {
+      targetLat = window._activeMapCenter.lat;
+      targetLng = window._activeMapCenter.lng;
+      targetZoom = window._activeMapCenter.zoom;
+    } else if (window._currentFeature?.geometry?.coordinates) {
+      const coords = window._currentFeature.geometry.coordinates;
+      if (Array.isArray(coords) && coords.length >= 2) {
+        targetLat = Number(coords[1]);
+        targetLng = Number(coords[0]);
+      }
+    }
+
+    if (Number.isFinite(targetLat) && Number.isFinite(targetLng)) {
+      centrarMapaEnPunto(targetLat, targetLng, targetZoom || (leafletMap && typeof leafletMap.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_CALLE));
+    } else if (leafletMap && typeof leafletMap.invalidateSize === 'function') {
+      leafletMap.invalidateSize({ animate: false });
+    }
+  };
+
+  requestAnimationFrame(recentrarFeature);
+  setTimeout(recentrarFeature, 60);
+  setTimeout(recentrarFeature, 160);
+  setTimeout(recentrarFeature, 260);
+
+  // Mostrar/ocultar botón de favoritos según el tipo y estado de guardado
   if (favBtn) {
     if (tipo === 'parada') {
-      favBtn.style.display = '';
       favBtn.dataset.tipo = 'parada';
       favBtn.onclick = () => {
         agregarParadaAFavoritos(window._currentFeature || {});
@@ -356,7 +489,6 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
       };
       actualizarEstadoBotonFavoritos();
     } else if (tipo === 'linea') {
-      favBtn.style.display = '';
       favBtn.dataset.tipo = 'linea';
       favBtn.onclick = () => {
         const ref = window._currentLineaRef || '';
@@ -365,26 +497,28 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
         actualizarEstadoBotonFavoritos();
       };
       actualizarEstadoBotonFavoritos();
+    } else if (tipo === 'ubicacion' || tipo === 'lugar') {
+      favBtn.dataset.tipo = 'lugar';
+      favBtn.onclick = () => {
+        if (window._currentLugar) {
+          agregarLugarAFavoritos(window._currentLugar.nombre, window._currentLugar.lat, window._currentLugar.lng);
+          actualizarEstadoBotonFavoritos();
+        }
+      };
+      actualizarEstadoBotonFavoritos();
     } else {
       favBtn.style.display = 'none';
       favBtn.classList.remove('is-fav');
       favBtn.removeAttribute('data-tipo');
-      favBtn.setAttribute('aria-label', 'Agregar a favoritos');
+      favBtn.setAttribute('aria-label', 'Guardar en favoritos');
       favBtn.onclick = null;
     }
   }
 
-  // Botón Planear ruta: solo para paradas (ubicado a la izquierda del handle)
+  // Botón Planear ruta en cabecera desactivado (se usa el botón descriptivo en el cuerpo)
   if (planBtn) {
-    if (tipo === 'parada') {
-      planBtn.style.display = '';
-      planBtn.onclick = () => {
-        iniciarPlaneoRutaHastaParadaSeleccionada(window._currentFeature || null);
-      };
-    } else {
-      planBtn.style.display = 'none';
-      planBtn.onclick = null;
-    }
+    planBtn.style.display = 'none';
+    planBtn.onclick = null;
   }
 }
 
@@ -588,12 +722,13 @@ function setupModalConfirmCentradoTiempoReal() {
 }
 
 function actualizarEstadoBotonCentradoTiempoReal(activo) {
-  const btn = document.getElementById('btn-centrar');
-  if (!btn) return;
-  btn.classList.toggle('is-realtime-active', Boolean(activo));
-  btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
-  btn.setAttribute('title', activo ? 'Centrado en tiempo real activo' : 'Recentrar ubicación');
-  btn.setAttribute('aria-label', activo ? 'Desactivar centrado en tiempo real' : 'Recentrar ubicación');
+  const btns = document.querySelectorAll('.btn-centrar-trigger, #btn-centrar, #btn-centrar-nav, #btn-centrar-container');
+  btns.forEach((btn) => {
+    btn.classList.toggle('is-realtime-active', Boolean(activo));
+    btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
+    btn.setAttribute('title', activo ? 'Centrado en tiempo real activo' : 'Recentrar ubicación');
+    btn.setAttribute('aria-label', activo ? 'Desactivar centrado en tiempo real' : 'Recentrar ubicación');
+  });
 
   if (typeof userMarkerHalo !== 'undefined' && userMarkerHalo && userMarkerHalo.getElement) {
     const el = userMarkerHalo.getElement();
@@ -638,79 +773,81 @@ function desactivarModoCentradoTiempoReal() {
 }
 
 function setupBotonCentrarTiempoReal() {
-  const btn = document.getElementById('btn-centrar');
-  if (!btn) return;
+  const btns = document.querySelectorAll('.btn-centrar-trigger, #btn-centrar, #btn-centrar-nav, #btn-centrar-container');
+  if (!btns.length) return;
 
-  const prevHandlers = btn._realtimeCenterHandlers;
-  if (prevHandlers) {
-    btn.removeEventListener('pointerdown', prevHandlers.handlePointerDown);
-    btn.removeEventListener('pointerup', prevHandlers.handlePointerUp);
-    btn.removeEventListener('pointercancel', prevHandlers.handlePointerCancel);
-    btn.removeEventListener('pointerleave', prevHandlers.handlePointerLeave);
-    btn.removeEventListener('click', prevHandlers.handleClick);
-  }
-
-  const clearLongPress = () => {
-    if (_realtimeCenterLongPressTimer) {
-      clearTimeout(_realtimeCenterLongPressTimer);
-      _realtimeCenterLongPressTimer = null;
+  btns.forEach((btn) => {
+    const prevHandlers = btn._realtimeCenterHandlers;
+    if (prevHandlers) {
+      btn.removeEventListener('pointerdown', prevHandlers.handlePointerDown);
+      btn.removeEventListener('pointerup', prevHandlers.handlePointerUp);
+      btn.removeEventListener('pointercancel', prevHandlers.handlePointerCancel);
+      btn.removeEventListener('pointerleave', prevHandlers.handlePointerLeave);
+      btn.removeEventListener('click', prevHandlers.handleClick);
     }
-  };
 
-  const handlePointerDown = (e) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    clearLongPress();
-    _realtimeCenterSuppressNextClick = false;
+    const clearLongPress = () => {
+      if (_realtimeCenterLongPressTimer) {
+        clearTimeout(_realtimeCenterLongPressTimer);
+        _realtimeCenterLongPressTimer = null;
+      }
+    };
 
-    _realtimeCenterLongPressTimer = setTimeout(() => {
-      _realtimeCenterSuppressNextClick = true;
-      const activando = !_realtimeCenterActive;
-      mostrarModalConfirmCentradoTiempoReal(() => {
-        if (activando) {
-          activarModoCentradoTiempoReal();
-        } else {
-          desactivarModoCentradoTiempoReal();
-        }
-      }, activando);
-    }, REALTIME_CENTER_LONG_PRESS_MS);
-  };
-
-  const handlePointerUp = () => {
-    clearLongPress();
-  };
-
-  const handlePointerCancel = () => {
-    clearLongPress();
-    _realtimeCenterSuppressNextClick = false;
-  };
-
-  const handlePointerLeave = () => {
-    clearLongPress();
-  };
-
-  const handleClick = (e) => {
-    if (_realtimeCenterSuppressNextClick) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
+    const handlePointerDown = (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      clearLongPress();
       _realtimeCenterSuppressNextClick = false;
-      return;
-    }
-    CentrarYOferécerGuardar();
-  };
 
-  btn.addEventListener('pointerdown', handlePointerDown);
-  btn.addEventListener('pointerup', handlePointerUp);
-  btn.addEventListener('pointercancel', handlePointerCancel);
-  btn.addEventListener('pointerleave', handlePointerLeave);
-  btn.addEventListener('click', handleClick);
+      _realtimeCenterLongPressTimer = setTimeout(() => {
+        _realtimeCenterSuppressNextClick = true;
+        const activando = !_realtimeCenterActive;
+        mostrarModalConfirmCentradoTiempoReal(() => {
+          if (activando) {
+            activarModoCentradoTiempoReal();
+          } else {
+            desactivarModoCentradoTiempoReal();
+          }
+        }, activando);
+      }, REALTIME_CENTER_LONG_PRESS_MS);
+    };
 
-  btn._realtimeCenterHandlers = {
-    handlePointerDown,
-    handlePointerUp,
-    handlePointerCancel,
-    handlePointerLeave,
-    handleClick,
-  };
+    const handlePointerUp = () => {
+      clearLongPress();
+    };
+
+    const handlePointerCancel = () => {
+      clearLongPress();
+      _realtimeCenterSuppressNextClick = false;
+    };
+
+    const handlePointerLeave = () => {
+      clearLongPress();
+    };
+
+    const handleClick = (e) => {
+      if (_realtimeCenterSuppressNextClick) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        _realtimeCenterSuppressNextClick = false;
+        return;
+      }
+      CentrarYOferécerGuardar();
+    };
+
+    btn.addEventListener('pointerdown', handlePointerDown);
+    btn.addEventListener('pointerup', handlePointerUp);
+    btn.addEventListener('pointercancel', handlePointerCancel);
+    btn.addEventListener('pointerleave', handlePointerLeave);
+    btn.addEventListener('click', handleClick);
+
+    btn._realtimeCenterHandlers = {
+      handlePointerDown,
+      handlePointerUp,
+      handlePointerCancel,
+      handlePointerLeave,
+      handleClick,
+    };
+  });
 
   actualizarEstadoBotonCentradoTiempoReal(false);
 }
@@ -740,11 +877,20 @@ function cerrarBottomSheet(force = false) {
   // Limpiar estilos y clases
   if (bs) {
     bs.classList.remove('active');
-    bs.classList.remove('dragging');
-    setBottomSheetState(BOTTOM_SHEET_STATE_HALF);
-    bs.style.transform = '';
-    bs.style.transition = '';
   }
+
+  const viewMap = document.getElementById('view-map');
+  viewMap?.classList.remove('has-detail-open');
+
+  const reajustarMapa = () => {
+    if (leafletMap && typeof leafletMap.invalidateSize === 'function') {
+      leafletMap.invalidateSize({ animate: false });
+    }
+  };
+
+  requestAnimationFrame(reajustarMapa);
+  setTimeout(reajustarMapa, 120);
+  setTimeout(reajustarMapa, 290);
 
   overlay?.classList.remove('active');
 
@@ -756,9 +902,14 @@ function cerrarBottomSheet(force = false) {
     planBtn.style.display = 'none';
   }
 
-  // Limpiar recorrido activo al cerrar
+  // Limpiar recorrido activo y ruta GPS al cerrar
   limpiarRecorrido();
+  if (typeof limpiarRutaGpsActiva === 'function') limpiarRutaGpsActiva();
   volverVistaGeneral();
+
+  setTimeout(() => {
+    void actualizarHudParadaMasCercana();
+  }, 280);
 }
 
 async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNombre = '') {
@@ -839,254 +990,24 @@ async function dibujarParadasDeLineaCercanasAlOrigen(relIds, origenLat, origenLn
 }
 
 function abrirBottomSheetFavoritos() {
-  const contParadas = document.getElementById('paradas_favs');
-  const contLineas = document.getElementById('lineas_favs');
-  const contLugares = document.getElementById('lugares_favs');
-  const paradasHtml = contParadas?.innerHTML || '<p class="fav-empty">Sin paradas favoritas</p>';
-  const lineasHtml = contLineas?.innerHTML || '<p class="fav-empty">Sin líneas favoritas</p>';
-  const lugaresHtml = contLugares?.innerHTML || '<p class="fav-empty">Sin lugares guardados</p>';
-
-  const html = `
-    <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 20px; font-weight: 700; color: var(--text-primary, #222);">📍 Paradas Favoritas</h3>
-    <div style="margin-bottom: 28px;">${paradasHtml}</div>
-    <h3 style="margin-bottom: 18px; font-size: 20px; font-weight: 700; color: var(--text-primary, #222);">🚌 Líneas Favoritas</h3>
-    <div style="margin-bottom: 28px;">${lineasHtml}</div>
-    <h3 style="margin-bottom: 18px; font-size: 20px; font-weight: 700; color: var(--text-primary, #222);">📌 Lugares Guardados</h3>
-    <div>${lugaresHtml}</div>
-  `;
-  abrirBottomSheet('Favoritos', html);
+  cambiarVista('view-guardados');
 }
 
-// Funcionalidad de drag en el handle del bottom-sheet
+// Funcionalidad previa de drag purgada: el panel ahora usa la vista dividida fluida
 function setupBottomSheetDrag() {
-  const header = document.querySelector('.bottom-sheet-header');
-  const bottomSheet = document.getElementById('bottom-sheet');
-  const content = document.getElementById('bs-content');
+  // Purged: No se requieren controladores de arrastre en la vista dividida
+}
 
-  if (!header || !bottomSheet) return;
+function iniciarCarruselHeroDashboard() {
+  const slides = document.querySelectorAll('.hero-bg-slide');
+  if (!slides || slides.length <= 1) return;
 
-  let isDragging = false;
-  let startY = 0;
-  let currentY = 0;
-  let lastY = 0;
-  let lastTime = 0;
-  let velocity = 0;
-  let startState = BOTTOM_SHEET_STATE_HALF;
-  let startHeightPx = 0;
-
-  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-  const getHalfHeightPx = () => Math.round((window.innerHeight || 0) * 0.5);
-  const getFullHeightPx = () => Math.round((window.innerHeight || 0) * 1.0);
-  const getSheetTranslate = (y) => `translate(-50%, ${y})`;
-
-  const handleDragStart = (e) => {
-    // No iniciar drag si el click es en un botón o elementos interactivos
-    if (e.target.closest('button') || e.target.closest('svg') || e.target.closest('img') || e.target.closest('.btn-nav-row')) {
-      return;
-    }
-
-    if (!bottomSheet.classList.contains('active')) return;
-
-    isDragging = true;
-    startY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
-    lastY = startY;
-    lastTime = Date.now();
-    velocity = 0;
-
-    startState = getBottomSheetState();
-    startHeightPx = Math.round(bottomSheet.getBoundingClientRect().height || 0);
-
-    bottomSheet.classList.add('dragging');
-    // Prevenir selección de texto durante el drag
-    document.body.style.userSelect = 'none';
-    if (content) {
-      content.style.pointerEvents = 'none';
-    }
-  };
-
-  const handleDragMove = (e) => {
-    if (!isDragging) return;
-
-    const now = Date.now();
-    const clientY = e.type.includes('mouse') ? e.clientY : e.touches?.[0]?.clientY || 0;
-
-    // Calcular velocidad (píxeles por milisegundo)
-    const dt = now - lastTime;
-    if (dt > 0) {
-      velocity = (clientY - lastY) / dt;
-    }
-
-    currentY = clientY - startY;
-    lastY = clientY;
-    lastTime = now;
-
-    const halfPx = getHalfHeightPx();
-    const fullPx = getFullHeightPx();
-
-    // Limites de arrastre: permitir cerrar (min height 0) y exceder un poco el top (rubber band)
-    const minPx = 0;
-    const maxLimit = fullPx + 50;
-
-    let nextHeight = startHeightPx - currentY;
-
-    if (nextHeight > fullPx) {
-      // Efecto "muelle" (rubber banding) al llegar al tope
-      nextHeight = fullPx + (nextHeight - fullPx) * 0.3;
-    }
-
-    bottomSheet.style.height = `${clamp(nextHeight, minPx, maxLimit)}px`;
-    // Mantener el mismo anclaje horizontal en móvil y escritorio.
-    bottomSheet.style.transform = getSheetTranslate('0');
-  };
-
-  const handleDragEnd = () => {
-    if (!isDragging) return;
-    isDragging = false;
-
-    bottomSheet.classList.remove('dragging');
-    document.body.style.userSelect = '';
-    if (content) {
-      content.style.pointerEvents = '';
-    }
-
-    const halfPx = getHalfHeightPx();
-    const fullPx = getFullHeightPx();
-    const currentHeight = bottomSheet.offsetHeight;
-
-    // Lógica de snapping basada en velocidad y posición
-    const flickThreshold = 0.5; // px/ms
-    let targetState = BOTTOM_SHEET_STATE_HALF;
-    let targetHeight = halfPx;
-
-    if (velocity > flickThreshold) {
-      // Flick hacia abajo: o va a half o cierra
-      if (currentHeight > halfPx * 1.1) {
-        targetState = BOTTOM_SHEET_STATE_HALF;
-        targetHeight = halfPx;
-      } else {
-        targetState = 'close';
-        targetHeight = 0;
-      }
-    } else if (velocity < -flickThreshold) {
-      // Flick hacia arriba: expandir a full
-      targetState = BOTTOM_SHEET_STATE_FULL;
-      targetHeight = fullPx;
-    } else {
-      // Sin velocidad: ir al estado más cercano
-      const distToFull = Math.abs(currentHeight - fullPx);
-      const distToHalf = Math.abs(currentHeight - halfPx);
-      const distToClose = currentHeight;
-
-      if (distToClose < SHEET_DRAG_CLOSE_THRESHOLD) {
-        targetState = 'close';
-        targetHeight = 0;
-      } else if (startState === BOTTOM_SHEET_STATE_FULL && distToClose < SHEET_DRAG_CLOSE_FROM_FULL_THRESHOLD) {
-        targetState = BOTTOM_SHEET_STATE_HALF;
-        targetHeight = halfPx;
-      } else if (distToFull + SHEET_DRAG_EXPAND_THRESHOLD < distToHalf) {
-        targetState = BOTTOM_SHEET_STATE_FULL;
-        targetHeight = fullPx;
-      } else if (distToHalf + SHEET_DRAG_COLLAPSE_THRESHOLD < distToFull) {
-        targetState = BOTTOM_SHEET_STATE_HALF;
-        targetHeight = halfPx;
-      } else {
-        targetState = distToFull < distToHalf ? BOTTOM_SHEET_STATE_FULL : BOTTOM_SHEET_STATE_HALF;
-        targetHeight = targetState === BOTTOM_SHEET_STATE_FULL ? fullPx : halfPx;
-      }
-    }
-
-    // Aplicar transición suave
-    if (targetState === 'close') {
-      // Si hay una petición de arribos en curso, mostrar confirmación ANTES de animar el cierre
-      if (_arrivalsAbortController) {
-        // Revertir la posición del sheet a su estado anterior
-        bottomSheet.style.transition = 'height 0.25s cubic-bezier(0.33, 1, 0.68, 1)';
-        bottomSheet.style.height = `${startHeightPx}px`;
-        bottomSheet.style.transform = getSheetTranslate('0');
-        document.getElementById('bottom-sheet-overlay')?.classList.add('active');
-        setTimeout(() => {
-          bottomSheet.style.transition = '';
-          bottomSheet.style.height = '';
-        }, 250);
-
-        mostrarModalConfirmCerrarArribos(() => {
-          try { _arrivalsAbortController?.abort(); } catch { }
-          _arrivalsAbortController = null;
-          // Animar el cierre ahora que el usuario confirmó
-          bottomSheet.style.transition = 'transform 0.3s ease-in';
-          bottomSheet.style.transform = getSheetTranslate('100%');
-          document.getElementById('bottom-sheet-overlay')?.classList.remove('active');
-          setTimeout(() => {
-            cerrarBottomSheet(true);
-            bottomSheet.style.transform = '';
-            bottomSheet.style.height = '';
-            bottomSheet.style.transition = '';
-          }, 300);
-        });
-        return;
-      }
-
-      // Para evitar el salto vertical, animamos el transform hacia abajo
-      // en lugar de colapsar el height a 0px.
-      bottomSheet.style.transition = 'transform 0.3s ease-in';
-      bottomSheet.style.transform = getSheetTranslate('100%');
-
-      // Desactivamos el overlay inmediatamente
-      document.getElementById('bottom-sheet-overlay')?.classList.remove('active');
-
-      setTimeout(() => {
-        cerrarBottomSheet(true);
-        bottomSheet.style.transform = '';
-        bottomSheet.style.height = '';
-        bottomSheet.style.transition = '';
-      }, 300);
-    } else {
-      setBottomSheetState(targetState);
-      // Usar una curva con un ligero bounce para el snapping
-      bottomSheet.style.transition = 'height 0.35s cubic-bezier(0.33, 1, 0.68, 1)';
-      bottomSheet.style.height = `${targetHeight}px`;
-
-      setTimeout(() => {
-        bottomSheet.classList.remove('dragging');
-        bottomSheet.style.transition = '';
-        // Volver a dejar que el CSS maneje la altura reactiva (dvh) tras la animación
-        bottomSheet.style.height = '';
-        // Asegurar el mismo transform en cualquier viewport tras el snapping.
-        bottomSheet.style.transform = getSheetTranslate('0');
-      }, 350);
-    }
-
-    currentY = 0;
-    startHeightPx = 0;
-    velocity = 0;
-  };
-
-  // Remover listeners previos para evitar duplicados
-  const prevHandlers = header._bottomSheetDragHandlers;
-  if (prevHandlers) {
-    header.removeEventListener('mousedown', prevHandlers.handleDragStart);
-    header.removeEventListener('touchstart', prevHandlers.handleDragStart);
-    document.removeEventListener('mousemove', prevHandlers.handleDragMove);
-    document.removeEventListener('mouseup', prevHandlers.handleDragEnd);
-    document.removeEventListener('touchmove', prevHandlers.handleDragMove);
-    document.removeEventListener('touchend', prevHandlers.handleDragEnd);
-  }
-
-  // Listener para el inicio del drag (en toda la cabecera)
-  header.addEventListener('mousedown', handleDragStart);
-  header.addEventListener('touchstart', handleDragStart, { passive: false });
-
-  // Listeners globales para el movimiento y fin
-  document.addEventListener('mousemove', handleDragMove, { passive: true });
-  document.addEventListener('mouseup', handleDragEnd);
-  document.addEventListener('touchmove', handleDragMove, { passive: true });
-  document.addEventListener('touchend', handleDragEnd);
-
-  header._bottomSheetDragHandlers = {
-    handleDragStart,
-    handleDragMove,
-    handleDragEnd,
-  };
+  let slideIndex = 0;
+  setInterval(() => {
+    slides[slideIndex]?.classList.remove('active');
+    slideIndex = (slideIndex + 1) % slides.length;
+    slides[slideIndex]?.classList.add('active');
+  }, 5500);
 }
 
 // Inicializar cuando el DOM esté listo
@@ -1096,14 +1017,26 @@ if (document.readyState === 'loading') {
     setupModalConfirmCerrarRuta();
     setupModalConfirmCentradoTiempoReal();
     setupBotonCentrarTiempoReal();
-    setupSidepanelConfiguracion();
+    setupNavegacion();
+    setupDashboardSearch();
+    setupGuardadosSearch();
+    setupPreferenciaHudParada();
+    renderHistorialDashboard();
+    renderSeccionGuardados();
+    iniciarCarruselHeroDashboard();
   });
 } else {
   setupBottomSheetDrag();
   setupModalConfirmCerrarRuta();
   setupModalConfirmCentradoTiempoReal();
   setupBotonCentrarTiempoReal();
-  setupSidepanelConfiguracion();
+  setupNavegacion();
+  setupDashboardSearch();
+  setupGuardadosSearch();
+  setupPreferenciaHudParada();
+  renderHistorialDashboard();
+  renderSeccionGuardados();
+  iniciarCarruselHeroDashboard();
 }
 
 function obtenerPosicionActual() {
@@ -1129,9 +1062,9 @@ async function Centrar() {
       lng: position.coords.longitude,
     };
     console.log(`Ubicación: ${ubicacion.lat}, ${ubicacion.lng}`);
-    limpiarRecorrido();
     cargarLF(ubicacion, ZOOM_CALLE);
     await dibujarParadasCercanas(ubicacion);
+    void actualizarHudParadaMasCercana();
   } catch (error) {
     console.error('Error:', error.message ?? error);
   }
@@ -1151,56 +1084,268 @@ function abrirGuardadoDesdeMarcadorUbicacion() {
     return;
   }
 
-  const nombreLugar = generarNombreUbicacionGuardada();
+  const nombreLugar = generarNombreUbicacionGuardada('current');
   abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, 'current');
 }
 
-function generarNombreUbicacionGuardada() {
+function generarNombreUbicacionGuardada(contexto = 'punto') {
   const ahora = new Date();
-  const fechaHora = ahora.toLocaleString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-  return `ubicacion guardada, ${fechaHora}`;
+  const dia = ahora.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+  const hora = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (contexto === 'current') {
+    return `Mi ubicación (${dia}, ${hora} hs)`;
+  }
+  return `Punto en el mapa (${dia}, ${hora} hs)`;
 }
 
-function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'current') {
-  // Abrir bottom-sheet para confirmar guardado
-  const iconSaveDark = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zYXZlLWljb24gbHVjaWRlLXNhdmUiPjxwYXRoIGQ9Ik0xNS4yIDNhMiAyIDAgMCAxIDEuNC42bDMuOCAzLjhhMiAyIDAgMCAxIC42IDEuNFYxOWEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJ6Ii8+PHBhdGggZD0iTTE3IDIxdi03YTEgMSAwIDAgMC0xLTFIOGExIDEgMCAwIDAtMSAxdjciLz48cGF0aCBkPSJNNyAzdjRhMSAxIDAgMCAwIDEgMWg3Ii8+PC9zdmc+';
-  const iconSaveLight = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zYXZlLWljb24gbHVjaWRlLXNhdmUiPjxwYXRoIGQ9Ik0xNS4yIDNhMiAyIDAgMCAxIDEuNC42bDMuOCAzLjhhMiAyIDAgMCAxIC42IDEuNFYxOWEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMlY1YTIgMiAwIDAgMSAyLTJ6Ii8+PHBhdGggZD0iTTE3IDIxdi03YTEgMSAwIDAgMC0xLTFIOGExIDEgMCAwIDAtMSAxdjciLz48cGF0aCBkPSJNNyAzdjRhMSAxIDAgMCAwIDEgMWg3Ii8+PC9zdmc+';
-  const iconPlanDark = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+';
-  const iconPlanLight = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tYXAtcGlubmVkLWljb24gbHVjaWRlLW1hcC1waW5uZWQiPjxwYXRoIGQ9Ik0xOCA4YzAgMy42MTMtMy44NjkgNy40MjktNS4zOTMgOC43OTVhMSAxIDAgMCAxLTEuMjE0IDBDOS44NyAxNS40MjkgNiAxMS42MTMgNiA4YTYgNiAwIDAgMSAxMiAwIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIyIi8+PHBhdGggZD0iTTguNzE0IDE0aC0zLjcxYTEgMSAwIDAgMC0uOTQ4LjY4M2wtMi4wMDQgNkExIDEgMCAwIDAgMyAyMmgxOGExIDEgMCAwIDAgLjk0OC0xLjMxNmwtMi02YTEgMSAwIDAgMC0uOTQ5LS42ODRoLTMuNzEyIi8+PC9zdmc+';
-  const html = `
-    <div class="save-location-sheet">
-      <p class="save-location-title">¿Guardar este lugar?</p>
-      <p class="save-location-name">${escapeHtml(nombreLugar)}</p>
-      <p class="save-location-description">Acceso rápido desde favoritos</p>
+function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'current', paradaCercana = null) {
+  const safeLat = Number(lat);
+  const safeLng = Number(lng);
+  if (Number.isFinite(safeLat) && Number.isFinite(safeLng)) {
+    const z = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
+    window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: z };
+    window._currentFeature = null;
+    centrarMapaEnPunto(safeLat, safeLng, z);
+  }
+
+  window._currentLugar = { nombre: nombreLugar, lat: safeLat, lng: safeLng };
+
+  let tituloHeader = 'Guardar ubicación';
+  let subtituloHeader = 'Punto seleccionado en el mapa';
+
+  if (contexto === 'search') {
+    tituloHeader = nombreLugar || 'Lugar encontrado';
+    subtituloHeader = 'Lugar encontrado';
+  } else if (contexto === 'current') {
+    tituloHeader = 'Tu ubicación';
+    subtituloHeader = 'Ubicación actual';
+  } else if (contexto === 'longpress') {
+    tituloHeader = 'Punto en el mapa';
+    subtituloHeader = 'Punto seleccionado';
+  }
+
+  const lineasCercanas = paradaCercana?.feature ? obtenerLineasDetalleDesdeRelations(paradaCercana.feature) : [];
+  let lineasHtml = '';
+  if (lineasCercanas.length) {
+    const itemsHtml = lineasCercanas.map((l) => renderBotonLineaHtml({ ref: l.ref, name: l.name })).join('');
+
+    const paradaNombre = paradaCercana.feature?.properties?.name || 'Parada cercana';
+    const distMetros = Number.isFinite(paradaCercana.lat) && Number.isFinite(paradaCercana.lng)
+      ? Math.round(calcularDistancia(safeLat, safeLng, paradaCercana.lat, paradaCercana.lng))
+      : null;
+    const distTexto = distMetros != null ? ` (a ${distMetros}m)` : '';
+
+    lineasHtml = `
+      <div style="margin: 4px 0 10px 0;">
+        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; color: #93c5fd;">Líneas en ${escapeHtml(paradaNombre)}${distTexto}:</p>
+        <ul class="lineas-list">${itemsHtml}</ul>
+      </div>
+    `;
+  }
+
+  const favsLugares = obtenerLugaresFavs();
+  const esLugarFav = favsLugares.some((f) => esMismoLugarGuardado(f, { lat: safeLat, lng: safeLng }) || f.nombre === nombreLugar);
+  const saveLugarHtml = `
+    <div class="save-location-sheet" id="save-lugar-container" style="${esLugarFav ? 'display: none;' : ''}">
+      <p class="save-location-title">¿Guardar esta ubicación?</p>
+      <p class="save-location-description">
+        Podrás acceder rápidamente desde tu sección de <strong>Guardados</strong> y planificar viajes cuando quieras.
+      </p>
+      <div class="save-location-field">
+        <label for="input-nombre-lugar" class="save-location-label">
+          Nombre o referencia
+        </label>
+        <input
+          id="input-nombre-lugar"
+          type="text"
+          class="save-location-input"
+          value="${escapeHtml(nombreLugar)}"
+          placeholder="Ej: Casa, Trabajo, Gimnasio..."
+          maxlength="60"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('button[data-save-lugar=\\'1\\']')?.click();}"
+        />
+      </div>
       <div class="save-location-buttonarea">
         <button
           type="button"
           class="btn-save-location-primary"
           data-save-lugar="1"
           data-lugar-nombre="${escapeHtml(nombreLugar)}"
-          data-lat="${String(lat)}"
-          data-lng="${String(lng)}"
+          data-lat="${String(safeLat)}"
+          data-lng="${String(safeLng)}"
         >
-          <img class="icon light" alt="" src="${iconSaveLight}" />
-          <img class="icon dark" alt="" src="${iconSaveDark}" />
-          <span>Guardar lugar</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
+          </svg>
+          <span>Guardar en mis lugares</span>
         </button>
       </div>
     </div>
   `;
 
-  abrirBottomSheet('Guardar lugar', html);
+  const html = `
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 4px 0 16px 0;">
+      <ul class="bs-nav-rows">
+        <li>
+          <button type="button" class="btn-nav-row" onclick="iniciarPlaneoRutaHaciaCoordenadas('${escapeHtml(nombreLugar)}', ${safeLat}, ${safeLng})">
+            🎯 Planificar viaje en colectivo hasta aquí
+          </button>
+        </li>
+      </ul>
+
+      ${lineasHtml}
+
+      ${saveLugarHtml}
+
+      <div class="tsj-ad-slot" ${TSJ_ADS_PLACEHOLDER_ATTR}="${TSJ_ADS_TOKEN}"></div>
+    </div>
+  `;
+
+  abrirBottomSheet(escapeHtml(tituloHeader), html, 'ubicacion', esLugarFav ? 'Ubicación guardada' : subtituloHeader);
+}
+
+function iniciarPlaneoRutaHaciaCoordenadas(nombre, lat, lng) {
+  _routePlanTarget = { feature: null, nombre: String(nombre || 'Destino'), lat: Number(lat), lng: Number(lng), stopId: null };
+  void mostrarOpcionesRutaParaTarget(true);
+}
+
+function abrirBottomSheetLugarGuardado(nombreLugar, lat, lng, paradaCercana = null) {
+  const safeLat = Number(lat);
+  const safeLng = Number(lng);
+  if (Number.isFinite(safeLat) && Number.isFinite(safeLng)) {
+    window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: leafletMap?.getZoom() || ZOOM_CALLE };
+    window._currentFeature = null;
+  }
+
+  window._currentLugar = { nombre: nombreLugar, lat: safeLat, lng: safeLng };
+
+  const lineasCercanas = paradaCercana?.feature ? obtenerLineasDetalleDesdeRelations(paradaCercana.feature) : [];
+  let lineasHtml = '';
+  if (lineasCercanas.length) {
+    const itemsHtml = lineasCercanas.map((l) => renderBotonLineaHtml({ ref: l.ref, name: l.name })).join('');
+
+    const paradaNombre = paradaCercana.feature?.properties?.name || 'Parada cercana';
+    const distMetros = Number.isFinite(paradaCercana.lat) && Number.isFinite(paradaCercana.lng)
+      ? Math.round(calcularDistancia(safeLat, safeLng, paradaCercana.lat, paradaCercana.lng))
+      : null;
+    const distTexto = distMetros != null ? ` (a ${distMetros}m)` : '';
+
+    lineasHtml = `
+      <div style="margin: 4px 0 10px 0;">
+        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; color: #93c5fd;">Líneas en ${escapeHtml(paradaNombre)}${distTexto}:</p>
+        <ul class="lineas-list">${itemsHtml}</ul>
+      </div>
+    `;
+  }
+
+  const favsLugares = obtenerLugaresFavs();
+  const esLugarFav = favsLugares.some((f) => esMismoLugarGuardado(f, { lat: safeLat, lng: safeLng }) || f.nombre === nombreLugar);
+  const saveLugarHtml = `
+    <div class="save-location-sheet" id="save-lugar-container" style="${esLugarFav ? 'display: none;' : ''}">
+      <p class="save-location-title">¿Guardar esta ubicación?</p>
+      <p class="save-location-description">
+        Podrás acceder rápidamente desde tu sección de <strong>Guardados</strong> y planificar viajes cuando quieras.
+      </p>
+      <div class="save-location-field">
+        <label for="input-nombre-lugar" class="save-location-label">
+          Nombre o referencia
+        </label>
+        <input
+          id="input-nombre-lugar"
+          type="text"
+          class="save-location-input"
+          value="${escapeHtml(nombreLugar)}"
+          placeholder="Ej: Casa, Trabajo, Gimnasio..."
+          maxlength="60"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('button[data-save-lugar=\\'1\\']')?.click();}"
+        />
+      </div>
+      <div class="save-location-buttonarea">
+        <button
+          type="button"
+          class="btn-save-location-primary"
+          data-save-lugar="1"
+          data-lugar-nombre="${escapeHtml(nombreLugar)}"
+          data-lat="${String(safeLat)}"
+          data-lng="${String(safeLng)}"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
+          </svg>
+          <span>Guardar en mis lugares</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  const html = `
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 4px 0 16px 0;">
+      <ul class="bs-nav-rows">
+        <li>
+          <button type="button" class="btn-nav-row" onclick="iniciarPlaneoRutaHaciaCoordenadas('${escapeHtml(nombreLugar)}', ${safeLat}, ${safeLng})">
+            🎯 Planificar viaje en colectivo hasta aquí
+          </button>
+        </li>
+      </ul>
+      ${lineasHtml}
+      ${saveLugarHtml}
+      <div class="tsj-ad-slot" ${TSJ_ADS_PLACEHOLDER_ATTR}="${TSJ_ADS_TOKEN}"></div>
+    </div>
+  `;
+
+  abrirBottomSheet(escapeHtml(nombreLugar), html, 'ubicacion', esLugarFav ? 'Ubicación guardada' : '');
 }
 
 function guardarUbicacionActualDesdeBottomSheet(nombreLugar, lat, lng) {
-  agregarLugarAFavoritos(nombreLugar, lat, lng);
-  cerrarBottomSheet();
+  agregarLugarAFavoritos(nombreLugar, lat, lng, true);
+  const btn = document.querySelector('button[data-save-lugar="1"]');
+  if (btn) {
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6 9 17l-5-5"></path>
+      </svg>
+      <span>¡Guardado en tus lugares!</span>
+    `;
+    btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+  }
+  setTimeout(() => {
+    actualizarEstadoBotonFavoritos();
+  }, 450);
+}
+
+function guardarLineaActualDesdeBottomSheet(ref, name) {
+  agregarLineaAFavoritos({ ref, name }, true);
+  const btn = document.querySelector('button[data-save-linea="1"]');
+  if (btn) {
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6 9 17l-5-5"></path>
+      </svg>
+      <span>¡Guardada en tus líneas!</span>
+    `;
+    btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+  }
+  setTimeout(() => {
+    actualizarEstadoBotonFavoritos();
+  }, 450);
+}
+
+function guardarParadaActualDesdeBottomSheet(feature, customLabel = '') {
+  if (!feature) return;
+  agregarParadaAFavoritos(feature, customLabel);
+  const btn = document.querySelector('button[data-save-parada="1"]');
+  if (btn) {
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6 9 17l-5-5"></path>
+      </svg>
+      <span>¡Guardada en tus paradas!</span>
+    `;
+    btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+  }
+  setTimeout(() => {
+    actualizarEstadoBotonFavoritos();
+  }, 450);
 }
 
 function esFeatureParada(feature) {
@@ -1266,6 +1411,31 @@ function getColorForLinea(ref) {
   return '#007BFF'; // Default fallback
 }
 
+function formatBadgeLinea(ref) {
+  let r = String(ref || '').trim();
+  if (!r) return '';
+  // Eliminar prefijo 'L' o 'l' si estuviera presente (ej: 'L129' -> '129')
+  if (/^l\s*\d+/i.test(r)) {
+    r = r.replace(/^l\s*/i, '');
+  }
+  return r;
+}
+
+function renderBotonLineaHtml({ ref, name, extraAttrs = '', extraBadgeClass = '' } = {}) {
+  const refClean = String(ref || '').trim();
+  const nameClean = String(name || '').trim();
+  const refDisplay = refClean ? escapeHtml(refClean) : (nameClean ? escapeHtml(nameClean) : 'Línea');
+  const refAttr = escapeHtml(refClean);
+  const nameAttr = escapeHtml(nameClean);
+  const nameDisplay = nameClean ? `<span class="linea-button-name">${escapeHtml(nameClean)}</span>` : '';
+  const c = getColorForLinea(refClean);
+  const tc = getTextColorForBg(c);
+  const badgeText = formatBadgeLinea(refClean);
+  const badgeClass = extraBadgeClass ? `linea-button-badge ${extraBadgeClass}` : 'linea-button-badge';
+
+  return `<li><button type="button" class="btn-linea" style="--line-color: ${c}; --line-text: ${tc};" data-linea-ref="${refAttr}" data-linea-name="${nameAttr}" ${extraAttrs}><span class="${badgeClass}" style="background-color: ${c}; color: ${tc};">${escapeHtml(badgeText)}</span><div class="linea-rail-col"><div class="linea-tube-seg"><span class="linea-dot"></span></div></div><div class="linea-button-info"><span class="linea-button-ref">Línea ${refDisplay}</span>${nameDisplay}</div><svg class="linea-button-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button></li>`;
+}
+
 function escapeHtml(text) {
   return String(text)
     .replaceAll('&', '&amp;')
@@ -1313,65 +1483,625 @@ function guardarBoolLocalStorage(key, value) {
   }
 }
 
-function aplicarModoOscuro(enabled) {
-  document.documentElement.classList.toggle('dark-mode', Boolean(enabled));
-  document.head.querySelector('meta[name="theme-color"]')?.setAttribute('content', Boolean(enabled) ? '#000000' : '#ffffff');
-  guardarBoolLocalStorage(STORAGE_DARK_MODE_KEY, Boolean(enabled));
+function aplicarModoOscuro() {
+  document.documentElement.classList.add('dark-mode');
+  document.documentElement.classList.remove('no-transparency');
+  document.head.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0f0f12');
 }
 
-function aplicarTransparencia(enabled) {
-  // enabled=true => superficies con blur/alpha (sin clase)
-  // enabled=false => modo opaco y sin blur (clase .no-transparency)
-  document.documentElement.classList.toggle('no-transparency', !Boolean(enabled));
-  guardarBoolLocalStorage(STORAGE_TRANSPARENCY_KEY, Boolean(enabled));
+function aplicarTransparencia() {
+  document.documentElement.classList.remove('no-transparency');
 }
 
-function abrirSidepanelConfiguracion() {
-  const overlay = document.getElementById('settings-overlay');
-  const panel = document.getElementById('settings-panel');
-  overlay?.classList.add('active');
-  panel?.classList.add('active');
-  overlay?.setAttribute('aria-hidden', 'false');
-  panel?.setAttribute('aria-hidden', 'false');
-}
-
-function cerrarSidepanelConfiguracion() {
-  const overlay = document.getElementById('settings-overlay');
-  const panel = document.getElementById('settings-panel');
-  overlay?.classList.remove('active');
-  panel?.classList.remove('active');
-  overlay?.setAttribute('aria-hidden', 'true');
-  panel?.setAttribute('aria-hidden', 'true');
-}
-
-function setupSidepanelConfiguracion() {
-  const btn = document.getElementById('btn-settings');
-  const overlay = document.getElementById('settings-overlay');
-  const closeBtn = document.getElementById('settings-close');
-  const toggle = document.getElementById('toggle-darkmode');
-  const toggleTransparency = document.getElementById('toggle-transparency');
-
-  btn?.addEventListener('click', abrirSidepanelConfiguracion);
-  overlay?.addEventListener('click', cerrarSidepanelConfiguracion);
-  closeBtn?.addEventListener('click', cerrarSidepanelConfiguracion);
-
-  const enabled = leerBoolLocalStorage(STORAGE_DARK_MODE_KEY, false);
-  if (toggle instanceof HTMLInputElement) {
-    toggle.checked = enabled;
-    toggle.addEventListener('change', () => aplicarModoOscuro(toggle.checked));
+function cambiarVista(vistaId) {
+  if (vistaId !== 'view-map' && typeof cerrarBottomSheet === 'function') {
+    cerrarBottomSheet(true);
   }
-  aplicarModoOscuro(enabled);
 
-  const transparencyEnabled = leerBoolLocalStorage(STORAGE_TRANSPARENCY_KEY, true);
-  if (toggleTransparency instanceof HTMLInputElement) {
-    toggleTransparency.checked = transparencyEnabled;
-    toggleTransparency.addEventListener('change', () => aplicarTransparencia(toggleTransparency.checked));
-  }
-  aplicarTransparencia(transparencyEnabled);
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') cerrarSidepanelConfiguracion();
+  const vistas = document.querySelectorAll('.app-view');
+  vistas.forEach((v) => {
+    if (v.id === vistaId) {
+      v.classList.add('active');
+    } else {
+      v.classList.remove('active');
+    }
   });
+
+  const tabs = document.querySelectorAll('.nav-tab');
+  tabs.forEach((tab) => {
+    if (tab.dataset.view === vistaId) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+
+  if (vistaId === 'view-map') {
+    const reajustar = () => {
+      if (!leafletMap) return;
+      if (typeof leafletMap.invalidateSize === 'function') {
+        leafletMap.invalidateSize({ animate: false });
+      }
+      if (window._activeMapCenter && Number.isFinite(window._activeMapCenter.lat) && Number.isFinite(window._activeMapCenter.lng)) {
+        leafletMap.setView(
+          [window._activeMapCenter.lat, window._activeMapCenter.lng],
+          window._activeMapCenter.zoom || (leafletMap && typeof leafletMap.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_CALLE),
+          { animate: false }
+        );
+      }
+    };
+    requestAnimationFrame(reajustar);
+    setTimeout(reajustar, 50);
+    setTimeout(reajustar, 150);
+    setTimeout(reajustar, 260);
+    setTimeout(() => { void actualizarHudParadaMasCercana(); }, 320);
+  } else {
+    document.getElementById('map-nearest-stop-hud')?.classList.remove('visible');
+    if (typeof limpiarRutaGpsActiva === 'function') limpiarRutaGpsActiva();
+    if (vistaId === 'view-guardados') {
+      renderSeccionGuardados();
+    } else if (vistaId === 'view-dashboard') {
+      renderHistorialDashboard();
+    }
+  }
+}
+
+function setupNavegacion() {
+  setupNearestStopHud();
+
+  const tabs = document.querySelectorAll('.nav-tab[data-view]');
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const targetView = tab.dataset.view;
+      if (targetView) cambiarVista(targetView);
+    });
+  });
+
+  const btnQuickMap = document.getElementById('btn-quick-map');
+  btnQuickMap?.addEventListener('click', () => {
+    cambiarVista('view-map');
+  });
+}
+
+let dashSearchTimeout = null;
+let dashSearchAbort = null;
+let dashSearchSeq = 0;
+
+function setupDashboardSearch() {
+  const input = document.getElementById('dash-search-input');
+  const clearBtn = document.getElementById('dash-search-clear');
+  const resultsDiv = document.getElementById('dash-search-results');
+  const clearHistoryBtn = document.getElementById('btn-clear-recent-searches');
+
+  clearHistoryBtn?.addEventListener('click', () => {
+    guardarHistorialBusqueda([]);
+    renderHistorialDashboard();
+  });
+
+  clearBtn?.addEventListener('click', () => {
+    if (input) input.value = '';
+    clearBtn.style.display = 'none';
+    if (resultsDiv) {
+      resultsDiv.style.display = 'none';
+      resultsDiv.innerHTML = '';
+    }
+  });
+
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+    const val = input.value.trim();
+    if (clearBtn) clearBtn.style.display = val ? 'flex' : 'none';
+
+    if (dashSearchTimeout) clearTimeout(dashSearchTimeout);
+
+    if (!val) {
+      if (resultsDiv) {
+        resultsDiv.style.display = 'none';
+        resultsDiv.innerHTML = '';
+      }
+      return;
+    }
+
+    if (val.length < 2) {
+      if (resultsDiv) {
+        resultsDiv.style.display = 'flex';
+        resultsDiv.innerHTML = '<p class="search-results-hint">Escribe al menos 2 letras</p>';
+      }
+      return;
+    }
+
+    if (resultsDiv) {
+      resultsDiv.style.display = 'flex';
+      resultsDiv.innerHTML = '<p class="search-results-loading">Buscando líneas y calles...</p>';
+    }
+
+    dashSearchTimeout = setTimeout(() => {
+      ejecutarBusquedaDashboard(val);
+    }, 250);
+  });
+}
+
+async function ejecutarBusquedaDashboard(query) {
+  const resultsDiv = document.getElementById('dash-search-results');
+  if (!resultsDiv) return;
+
+  if (dashSearchAbort) {
+    try { dashSearchAbort.abort(); } catch { /* noop */ }
+  }
+  dashSearchAbort = new AbortController();
+  const mySeq = ++dashSearchSeq;
+
+  try {
+    const [lineas, calles] = await Promise.all([
+      buscarLineasLocales(query),
+      buscarCallesEnSanJuan(query, dashSearchAbort.signal),
+    ]);
+
+    if (mySeq !== dashSearchSeq) return;
+
+    const resultados = pareceBusquedaLinea(query)
+      ? [
+        ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
+        ...calles,
+      ]
+      : [
+        ...calles,
+        ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
+      ];
+
+    if (!resultados.length) {
+      resultsDiv.innerHTML = '<p class="search-results-hint">No se encontraron resultados en San Juan</p>';
+      return;
+    }
+
+    resultsDiv.innerHTML = '';
+    for (const item of resultados) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'search-unified-item';
+
+      if (item.tipoResultado === 'linea') {
+        const ref = String(item.ref || '').trim();
+        const name = String(item.name || '').trim();
+        const c = getColorForLinea(ref);
+        const tc = getTextColorForBg(c);
+
+        btn.innerHTML = `
+          <div class="search-unified-item-main">
+            <span class="search-unified-item-title">${name || `Línea ${ref}`}</span>
+            <span class="search-unified-item-sub">Línea RedTulum</span>
+          </div>
+          <span class="search-badge-line" style="background-color: ${c}; color: ${tc};">${ref}</span>
+        `;
+
+        btn.addEventListener('click', () => {
+          agregarAHistorialBusqueda({ tipo: 'linea', ref, name });
+          resultsDiv.style.display = 'none';
+          const inp = document.getElementById('dash-search-input');
+          if (inp) inp.value = '';
+          const clr = document.getElementById('dash-search-clear');
+          if (clr) clr.style.display = 'none';
+          cambiarVista('view-map');
+          void mostrarRecorridoDeLinea(ref, name);
+        });
+      } else {
+        const nombre = String(item.nombre || item.display_name || 'Lugar').trim();
+        const lat = Number(item.lat);
+        const lng = Number(item.lng || item.lon);
+
+        btn.innerHTML = `
+          <div class="search-unified-item-main">
+            <span class="search-unified-item-title">${nombre}</span>
+            <span class="search-unified-item-sub">Calle / Ubicación</span>
+          </div>
+          <span style="color: #71717a; font-size: 14px;">📍</span>
+        `;
+
+        btn.addEventListener('click', () => {
+          agregarAHistorialBusqueda({ tipo: 'calle', nombre, lat, lng });
+          resultsDiv.style.display = 'none';
+          const inp = document.getElementById('dash-search-input');
+          if (inp) inp.value = '';
+          const clr = document.getElementById('dash-search-clear');
+          if (clr) clr.style.display = 'none';
+          cambiarVista('view-map');
+          centrarEnLugar(lat, lng, nombre);
+        });
+      }
+
+      resultsDiv.appendChild(btn);
+    }
+  } catch (error) {
+    if (error && error.name === 'AbortError') return;
+    console.error('Error en búsqueda dashboard:', error);
+    resultsDiv.innerHTML = '<p class="search-results-error">Error al buscar. Intenta de nuevo.</p>';
+  }
+}
+
+function renderHistorialDashboard() {
+  const container = document.getElementById('recent-searches-list');
+  if (!container) return;
+
+  const historial = obtenerHistorialBusqueda().filter(Boolean);
+  if (!historial.length) {
+    container.innerHTML = '<p class="recent-empty-hint">No hay búsquedas recientes</p>';
+    return;
+  }
+
+  container.innerHTML = '';
+  historial.forEach((item, index) => {
+    const row = document.createElement('div');
+    row.className = 'recent-item-btn';
+
+    const tipo = String(item.tipo || '').toLowerCase();
+    let icon = '📍';
+    let label = item.nombre || 'Ubicación';
+
+    if (tipo === 'linea') {
+      icon = '🚌';
+      label = item.name || `Línea ${item.ref}`;
+    }
+
+    row.innerHTML = `
+      <div class="recent-item-content">
+        <span>${icon}</span>
+        <span class="recent-item-text">${label}</span>
+      </div>
+      <button type="button" class="recent-delete-btn" aria-label="Eliminar de historial" title="Eliminar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    `;
+
+    const contentDiv = row.querySelector('.recent-item-content');
+    contentDiv?.addEventListener('click', () => {
+      cambiarVista('view-map');
+      if (tipo === 'linea') {
+        void mostrarRecorridoDeLinea(item.ref, item.name);
+      } else if (Number.isFinite(item.lat) && Number.isFinite(item.lng)) {
+        centrarEnLugar(item.lat, item.lng, item.nombre);
+      }
+    });
+
+    const delBtn = row.querySelector('.recent-delete-btn');
+    delBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const next = obtenerHistorialBusqueda().filter((_, i) => i !== index);
+      guardarHistorialBusqueda(next);
+      renderHistorialDashboard();
+    });
+
+    container.appendChild(row);
+  });
+}
+
+let favFiltroActual = 'all';
+
+function renderSeccionGuardados() {
+  const container = document.getElementById('guardados-list-container');
+  if (!container) return;
+
+  const lineas = obtenerLineasFavs();
+  const paradas = obtenerParadasFavs();
+  const lugares = obtenerLugaresFavs();
+
+  const total = lineas.length + paradas.length + lugares.length;
+  if (total === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 16px; color: #71717a;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px; opacity: 0.5;"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
+        <p style="font-size: 16px; font-weight: 600; color: #f4f4f6; margin-bottom: 6px;">Aún no tienes elementos guardados</p>
+        <p style="font-size: 14px; margin: 0;">Usa el buscador superior para buscar y guardar tus líneas o paradas favoritas.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = '';
+
+  if (favFiltroActual === 'all' || favFiltroActual === 'lineas') {
+    if (lineas.length > 0) {
+      const header = document.createElement('h3');
+      header.style.cssText = 'font-size: 13px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 4px 6px 4px;';
+      header.textContent = 'Líneas favoritas';
+      container.appendChild(header);
+
+      lineas.forEach((linea) => {
+        const ref = String(linea.ref || linea.linea || '').trim();
+        const name = String(linea.name || linea.nombre || `Línea ${ref}`).trim();
+        const c = getColorForLinea(ref);
+        const tc = getTextColorForBg(c);
+
+        const card = document.createElement('div');
+        card.className = 'fav-card-item';
+        card.innerHTML = `
+          <div class="fav-card-info">
+            <span class="search-badge-line" style="background-color: ${c}; color: ${tc};">${ref}</span>
+            <div class="fav-card-texts">
+              <span class="fav-card-title">${name}</span>
+              <span class="fav-card-sub">Línea RedTulum</span>
+            </div>
+          </div>
+          <div class="fav-card-actions">
+            <button type="button" class="btn-fav-action btn-fav-map">Ver mapa</button>
+            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar">✕</button>
+          </div>
+        `;
+
+        card.querySelector('.btn-fav-map')?.addEventListener('click', () => {
+          cambiarVista('view-map');
+          void mostrarRecorridoDeLinea(ref, name);
+        });
+
+        card.querySelector('.btn-fav-remove')?.addEventListener('click', () => {
+          const next = obtenerLineasFavs().filter((l) => (l.ref || l.linea) !== ref);
+          guardarLineasFavs(next);
+          renderSeccionGuardados();
+        });
+
+        container.appendChild(card);
+      });
+    }
+  }
+
+  if (favFiltroActual === 'all' || favFiltroActual === 'paradas') {
+    if (paradas.length > 0) {
+      const header = document.createElement('h3');
+      header.style.cssText = 'font-size: 13px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 4px 6px 4px;';
+      header.textContent = 'Paradas favoritas';
+      container.appendChild(header);
+
+      paradas.forEach((parada) => {
+        const paradaId = parada.id;
+        const nombre = parada.nombre || `Parada #${paradaId}`;
+        const lat = parada.lat;
+        const lng = parada.lng;
+
+        const card = document.createElement('div');
+        card.className = 'fav-card-item';
+        card.innerHTML = `
+          <div class="fav-card-info">
+            <span style="font-size: 20px;">📍</span>
+            <div class="fav-card-texts">
+              <span class="fav-card-title">${nombre}</span>
+              <span class="fav-card-sub">Parada</span>
+            </div>
+          </div>
+          <div class="fav-card-actions">
+            <button type="button" class="btn-fav-action btn-fav-map">Ver mapa</button>
+            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar">✕</button>
+          </div>
+        `;
+
+        card.querySelector('.btn-fav-map')?.addEventListener('click', () => {
+          cambiarVista('view-map');
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            centrarEnCoordenadas(lat, lng, ZOOM_CALLE);
+            if (paradaId && typeof consultarParadaPorId === 'function') {
+              void consultarParadaPorId(paradaId);
+            }
+          }
+        });
+
+        card.querySelector('.btn-fav-remove')?.addEventListener('click', () => {
+          const next = obtenerParadasFavs().filter((p) => p.id !== paradaId);
+          guardarParadasFavs(next);
+          renderSeccionGuardados();
+        });
+
+        container.appendChild(card);
+      });
+    }
+  }
+
+  if (favFiltroActual === 'all' || favFiltroActual === 'lugares') {
+    if (lugares.length > 0) {
+      const header = document.createElement('h3');
+      header.style.cssText = 'font-size: 13px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 4px 6px 4px;';
+      header.textContent = 'Lugares guardados';
+      container.appendChild(header);
+
+      lugares.forEach((lugar) => {
+        const nombre = lugar.nombre || 'Lugar guardado';
+        const lat = lugar.lat;
+        const lng = lugar.lng;
+
+        const card = document.createElement('div');
+        card.className = 'fav-card-item';
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+          <div class="fav-card-info">
+            <span style="font-size: 20px;">📌</span>
+            <div class="fav-card-texts">
+              <span class="fav-card-title">${escapeHtml(nombre)}</span>
+              <span class="fav-card-sub">Ubicación guardada</span>
+            </div>
+          </div>
+          <div class="fav-card-actions">
+            <button type="button" class="btn-fav-action btn-fav-map">Ver mapa</button>
+            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar">✕</button>
+          </div>
+        `;
+
+        const irAlLugar = () => {
+          if (Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
+            void centrarEnLugarGuardado({ nombre, lat: Number(lat), lng: Number(lng) });
+          }
+        };
+
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-fav-remove')) return;
+          irAlLugar();
+        });
+
+        card.querySelector('.btn-fav-remove')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const next = obtenerLugaresFavs().filter((l) => l.nombre !== nombre);
+          guardarLugaresFavs(next);
+          renderSeccionGuardados();
+        });
+
+        container.appendChild(card);
+      });
+    }
+  }
+}
+
+let favSearchTimeout = null;
+
+function setupGuardadosSearch() {
+  const input = document.getElementById('fav-search-input');
+  const clearBtn = document.getElementById('fav-search-clear');
+  const resultsDiv = document.getElementById('fav-search-results');
+
+  const filterBtns = document.querySelectorAll('.guardados-filter-btn');
+  filterBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      favFiltroActual = btn.dataset.filter || 'all';
+      renderSeccionGuardados();
+    });
+  });
+
+  clearBtn?.addEventListener('click', () => {
+    if (input) input.value = '';
+    clearBtn.style.display = 'none';
+    if (resultsDiv) {
+      resultsDiv.style.display = 'none';
+      resultsDiv.innerHTML = '';
+    }
+  });
+
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+    const val = input.value.trim();
+    if (clearBtn) clearBtn.style.display = val ? 'flex' : 'none';
+
+    if (favSearchTimeout) clearTimeout(favSearchTimeout);
+
+    if (!val) {
+      if (resultsDiv) {
+        resultsDiv.style.display = 'none';
+        resultsDiv.innerHTML = '';
+      }
+      return;
+    }
+
+    if (val.length < 2) {
+      if (resultsDiv) {
+        resultsDiv.style.display = 'flex';
+        resultsDiv.innerHTML = '<p class="search-results-hint">Escribe al menos 2 letras para buscar</p>';
+      }
+      return;
+    }
+
+    if (resultsDiv) {
+      resultsDiv.style.display = 'flex';
+      resultsDiv.innerHTML = '<p class="search-results-loading">Buscando líneas y paradas...</p>';
+    }
+
+    favSearchTimeout = setTimeout(() => {
+      ejecutarBusquedaParaGuardar(val);
+    }, 250);
+  });
+}
+
+async function ejecutarBusquedaParaGuardar(query) {
+  const resultsDiv = document.getElementById('fav-search-results');
+  if (!resultsDiv) return;
+
+  try {
+    const lineas = await buscarLineasLocales(query);
+
+    const queryNorm = normalizarTextoBusqueda(query);
+    const paradasMatch = (typeof todasLasParadas !== 'undefined' && Array.isArray(todasLasParadas))
+      ? todasLasParadas
+        .filter((p) => normalizarTextoBusqueda(p.nombre || p.name || '').includes(queryNorm))
+        .slice(0, 10)
+      : [];
+
+    const totalRes = lineas.length + paradasMatch.length;
+    if (totalRes === 0) {
+      resultsDiv.innerHTML = '<p class="search-results-hint">No se encontraron líneas ni paradas</p>';
+      return;
+    }
+
+    resultsDiv.innerHTML = '';
+
+    lineas.forEach((l) => {
+      const ref = String(l.ref || '').trim();
+      const name = String(l.name || '').trim();
+      const c = getColorForLinea(ref);
+      const tc = getTextColorForBg(c);
+
+      const item = document.createElement('div');
+      item.className = 'search-unified-item';
+      item.innerHTML = `
+        <div class="search-unified-item-main">
+          <span class="search-unified-item-title">${name || `Línea ${ref}`}</span>
+          <span class="search-unified-item-sub">Línea RedTulum</span>
+        </div>
+        <button type="button" class="search-badge-add">+ Guardar</button>
+      `;
+
+      item.querySelector('.search-badge-add')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const favs = obtenerLineasFavs();
+        if (!favs.some((x) => (x.ref || x.linea) === ref)) {
+          favs.unshift({ ref, name });
+          guardarLineasFavs(favs);
+          renderSeccionGuardados();
+          e.target.textContent = '✓ Guardado';
+          e.target.style.background = 'rgba(34, 197, 94, 0.2)';
+          e.target.style.color = '#4ade80';
+        } else {
+          e.target.textContent = 'Ya guardada';
+        }
+      });
+
+      resultsDiv.appendChild(item);
+    });
+
+    paradasMatch.forEach((p) => {
+      const pId = p.id;
+      const pNom = p.nombre || p.name || `Parada #${pId}`;
+      const lat = p.lat;
+      const lng = p.lng || p.lon;
+
+      const item = document.createElement('div');
+      item.className = 'search-unified-item';
+      item.innerHTML = `
+        <div class="search-unified-item-main">
+          <span class="search-unified-item-title">${pNom}</span>
+          <span class="search-unified-item-sub">Parada</span>
+        </div>
+        <button type="button" class="search-badge-add">+ Guardar</button>
+      `;
+
+      item.querySelector('.search-badge-add')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const favs = obtenerParadasFavs();
+        if (!favs.some((x) => x.id === pId)) {
+          favs.unshift({ id: pId, nombre: pNom, lat, lng });
+          guardarParadasFavs(favs);
+          renderSeccionGuardados();
+          e.target.textContent = '✓ Guardado';
+          e.target.style.background = 'rgba(34, 197, 94, 0.2)';
+          e.target.style.color = '#4ade80';
+        } else {
+          e.target.textContent = 'Ya guardada';
+        }
+      });
+
+      resultsDiv.appendChild(item);
+    });
+
+  } catch (err) {
+    console.error('Error al buscar para guardar:', err);
+    resultsDiv.innerHTML = '<p class="search-results-error">Error al buscar.</p>';
+  }
 }
 
 function obtenerLineasFavs() {
@@ -1381,6 +2111,7 @@ function obtenerLineasFavs() {
 
 function guardarLineasFavs(arr) {
   guardarJsonLocalStorage(STORAGE_LINEAS_FAVS_KEY, arr);
+  if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
 }
 
 function obtenerParadasFavs() {
@@ -1390,6 +2121,7 @@ function obtenerParadasFavs() {
 
 function guardarParadasFavs(arr) {
   guardarJsonLocalStorage(STORAGE_PARADAS_FAVS_KEY, arr);
+  if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
 }
 
 function renderLineasFavs() {
@@ -1589,11 +2321,33 @@ if (bsContent) {
     const btnGuardarLugar = target.closest('button[data-save-lugar="1"][data-lugar-nombre][data-lat][data-lng]');
     if (btnGuardarLugar instanceof HTMLButtonElement) {
       ev.stopPropagation();
-      const nombre = btnGuardarLugar.dataset.lugarNombre || '';
+      const inputCustom = document.getElementById('input-nombre-lugar');
+      const nombre = (inputCustom?.value || '').trim() || btnGuardarLugar.dataset.lugarNombre || 'Lugar guardado';
       const lat = Number(btnGuardarLugar.dataset.lat);
       const lng = Number(btnGuardarLugar.dataset.lng);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
       guardarUbicacionActualDesdeBottomSheet(nombre, lat, lng);
+      return;
+    }
+
+    const btnGuardarLinea = target.closest('button[data-save-linea="1"][data-linea-ref]');
+    if (btnGuardarLinea instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const inputCustom = document.getElementById('input-nombre-linea');
+      const ref = btnGuardarLinea.dataset.lineaRef || '';
+      const defaultName = btnGuardarLinea.dataset.lineaName || '';
+      const customName = (inputCustom?.value || '').trim() || defaultName || `Línea ${ref}`;
+      guardarLineaActualDesdeBottomSheet(ref, customName);
+      return;
+    }
+
+    const btnGuardarParada = target.closest('button[data-save-parada="1"][data-parada-id]');
+    if (btnGuardarParada instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const inputCustom = document.getElementById('input-nombre-parada');
+      const feature = window._currentFeature || null;
+      const customName = (inputCustom?.value || '').trim();
+      guardarParadaActualDesdeBottomSheet(feature, customName);
       return;
     }
 
@@ -1697,28 +2451,34 @@ if (bsContent) {
 async function centrarEnLugarGuardado({ nombre, lat, lng }) {
   const latNum = typeof lat === 'number' ? lat : Number(lat);
   const lngNum = typeof lng === 'number' ? lng : Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return;
+
+  cambiarVista('view-map');
 
   if (!leafletMap) {
-    if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-      cargarLF({ lat: latNum, lng: lngNum }, ZOOM_CALLE);
-    }
+    cargarLF({ lat: latNum, lng: lngNum }, ZOOM_CALLE);
   }
   if (!leafletMap || typeof L === 'undefined') return;
 
   limpiarRecorrido();
 
-  const layerSel = asegurarSeleccionParadaLayer();
-  layerSel?.clearLayers();
+  const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
+  const zoomTarget = Number.isFinite(z) ? Math.min(z, 18) : ZOOM_CALLE;
+  window._activeMapCenter = { lat: latNum, lng: lngNum, zoom: zoomTarget };
 
-  if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-    // Para lugares guardados: mostrar el mismo "punto" que el long-press (sin pin ni texto)
+  const layerSel = asegurarSeleccionParadaLayer();
+  if (layerSel) {
+    layerSel.clearLayers();
     L.circleMarker(
       [latNum, lngNum],
       { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 },
     ).addTo(layerSel);
-    const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
-    leafletMap.setView([latNum, lngNum], Number.isFinite(z) ? z : ZOOM_CALLE);
   }
+
+  centrarMapaEnPunto(latNum, lngNum, zoomTarget);
+
+  // Abrir panel con la información del lugar guardado
+  abrirBottomSheetLugarGuardado(nombre, latNum, lngNum, null);
 
   try {
     const puntos = await cargarParadasPuntos();
@@ -1735,7 +2495,7 @@ async function centrarEnLugarGuardado({ nombre, lat, lng }) {
     }
 
     if (paradaCercana?.feature) {
-      mostrarLineasEnContenedorParadas(paradaCercana.feature);
+      abrirBottomSheetLugarGuardado(nombre, latNum, lngNum, paradaCercana);
     }
   } catch {
     // noop
@@ -1766,7 +2526,15 @@ function renderParadasFavs() {
     item.dataset.paradaId = id;
     if (lat !== null) item.dataset.lat = String(lat);
     if (lng !== null) item.dataset.lng = String(lng);
-    item.textContent = label;
+    item.innerHTML = `
+      <span class="fav-parada-icon-badge">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </span>
+      <span class="fav-parada-label">${escapeHtml(label)}</span>
+    `;
 
     const btnEliminar = document.createElement('button');
     btnEliminar.type = 'button';
@@ -1872,31 +2640,214 @@ function obtenerEtiquetaParada(feature) {
   return 'Parada';
 }
 
-function renderListaParadasRecorrido({ mostrarTodas = false } = {}) {
+function toggleTransitTimeline(btn) {
+  const container = btn?.closest('.transit-timeline-track');
+  const list = container?.querySelector('.transit-intermediate-stops');
+  const icon = btn?.querySelector('.transit-accordion-icon');
+  if (!list) return;
+
+  const isCollapsed = list.classList.contains('collapsed');
+  if (isCollapsed) {
+    list.classList.remove('collapsed');
+    btn.setAttribute('aria-expanded', 'true');
+    if (icon) icon.style.transform = 'rotate(0deg)';
+  } else {
+    list.classList.add('collapsed');
+    btn.setAttribute('aria-expanded', 'false');
+    if (icon) icon.style.transform = 'rotate(180deg)';
+  }
+}
+
+function renderListaParadasRecorrido({ mostrarTodas = true } = {}) {
   if (!Array.isArray(paradasRecorrido) || paradasRecorrido.length === 0) return '';
 
   const total = paradasRecorrido.length;
-  const listaParadas = mostrarTodas
-    ? paradasRecorrido
-    : paradasRecorrido.slice(0, MAX_PARADAS_RECORRIDO);
+  const ref = recorridoActivo?.ref || window._currentLineaRef || '';
+  const name = recorridoActivo?.name || window._currentLineaName || '';
+  const lineColor = getColorForLinea(ref) || '#ef4444';
+  const textColor = getTextColorForBg(lineColor);
 
-  const items = listaParadas
-    .map((p, idx) => {
-      const paradaId = p.paradaId || obtenerIdParada(p.feature);
-      const calle = p?.feature?.properties?.['addr:street'];
-      const etiqueta = (typeof calle === 'string' && calle.trim()) ? calle.trim() : obtenerEtiquetaParada(p.feature);
-      return `<li><button type="button" class="btn-recorrido-parada" data-parada-id="${escapeHtml(paradaId)}">${escapeHtml(etiqueta)}</button></li>`;
-    })
-    .join('');
+  const getStopName = (p, idx) => {
+    const calle = p?.feature?.properties?.['addr:street'];
+    if (typeof calle === 'string' && calle.trim()) return calle.trim();
+    const et = obtenerEtiquetaParada(p?.feature);
+    if (et && et !== 'Parada') return et;
+    const n = p?.feature?.properties?.name;
+    if (typeof n === 'string' && n.trim()) return n.trim();
+    return `Parada ${idx + 1}`;
+  };
 
-  const indice = `
-    <div class="recorrido-indice">
-      <span class="recorrido-indice-left">Paradas del recorrido</span>
-      <span class="recorrido-indice-right">${total} paradas</span>
+  const getStopId = (p) => p.paradaId || obtenerIdParada(p.feature) || '';
+
+  const badgeText = formatBadgeLinea(ref) || '1';
+
+  if (total === 1) {
+    const p = paradasRecorrido[0];
+    const pId = getStopId(p);
+    const pName = getStopName(p, 0);
+    return `
+      <div class="transit-timeline-container" style="--line-color: ${lineColor};">
+        <div class="transit-timeline-track">
+          <div class="transit-faint-dot"></div>
+          <div class="transit-row transit-row-origin">
+            <div class="transit-badge-col">
+              <span class="transit-line-pill-badge" style="background-color: ${lineColor}; color: ${textColor};">${escapeHtml(badgeText)}</span>
+            </div>
+            <div class="transit-rail-col">
+              <div class="transit-tube-seg" style="top: 14px; border-radius: 9999px;">
+                <span class="transit-dot"></span>
+              </div>
+            </div>
+            <button type="button" class="transit-stop-btn btn-recorrido-parada" data-parada-id="${escapeHtml(pId)}">
+              <span class="transit-stop-icon-badge">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </span>
+              <div class="transit-stop-info">
+                <span class="transit-stop-name transit-stop-name-primary">${escapeHtml(pName)}</span>
+                <span class="transit-stop-meta">Cabecera / Única parada</span>
+              </div>
+            </button>
+          </div>
+          <div class="transit-faint-dot"></div>
+          <div class="transit-faint-dot"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  const firstStop = paradasRecorrido[0];
+  const lastStop = paradasRecorrido[total - 1];
+  const intermediateStops = paradasRecorrido.slice(1, total - 1);
+  const intermediateCount = intermediateStops.length;
+
+  const firstId = getStopId(firstStop);
+  const firstName = getStopName(firstStop, 0);
+
+  const lastId = getStopId(lastStop);
+  const lastName = getStopName(lastStop, total - 1);
+
+  const destinoText = lastName ? `➔ ${lastName}` : '➔ Recorrido';
+
+  let intermediateHtml = '';
+  if (intermediateCount > 0) {
+    const rowsHtml = intermediateStops.map((p, idx) => {
+      const pId = getStopId(p);
+      const pName = getStopName(p, idx + 1);
+      return `
+        <div class="transit-row transit-row-intermediate">
+          <div class="transit-badge-col"></div>
+          <div class="transit-rail-col">
+            <div class="transit-tube-seg">
+              <span class="transit-dot"></span>
+            </div>
+          </div>
+          <button type="button" class="transit-stop-btn btn-recorrido-parada" data-parada-id="${escapeHtml(pId)}">
+            <span class="transit-stop-icon-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </span>
+            <div class="transit-stop-info">
+              <span class="transit-stop-name">${escapeHtml(pName)}</span>
+            </div>
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    intermediateHtml = `
+      <div class="transit-row transit-accordion-row">
+        <div class="transit-badge-col"></div>
+        <div class="transit-rail-col">
+          <div class="transit-tube-seg">
+            <span class="transit-dot"></span>
+          </div>
+        </div>
+        <button type="button" class="transit-accordion-btn" onclick="toggleTransitTimeline(this)" aria-expanded="true">
+          <div class="transit-accordion-left">
+            <span class="transit-accordion-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 14 4-4 4 4"/></svg>
+            </span>
+            <span class="transit-accordion-label">${intermediateCount} paradas en el trayecto</span>
+          </div>
+        </button>
+      </div>
+      <div class="transit-intermediate-stops" id="transit-intermediate-list">
+        ${rowsHtml}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="transit-timeline-container" style="--line-color: ${lineColor};">
+      <div class="transit-timeline-track">
+        <!-- Punto tenue previo -->
+        <div class="transit-faint-dot"></div>
+
+        <!-- Primera Parada (Origen) -->
+        <div class="transit-row transit-row-origin">
+          <div class="transit-badge-col">
+            <span class="transit-line-pill-badge" style="background-color: ${lineColor}; color: ${textColor};">${escapeHtml(badgeText)}</span>
+          </div>
+          <div class="transit-rail-col">
+            <div class="transit-tube-seg">
+              <span class="transit-dot"></span>
+            </div>
+          </div>
+          <button type="button" class="transit-stop-btn btn-recorrido-parada" data-parada-id="${escapeHtml(firstId)}">
+            <span class="transit-stop-icon-badge">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </span>
+            <div class="transit-stop-info">
+              <span class="transit-stop-name transit-stop-name-primary">${escapeHtml(firstName)}</span>
+              <span class="transit-stop-meta">
+                ${escapeHtml(destinoText)}
+              </span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Paradas intermedias -->
+        ${intermediateHtml}
+
+        <!-- Última Parada (Destino) -->
+        <div class="transit-row transit-row-dest">
+          <div class="transit-badge-col"></div>
+          <div class="transit-rail-col">
+            <div class="transit-tube-seg">
+              <span class="transit-dot"></span>
+            </div>
+          </div>
+          <button type="button" class="transit-stop-btn btn-recorrido-parada" data-parada-id="${escapeHtml(lastId)}">
+            <span class="transit-stop-icon-badge">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </span>
+            <div class="transit-stop-info">
+              <span class="transit-stop-name transit-stop-name-primary">${escapeHtml(lastName)}</span>
+              <span class="transit-stop-meta">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+                Destino final
+              </span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Puntos tenues posteriores -->
+        <div class="transit-faint-dot"></div>
+        <div class="transit-faint-dot"></div>
+      </div>
     </div>
   `;
-
-  return `${indice}<ul class="recorrido-stops">${items}</ul>`;
 }
 
 function obtenerNombreParadaBase(feature) {
@@ -3056,7 +4007,7 @@ function obtenerLineasDetalleDesdeRelations(feature) {
 function asegurarRecorridoLayer() {
   if (!leafletMap || typeof L === 'undefined') return null;
   if (!recorridoLayer) {
-    recorridoLayer = L.layerGroup().addTo(leafletMap);
+    recorridoLayer = L.featureGroup().addTo(leafletMap);
   }
   return recorridoLayer;
 }
@@ -3074,10 +4025,12 @@ function limpiarRecorrido() {
   paradasRecorrido = null;
   paradasRecorridoMarkers = null;
   if (recorridoLayer) recorridoLayer.clearLayers();
+  if (typeof limpiarRutaGpsActiva === 'function') limpiarRutaGpsActiva();
 }
 
 function volverVistaGeneral() {
   limpiarRecorrido();
+  if (typeof limpiarRutaGpsActiva === 'function') limpiarRutaGpsActiva();
   if (seleccionParadaLayer) seleccionParadaLayer.clearLayers();
   void actualizarParadasSegunVista();
 }
@@ -3191,17 +4144,19 @@ function obtenerRutasDeLinea(geojson, refLinea) {
   });
 }
 
-function agregarLineaAFavoritos(linea) {
+function agregarLineaAFavoritos(linea, isFromCard = false) {
   const ref = typeof linea?.ref === 'string' ? linea.ref.trim() : '';
   const name = typeof linea?.name === 'string' ? linea.name.trim() : '';
   const key = ref || name;
   if (!key) return;
 
   const favs = obtenerLineasFavs();
-  const indice = favs.findIndex((f) => f?.ref === ref);
+  const indice = favs.findIndex((f) => (f?.ref && ref && f.ref === ref) || (f?.name && name && f.name === name));
 
-  if (indice !== -1) {
+  if (indice !== -1 && !isFromCard) {
     favs.splice(indice, 1);
+  } else if (indice !== -1 && isFromCard) {
+    favs[indice].name = name;
   } else {
     favs.push({ ref, name });
   }
@@ -3211,9 +4166,10 @@ function agregarLineaAFavoritos(linea) {
   actualizarEstadoBotonFavoritos();
 }
 
-function agregarParadaAFavoritos(feature) {
+function agregarParadaAFavoritos(feature, customLabel = '') {
   const id = obtenerIdParada(feature);
-  const label = obtenerEtiquetaParada(feature);
+  const defaultLabel = obtenerEtiquetaParada(feature);
+  const label = (typeof customLabel === 'string' && customLabel.trim()) ? customLabel.trim() : defaultLabel;
   if (!id) return;
 
   const coords = feature?.geometry?.coordinates;
@@ -3223,8 +4179,10 @@ function agregarParadaAFavoritos(feature) {
   const favs = obtenerParadasFavs();
   const indice = favs.findIndex((f) => f?.id === id);
 
-  if (indice !== -1) {
+  if (indice !== -1 && !customLabel) {
     favs.splice(indice, 1);
+  } else if (indice !== -1 && customLabel) {
+    favs[indice].label = label;
   } else {
     favs.push({
       id,
@@ -3239,6 +4197,163 @@ function agregarParadaAFavoritos(feature) {
   guardarParadasFavs(favs);
   renderParadasFavs();
   actualizarEstadoBotonFavoritos();
+}
+
+function calcularRumboGrados(lat1, lng1, lat2, lng2) {
+  const toRad = Math.PI / 180;
+  const dLng = (lng2 - lng1) * toRad;
+  const phi1 = lat1 * toRad;
+  const phi2 = lat2 * toRad;
+  const y = Math.sin(dLng) * Math.cos(phi2);
+  const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLng);
+  const brng = (Math.atan2(y, x) * 180) / Math.PI;
+  return (brng + 360) % 360;
+}
+
+function generarFlechasDireccionEnRuta(puntosLatLng, layerDestino) {
+  if (!Array.isArray(puntosLatLng) || puntosLatLng.length < 2 || !layerDestino) return;
+
+  const INTERVALO_METROS = 135;
+  const DISTANCIA_MIN_INICIO = 45;
+  let acumuladoDesdeUltima = INTERVALO_METROS - DISTANCIA_MIN_INICIO;
+  let flechasColocadas = 0;
+
+  for (let i = 0; i < puntosLatLng.length - 1; i++) {
+    const p1 = puntosLatLng[i];
+    const p2 = puntosLatLng[i + 1];
+    if (!p1 || !p2) continue;
+
+    const segDist = typeof calcularDistancia === 'function'
+      ? calcularDistancia(p1[0], p1[1], p2[0], p2[1])
+      : 0;
+    if (segDist <= 3) continue;
+
+    let distEnSeg = 0;
+    while (distEnSeg + (INTERVALO_METROS - acumuladoDesdeUltima) <= segDist) {
+      const avance = INTERVALO_METROS - acumuladoDesdeUltima;
+      distEnSeg += avance;
+      acumuladoDesdeUltima = 0;
+
+      const ratio = distEnSeg / segDist;
+      const latFlecha = p1[0] + (p2[0] - p1[0]) * ratio;
+      const lngFlecha = p1[1] + (p2[1] - p1[1]) * ratio;
+      const rumbo = Math.round(calcularRumboGrados(p1[0], p1[1], p2[0], p2[1]));
+
+      const arrowIcon = L.divIcon({
+        className: 'route-direction-arrow-icon',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+        html: `<svg viewBox="0 0 16 16" width="14" height="14" style="display:block; transform: rotate(${rumbo}deg); transform-origin: 7px 7px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6)); pointer-events:none;">
+          <path d="M 8 2.5 L 13.5 13 L 8 10.3 L 2.5 13 Z" fill="#ffffff" stroke="rgba(0,0,0,0.4)" stroke-width="0.9" stroke-linejoin="round" />
+        </svg>`
+      });
+
+      L.marker([latFlecha, lngFlecha], {
+        icon: arrowIcon,
+        interactive: false,
+        keyboard: false
+      }).addTo(layerDestino);
+      flechasColocadas++;
+    }
+
+    acumuladoDesdeUltima += (segDist - distEnSeg);
+  }
+
+  if (flechasColocadas === 0 && puntosLatLng.length >= 2) {
+    const midIdx = Math.floor((puntosLatLng.length - 1) / 2);
+    const p1 = puntosLatLng[midIdx];
+    const p2 = puntosLatLng[midIdx + 1] || puntosLatLng[puntosLatLng.length - 1];
+    if (p1 && p2) {
+      const rumbo = Math.round(calcularRumboGrados(p1[0], p1[1], p2[0], p2[1]));
+      const latFlecha = (p1[0] + p2[0]) / 2;
+      const lngFlecha = (p1[1] + p2[1]) / 2;
+      const arrowIcon = L.divIcon({
+        className: 'route-direction-arrow-icon',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+        html: `<svg viewBox="0 0 16 16" width="14" height="14" style="display:block; transform: rotate(${rumbo}deg); transform-origin: 7px 7px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6)); pointer-events:none;">
+          <path d="M 8 2.5 L 13.5 13 L 8 10.3 L 2.5 13 Z" fill="#ffffff" stroke="rgba(0,0,0,0.4)" stroke-width="0.9" stroke-linejoin="round" />
+        </svg>`
+      });
+      L.marker([latFlecha, lngFlecha], {
+        icon: arrowIcon,
+        interactive: false,
+        keyboard: false
+      }).addTo(layerDestino);
+    }
+  }
+}
+
+function extraerSegmentosLineasDeFeature(feature) {
+  if (!feature) return [];
+  const geom = feature.geometry || feature;
+  if (!geom || !geom.coordinates) return [];
+
+  const type = geom.type;
+  const coords = geom.coordinates;
+  const segmentos = [];
+
+  const parsearPuntos = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((c) => {
+        if (!Array.isArray(c) || c.length < 2) return null;
+        const lng = Number(c[0]);
+        const lat = Number(c[1]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        return [lat, lng];
+      })
+      .filter(Boolean);
+  };
+
+  if (type === 'LineString') {
+    const pts = parsearPuntos(coords);
+    if (pts.length >= 2) segmentos.push(pts);
+  } else if (type === 'MultiLineString') {
+    for (const linea of coords) {
+      const pts = parsearPuntos(linea);
+      if (pts.length >= 2) segmentos.push(pts);
+    }
+  }
+
+  return segmentos;
+}
+
+function dibujarTrazoRecorridoConFlechas(layer, latLngs, colorLinea) {
+  if (!layer || !Array.isArray(latLngs) || latLngs.length < 2) return;
+
+  const color = colorLinea || '#ec4899';
+
+  // 1. Trazado exterior oscuro para dar alto contraste y relieve visual (~9.5px)
+  L.polyline(latLngs, {
+    color: 'rgba(0, 0, 0, 0.35)',
+    weight: 9.5,
+    opacity: 0.85,
+    lineCap: 'round',
+    lineJoin: 'round',
+    interactive: false
+  }).addTo(layer);
+
+  // 2. Trazo principal más grueso (~6.5px) con el color oficial de la línea
+  L.polyline(latLngs, {
+    color: color,
+    weight: 6.5,
+    opacity: 0.96,
+    lineCap: 'round',
+    lineJoin: 'round',
+    interactive: false
+  }).addTo(layer);
+
+  // 3. Flechas de orientación espaciadas a lo largo de la ruta
+  generarFlechasDireccionEnRuta(latLngs, layer);
+}
+
+function dibujarFeatureRecorridoConFlechas(layer, feature, colorLinea) {
+  if (!layer || !feature) return;
+  const segmentos = extraerSegmentosLineasDeFeature(feature);
+  for (const seg of segmentos) {
+    dibujarTrazoRecorridoConFlechas(layer, seg, colorLinea);
+  }
 }
 
 async function mostrarRecorridoDeLinea(ref, name = '') {
@@ -3276,9 +4391,7 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
 
   const lineColor = getColorForLinea(ref);
   for (const f of rutas) {
-    L.geoJSON(f, {
-      style: { color: lineColor, weight: 4, opacity: 0.95 }
-    }).addTo(layerRec);
+    dibujarFeatureRecorridoConFlechas(layerRec, f, lineColor);
   }
 
   await dibujarParadasDelRecorrido(relIds);
@@ -3298,7 +4411,7 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
   // Mostrar recorrido con paradas y botón de volver si venimos desde una parada
   const tituloLinea = ref ? `Línea ${escapeHtml(ref)}` : (name ? escapeHtml(name) : 'Línea');
   const listaParadasHtml = renderListaParadasRecorrido({ mostrarTodas: true });
-  
+
   const volverHtml = paradaOrigen
     ? '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>'
     : '';
@@ -3318,22 +4431,67 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
        </div>`
     : '';
 
+  const favsLineas = obtenerLineasFavs();
+  const esLineaFav = favsLineas.some((f) => (f?.ref && ref && f.ref === ref) || (typeof f === 'string' && f === ref));
+
+  const saveLineaHtml = `
+    <div class="save-location-sheet" id="save-linea-container" style="${esLineaFav ? 'display: none;' : ''}">
+      <p class="save-location-title">¿Guardar esta línea?</p>
+      <p class="save-location-description">
+        Podrás acceder rápidamente al recorrido y paradas desde tu sección de <strong>Guardados</strong>.
+      </p>
+      <div class="save-location-field">
+        <label for="input-nombre-linea" class="save-location-label">
+          Nombre o referencia
+        </label>
+        <input
+          id="input-nombre-linea"
+          type="text"
+          class="save-location-input"
+          value="${escapeHtml(name ? `Línea ${ref} - ${name}` : `Línea ${ref}`)}"
+          placeholder="Ej: Mi colectivo, Línea ${ref}..."
+          maxlength="60"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('button[data-save-linea=\\'1\\']')?.click();}"
+        />
+      </div>
+      <div class="save-location-buttonarea">
+        <button
+          type="button"
+          class="btn-save-location-primary"
+          data-save-linea="1"
+          data-linea-ref="${escapeHtml(String(ref))}"
+          data-linea-name="${escapeHtml(String(name || ''))}"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
+          </svg>
+          <span>Guardar en mis líneas</span>
+        </button>
+      </div>
+    </div>
+  `;
+
   const html = `
     ${volverHtml}
     ${infoArribosHtml}
+    ${saveLineaHtml}
     ${listaParadasHtml}
   `;
-  abrirBottomSheet(tituloLinea, html, 'linea');
+  abrirBottomSheet(tituloLinea, html, 'linea', esLineaFav ? 'Línea guardada' : '');
 }
 
-function mostrarLineasEnContenedorParadas(feature) {
+function mostrarLineasEnContenedorParadas(feature, opts = {}) {
   if (leafletMap && feature?.geometry?.coordinates) {
     const coords = feature.geometry.coordinates;
     if (Array.isArray(coords) && coords.length >= 2) {
       const lat = Number(coords[1]);
       const lng = Number(coords[0]);
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        leafletMap.panTo([lat, lng]);
+        const z = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
+        window._activeMapCenter = { lat, lng, zoom: z };
+        if (!opts?.gpsWalk) {
+          centrarMapaEnPunto(lat, lng, z);
+        }
       }
     }
   }
@@ -3346,29 +4504,78 @@ function mostrarLineasEnContenedorParadas(feature) {
 
   // Obtener nombre de la parada desde el feature
   const paradaNombre = feature?.properties?.name || feature?.properties?.['name:es'] || 'Parada desconocida';
+  window._currentFeature = feature;
+
+  const paradaId = obtenerIdParada(feature);
+  const paradasFavs = obtenerParadasFavs();
+  const esParadaFav = Array.isArray(paradasFavs) && paradasFavs.some((f) => f?.id === paradaId);
+
+  const saveParadaHtml = `
+    <div class="save-location-sheet" id="save-parada-container" style="${esParadaFav ? 'display: none;' : ''}">
+      <p class="save-location-title">¿Guardar esta parada?</p>
+      <p class="save-location-description">
+        Podrás acceder rápidamente a las líneas que pasan por aquí desde tu sección de <strong>Guardados</strong>.
+      </p>
+      <div class="save-location-field">
+        <label for="input-nombre-parada" class="save-location-label">
+          Nombre de la parada
+        </label>
+        <input
+          id="input-nombre-parada"
+          type="text"
+          class="save-location-input"
+          value="${escapeHtml(paradaNombre)}"
+          placeholder="Ej: Mi parada, Parada Facultad..."
+          maxlength="60"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('button[data-save-parada=\\'1\\']')?.click();}"
+        />
+      </div>
+      <div class="save-location-buttonarea">
+        <button
+          type="button"
+          class="btn-save-location-primary"
+          data-save-parada="1"
+          data-parada-id="${escapeHtml(String(paradaId))}"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
+          </svg>
+          <span>Guardar en mis paradas</span>
+        </button>
+      </div>
+    </div>
+  `;
 
   const itemsHtml = lineas
-    .map((l) => {
-      const ref = l.ref ? escapeHtml(l.ref) : (l.name ? escapeHtml(l.name) : 'Línea');
-      const name = l.name ? escapeHtml(l.name) : '';
-      const refAttr = escapeHtml(l.ref || '');
-      const nameAttr = escapeHtml(l.name || '');
-      const nameDisplay = name ? `<span class="linea-button-name">${name}</span>` : '';
-      const c = getColorForLinea(refAttr);
-      const tc = getTextColorForBg(c);
-      return `<li><button type="button" class="btn-linea" style="--line-color: ${c}; --line-text: ${tc};" data-linea-ref="${refAttr}" data-linea-name="${nameAttr}"><span class="linea-button-ref">${ref}</span>${nameDisplay}</button></li>`;
-    })
+    .map((l) => renderBotonLineaHtml({ ref: l.ref, name: l.name }))
     .join('');
 
   const listaParadasHtml = recorridoActivo ? renderListaParadasRecorrido() : '';
 
+  const gpsWalk = opts?.gpsWalk;
+
   const html = `
-    <ul class="lineas-list">${itemsHtml}</ul>
-    <div class="tsj-ad-slot" ${TSJ_ADS_PLACEHOLDER_ATTR}="${TSJ_ADS_TOKEN}"></div>
-    ${listaParadasHtml}
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 4px 0 16px 0;">
+      <ul class="bs-nav-rows">
+        <li>
+          <button type="button" class="btn-nav-row" onclick="iniciarPlaneoRutaHastaParadaSeleccionada(window._currentFeature || null)">
+            🎯 Planificar viaje hacia esta parada
+          </button>
+        </li>
+      </ul>
+
+      <div style="margin-top: 4px;">
+        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; color: #93c5fd;">Líneas que pasan por esta parada:</p>
+        <ul class="lineas-list">${itemsHtml}</ul>
+      </div>
+
+      ${saveParadaHtml}
+
+      <div class="tsj-ad-slot" ${TSJ_ADS_PLACEHOLDER_ATTR}="${TSJ_ADS_TOKEN}"></div>
+      ${listaParadasHtml}
+    </div>
   `;
-  window._currentFeature = feature;
-  abrirBottomSheet(escapeHtml(paradaNombre), html, 'parada');
+  abrirBottomSheet(escapeHtml(paradaNombre), html, 'parada', gpsWalk ? `A pie: ${gpsWalk.distTexto} (~${gpsWalk.minPie} min)` : (esParadaFav ? 'Parada guardada' : ''));
 }
 
 
@@ -3511,6 +4718,7 @@ function agendarActualizacionParadas() {
   actualizarParadasTimer = window.setTimeout(() => {
     actualizarParadasTimer = null;
     void actualizarParadasSegunVista();
+    void actualizarHudParadaMasCercana();
   }, EVENTO_PARADAS_DEBOUNCE_MS);
 }
 
@@ -3585,6 +4793,317 @@ async function dibujarParadasCercanas(userCoords) {
   }
 }
 
+let _nearestStopHudParada = null;
+let indicacionGpsLayer = null;
+
+function asegurarIndicacionGpsLayer() {
+  if (!leafletMap || typeof L === 'undefined') return null;
+  if (!indicacionGpsLayer) {
+    indicacionGpsLayer = L.layerGroup().addTo(leafletMap);
+  }
+  return indicacionGpsLayer;
+}
+
+function limpiarIndicacionGps() {
+  if (indicacionGpsLayer) {
+    indicacionGpsLayer.clearLayers();
+  }
+}
+
+function limpiarRutaGpsActiva() {
+  limpiarIndicacionGps();
+  const bar = document.getElementById('map-active-gps-route-bar');
+  if (bar) {
+    bar.classList.remove('visible');
+  }
+}
+
+function mostrarBarraRutaGpsActiva(distTexto, minPie, nombreParada) {
+  const bar = document.getElementById('map-active-gps-route-bar');
+  if (!bar) return;
+
+  const dtEl = document.getElementById('active-gps-dist-time');
+  const targetEl = document.getElementById('active-gps-target');
+
+  if (dtEl) dtEl.textContent = `${distTexto} • ~${minPie} min a pie`;
+  if (targetEl) targetEl.textContent = `Hacia ${nombreParada}`;
+
+  // Ocultar HUD normal de parada mientras la ruta activa esté en pantalla
+  const hud = document.getElementById('map-nearest-stop-hud');
+  if (hud) hud.classList.remove('visible');
+
+  bar.classList.add('visible');
+}
+
+function isHudParadaCercanaHabilitado() {
+  const val = localStorage.getItem('zondamov_hud_parada_cercana_enabled');
+  return val === null ? true : val === 'true';
+}
+
+function setHudParadaCercanaHabilitado(enabled) {
+  localStorage.setItem('zondamov_hud_parada_cercana_enabled', enabled ? 'true' : 'false');
+  const hud = document.getElementById('map-nearest-stop-hud');
+  if (!enabled) {
+    if (hud) hud.classList.remove('visible');
+    limpiarRutaGpsActiva();
+  } else {
+    void actualizarHudParadaMasCercana();
+  }
+}
+
+function setupPreferenciaHudParada() {
+  const toggle = document.getElementById('toggle-nearest-stop-hud');
+  if (!toggle) return;
+
+  toggle.checked = isHudParadaCercanaHabilitado();
+  toggle.onchange = () => {
+    setHudParadaCercanaHabilitado(toggle.checked);
+  };
+}
+
+async function actualizarHudParadaMasCercana() {
+  const hud = document.getElementById('map-nearest-stop-hud');
+  if (!hud) return;
+
+  // Si la barra de ruta GPS activa está visible, no mostrar el HUD de parada
+  const activeGpsBar = document.getElementById('map-active-gps-route-bar');
+  if (activeGpsBar?.classList.contains('visible')) {
+    hud.classList.remove('visible');
+    return;
+  }
+
+  if (!isHudParadaCercanaHabilitado()) {
+    hud.classList.remove('visible');
+    return;
+  }
+
+  const bs = document.getElementById('bottom-sheet');
+  const isBsActive = bs?.classList.contains('active');
+  const viewMap = document.getElementById('view-map');
+  const isMapActive = viewMap?.classList.contains('active');
+
+  // Solo mostrar en la vista del mapa cuando no hay panel de detalle abierto ni ruta activa
+  if (!isMapActive || isBsActive || (recorridoActivo && recorridoActivo.planned)) {
+    hud.classList.remove('visible');
+    return;
+  }
+
+  // Coordenadas de referencia: primero ubicación GPS, luego centro del mapa
+  let refLat = null;
+  let refLng = null;
+
+  if (ubicacion && Number.isFinite(ubicacion.lat) && Number.isFinite(ubicacion.lng)) {
+    refLat = Number(ubicacion.lat);
+    refLng = Number(ubicacion.lng);
+  } else if (leafletMap && typeof leafletMap.getCenter === 'function') {
+    const c = leafletMap.getCenter();
+    if (c && Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
+      refLat = Number(c.lat);
+      refLng = Number(c.lng);
+    }
+  }
+
+  if (!Number.isFinite(refLat) || !Number.isFinite(refLng)) {
+    hud.classList.remove('visible');
+    return;
+  }
+
+  const puntos = await cargarParadasPuntos();
+  if (!Array.isArray(puntos) || puntos.length === 0) {
+    hud.classList.remove('visible');
+    return;
+  }
+
+  let mejor = null;
+  let minDist = Infinity;
+
+  for (const p of puntos) {
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+    const d = calcularDistancia(refLat, refLng, p.lat, p.lng);
+    if (d < minDist) {
+      minDist = d;
+      mejor = p;
+    }
+  }
+
+  // Si no hay paradas o la más cercana está a más de 3000 metros, ocultar el HUD
+  if (!mejor || !mejor.feature || minDist > 3000) {
+    hud.classList.remove('visible');
+    return;
+  }
+
+  _nearestStopHudParada = mejor;
+
+  const nombreParada = mejor.feature.properties?.name || mejor.feature.properties?.['name:es'] || 'Parada cercana';
+  const minPie = Math.max(1, Math.round(minDist / 75));
+  const distTexto = minDist < 1000 ? `${Math.round(minDist)} m` : `${(minDist / 1000).toFixed(1)} km`;
+
+  const nameEl = document.getElementById('hud-stop-name');
+  const distEl = document.getElementById('hud-stop-dist');
+  const instrEl = document.getElementById('hud-stop-instruction');
+  const linesRow = document.getElementById('hud-lines-row');
+
+  if (nameEl) nameEl.textContent = nombreParada;
+  if (distEl) distEl.textContent = `${distTexto} • ~${minPie} min a pie`;
+  if (instrEl) {
+    instrEl.textContent = `Caminá hacia ${nombreParada} (~${minPie} min). Tocá acá para trazar la ruta GPS a pie en el mapa.`;
+  }
+
+  if (linesRow) {
+    const lineas = obtenerLineasDetalleDesdeRelations(mejor.feature);
+    if (lineas.length === 0) {
+      linesRow.innerHTML = '<span style="font-size: 11px; color: #94a3b8; font-weight: 500;">Parada sin líneas registradas</span>';
+    } else {
+      const maxShow = 6;
+      const shown = lineas.slice(0, maxShow);
+      const remaining = lineas.length - maxShow;
+
+      const pillsHtml = shown
+        .map((l) => {
+          const rawRef = String(l.ref || l.name || '').trim();
+          const cleanRef = formatBadgeLinea(rawRef);
+          const c = getColorForLinea(rawRef);
+          const tc = getTextColorForBg(c);
+          return `<span class="hud-line-pill" style="background-color: ${c}; color: ${tc};">${escapeHtml(cleanRef)}</span>`;
+        })
+        .join('');
+
+      const moreHtml = remaining > 0 ? `<span class="hud-line-more">+${remaining}</span>` : '';
+      linesRow.innerHTML = pillsHtml + moreHtml;
+    }
+  }
+
+  hud.style.display = '';
+  hud.classList.add('visible');
+}
+
+async function trazarRutaGpsAParadaCercana(paradaItem) {
+  if (!paradaItem || !paradaItem.feature) return;
+  const latD = Number(paradaItem.lat);
+  const lngD = Number(paradaItem.lng);
+  if (!Number.isFinite(latD) || !Number.isFinite(lngD)) return;
+
+  // Determinar origen
+  let latO = null;
+  let lngO = null;
+  if (ubicacion && Number.isFinite(ubicacion.lat) && Number.isFinite(ubicacion.lng)) {
+    latO = Number(ubicacion.lat);
+    lngO = Number(ubicacion.lng);
+  } else if (leafletMap && typeof leafletMap.getCenter === 'function') {
+    const c = leafletMap.getCenter();
+    if (c && Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
+      latO = Number(c.lat);
+      lngO = Number(c.lng);
+    }
+  }
+
+  if (!Number.isFinite(latO) || !Number.isFinite(lngO)) {
+    latO = latD;
+    lngO = lngD;
+  }
+
+  const layer = asegurarIndicacionGpsLayer();
+  if (layer) layer.clearLayers();
+
+  const distM = calcularDistancia(latO, lngO, latD, lngD);
+  const minPie = Math.max(1, Math.round(distM / 75));
+  const distTexto = distM < 1000 ? `${Math.round(distM)} m` : `${(distM / 1000).toFixed(1)} km`;
+
+  let coordsRuta = [[latO, lngO], [latD, lngD]];
+
+  // Intentar consultar ruta peatonal OSRM para seguir el trazado real de las calles
+  try {
+    const controller = new AbortController();
+    const toId = setTimeout(() => controller.abort(), 2500);
+    const osrmUrl = `https://router.project-osrm.org/route/v1/walking/${lngO},${latO};${lngD},${latD}?overview=full&geometries=geojson`;
+    const resp = await fetch(osrmUrl, { signal: controller.signal });
+    clearTimeout(toId);
+    if (resp.ok) {
+      const data = await resp.json();
+      const geom = data?.routes?.[0]?.geometry?.coordinates;
+      if (Array.isArray(geom) && geom.length >= 2) {
+        coordsRuta = geom.map((pt) => [pt[1], pt[0]]);
+      }
+    }
+  } catch {
+    // Fallback a línea directa
+  }
+
+  if (layer && typeof L !== 'undefined') {
+    // 1. Halo / resplandor GPS exterior
+    L.polyline(coordsRuta, {
+      color: '#1d4ed8',
+      weight: 9,
+      opacity: 0.45,
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(layer);
+
+    // 2. Línea punteada GPS interior
+    L.polyline(coordsRuta, {
+      color: '#38bdf8',
+      weight: 4.5,
+      opacity: 0.95,
+      dashArray: '8, 8',
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(layer);
+
+    // 3. Marcador pin destacado en la parada
+    const stopIcon = L.divIcon({
+      className: 'gps-stop-pin-icon',
+      html: `
+        <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(56, 189, 248, 0.35); animation: hudDotPulse 1.5s infinite ease-in-out;"></div>
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: #0284c7; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #ffffff;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+        </div>
+      `,
+      iconSize: [34, 34],
+      iconAnchor: [17, 17],
+    });
+
+    L.marker([latD, lngD], { icon: stopIcon }).addTo(layer);
+  }
+
+  // Centrar y encuadrar mapa
+  if (leafletMap) {
+    if (distM > 35) {
+      leafletMap.fitBounds([[latO, lngO], [latD, lngD]], {
+        paddingTopLeft: [40, 40],
+        paddingBottomRight: [40, 220],
+        maxZoom: 18,
+        animate: true,
+      });
+    } else {
+      centrarMapaEnPunto(latD, lngD, 18);
+    }
+  }
+
+  // Mostrar barra flotante achicada de ruta activa arriba del mapa
+  const nombreParada = paradaItem.feature?.properties?.name || paradaItem.feature?.properties?.['name:es'] || 'Parada cercana';
+  mostrarBarraRutaGpsActiva(distTexto, minPie, nombreParada);
+
+  // Desplegar panel con indicación GPS peatonal y las líneas
+  mostrarLineasEnContenedorParadas(paradaItem.feature, { gpsWalk: { distTexto, minPie } });
+}
+
+function setupNearestStopHud() {
+  const hud = document.getElementById('map-nearest-stop-hud');
+  if (!hud) return;
+
+  hud.onclick = (ev) => {
+    ev.stopPropagation();
+    if (!_nearestStopHudParada || !_nearestStopHudParada.feature) return;
+
+    void trazarRutaGpsAParadaCercana(_nearestStopHudParada);
+  };
+}
+
 
 function cargarLF(coords, zoomObjetivo = null) {
   if (typeof L === 'undefined') {
@@ -3654,18 +5173,26 @@ function setupLongPressGuardarUbicacionEnMapa() {
     if (nowMs - lastOpenMs < 650) return;
     lastOpenMs = nowMs;
 
+    cambiarVista('view-map');
+
+    const safeLat = Number(latlng.lat);
+    const safeLng = Number(latlng.lng);
+    const currentZoom = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
+
     try {
       const layerSel = asegurarSeleccionParadaLayer();
-      if (layerSel) {
+      if (layerSel && typeof L !== 'undefined') {
         layerSel.clearLayers();
-        L.circleMarker(latlng, { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+        L.circleMarker([safeLat, safeLng], { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
       }
     } catch {
       // noop
     }
 
+    centrarMapaEnPunto(safeLat, safeLng, currentZoom);
+
     const nombre = makeNombre();
-    abrirBottomSheetGuardarUbicacion(nombre, latlng.lat, latlng.lng, 'longpress');
+    abrirBottomSheetGuardarUbicacion(nombre, safeLat, safeLng, 'longpress');
   };
 
   const clear = () => {
@@ -3678,7 +5205,7 @@ function setupLongPressGuardarUbicacionEnMapa() {
   };
 
   const makeNombre = () => {
-    return generarNombreUbicacionGuardada();
+    return generarNombreUbicacionGuardada('punto');
   };
 
   const start = (e) => {
@@ -3759,6 +5286,7 @@ function obtenerLugaresFavs() {
 
 function guardarLugaresFavs(arr) {
   guardarJsonLocalStorage(STORAGE_LUGARES_FAVS_KEY, arr);
+  if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
 }
 
 function esMismoLugarGuardado(a, b) {
@@ -3921,14 +5449,17 @@ function cerrarModalBusqueda() {
     modal.classList.remove('active');
   }
   document.querySelector('.search-bar-container')?.classList.remove('is-open');
-  
+
   const input = document.getElementById('search-input');
   if (input) {
     input.value = '';
     input.blur();
   }
-  
-  document.getElementById('search-results').innerHTML = '<p class="search-results-hint">Escribe para buscar</p>';
+
+  const sResults = document.getElementById('search-results');
+  if (sResults) {
+    sResults.innerHTML = '<p class="search-results-hint">Escribe para buscar</p>';
+  }
 
   if (searchTimeout) {
     clearTimeout(searchTimeout);
@@ -4338,19 +5869,19 @@ if (searchInputEl) {
     const modal = document.getElementById('search-modal');
     if (!modal) return;
     if (!modal.classList.contains('active')) modal.classList.add('active');
-    
+
     const container = document.querySelector('.search-bar-container');
     if (container) {
       container.classList.add('is-open');
     }
-    
+
     posicionarModalBusqueda();
     if (!q) {
       renderHistorialBusqueda();
     } else if (q.length >= SEARCH_MIN_CHARS) {
       void buscarLugares(q);
     }
-    
+
     // Enfocar el input para habilitar la escritura inmediata
     if (document.activeElement !== searchInputEl) {
       searchInputEl.focus();
@@ -4483,19 +6014,60 @@ if (searchResultsEl) {
   });
 }
 
-function centrarEnLugar(lat, lng, nombreLugar) {
+async function centrarEnLugar(lat, lng, nombreLugar) {
+  const safeLat = Number(lat);
+  const safeLng = Number(lng);
+  if (!Number.isFinite(safeLat) || !Number.isFinite(safeLng)) return;
+
+  cambiarVista('view-map');
+
   if (!leafletMap) {
-    if (Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
-      cargarLF({ lat: Number(lat), lng: Number(lng) }, ZOOM_CALLE);
-    }
+    cargarLF({ lat: safeLat, lng: safeLng }, ZOOM_CALLE);
   }
   if (!leafletMap) return;
 
   cerrarModalBusqueda();
-  centrarEnCoordenadas(lat, lng, ZOOM_CALLE);
+  window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: ZOOM_CALLE };
 
-  // Abrir bottom-sheet para ofrecer guardar la ubicación
-  abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, 'search');
+  limpiarRecorrido();
+
+  const layerSel = asegurarSeleccionParadaLayer();
+  if (layerSel && typeof L !== 'undefined') {
+    layerSel.clearLayers();
+    L.circleMarker([safeLat, safeLng], {
+      radius: 7,
+      weight: 2,
+      color: '#007BFF',
+      fillColor: '#ffffff',
+      fillOpacity: 1,
+    }).addTo(layerSel);
+  }
+
+  centrarMapaEnPunto(safeLat, safeLng, ZOOM_CALLE);
+
+  // Abrir bottom-sheet con 'Cómo llegar', opción de guardar y anuncios
+  abrirBottomSheetGuardarUbicacion(nombreLugar, safeLat, safeLng, 'search', null);
+
+  // Buscar si hay una parada cercana para mostrar también sus líneas
+  try {
+    const puntos = await cargarParadasPuntos();
+    if (Array.isArray(puntos) && puntos.length > 0) {
+      let paradaCercana = null;
+      let distMin = Infinity;
+      for (const punto of puntos) {
+        const dist = calcularDistancia(safeLat, safeLng, punto.lat, punto.lng);
+        if (dist < distMin) {
+          distMin = dist;
+          paradaCercana = punto;
+        }
+      }
+      if (paradaCercana?.feature && distMin <= 1200) {
+        abrirBottomSheetGuardarUbicacion(nombreLugar, safeLat, safeLng, 'search', paradaCercana);
+      }
+    }
+  } catch (err) {
+    console.error('Error al buscar paradas cercanas para el lugar:', err);
+  }
 }
 
 function posicionarModalBusqueda() {
@@ -4533,9 +6105,7 @@ function centrarEnCoordenadas(lat, lng, zoom = ZOOM_CALLE) {
   const safeLng = Number(lng);
   if (!Number.isFinite(safeLat) || !Number.isFinite(safeLng)) return;
 
-  // Si había un recorrido dibujado, lo limpiamos antes de mover la vista.
-  limpiarRecorrido();
-  leafletMap.setView([safeLat, safeLng], zoom);
+  centrarMapaEnPunto(safeLat, safeLng, zoom);
 }
 
 function calcularDistancia(lat1, lng1, lat2, lng2) {
@@ -4888,7 +6458,7 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
 
       const tramo = latLngs.slice(iO, end + 1);
       if (tramo.length >= 2) {
-        L.polyline(tramo, { color: colorLinea, weight: 4, opacity: 0.95 }).addTo(layerRec);
+        dibujarTrazoRecorridoConFlechas(layerRec, tramo, colorLinea);
       }
     }
   }
@@ -5156,8 +6726,8 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
 
   const latLngs1 = calcularTramoRecortado(latO, lngO, tLat, tLng, tramo1.feature, tramo1.mejor);
   const latLngs2 = calcularTramoRecortado(tLat, tLng, dLat, dLng, tramo2.feature, tramo2.mejor);
-  if (Array.isArray(latLngs1) && latLngs1.length >= 2) L.polyline(latLngs1, { color: colorA, weight: 4, opacity: 0.95 }).addTo(layerRec);
-  if (Array.isArray(latLngs2) && latLngs2.length >= 2) L.polyline(latLngs2, { color: colorB, weight: 4, opacity: 0.95 }).addTo(layerRec);
+  if (Array.isArray(latLngs1) && latLngs1.length >= 2) dibujarTrazoRecorridoConFlechas(layerRec, latLngs1, colorA);
+  if (Array.isArray(latLngs2) && latLngs2.length >= 2) dibujarTrazoRecorridoConFlechas(layerRec, latLngs2, colorB);
 
   const relIds1 = obtenerRelIdsDeRutas([tramo1.feature]);
   const relIds2 = obtenerRelIdsDeRutas([tramo2.feature]);
@@ -5502,10 +7072,11 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
       const name = refToName.get(ref) || '';
       const refAttr = escapeHtml(ref);
       const nameAttr = escapeHtml(name);
-      const nameDisplay = name ? `<span class="linea-button-name">${escapeHtml(name)}</span>` : '';
-      const c = getColorForLinea(refAttr);
-      const tc = getTextColorForBg(c);
-      return `<li><button type="button" class="btn-linea" style="--line-color: ${c}; --line-text: ${tc};" data-route-line-ref="${refAttr}" data-route-line-name="${nameAttr}"><span class="linea-button-ref">${escapeHtml(ref)}</span>${nameDisplay}</button></li>`;
+      return renderBotonLineaHtml({
+        ref,
+        name,
+        extraAttrs: `data-route-line-ref="${refAttr}" data-route-line-name="${nameAttr}"`,
+      });
     })
     .join('');
 
@@ -5517,10 +7088,10 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
     .map((c) => {
       const labelRef = `${c.a} + ${c.b}`;
       const transferName = String(c.transfer.name || c.transfer.id || '').trim();
-      const nameDisplay = transferName ? `<span class="linea-button-name">Trasbordo: ${escapeHtml(transferName)}</span>` : '';
+      const nameDisplay = transferName ? `<span class="linea-button-name">Trasbordo en ${escapeHtml(transferName)}</span>` : '';
       const colorA = getColorForLinea(c.a);
       const tc = getTextColorForBg(colorA);
-      return `<li><button type="button" class="btn-linea" style="--line-color: ${colorA}; --line-text: ${tc};" data-route-combo="1" data-linea-a="${escapeHtml(c.a)}" data-linea-b="${escapeHtml(c.b)}" data-transfer-lat="${String(c.transfer.lat)}" data-transfer-lng="${String(c.transfer.lng)}" data-transfer-name="${escapeHtml(transferName)}"><span class="linea-button-ref">${escapeHtml(labelRef)}</span>${nameDisplay}</button></li>`;
+      return `<li><button type="button" class="btn-linea" style="--line-color: ${colorA}; --line-text: ${tc};" data-route-combo="1" data-linea-a="${escapeHtml(c.a)}" data-linea-b="${escapeHtml(c.b)}" data-transfer-lat="${String(c.transfer.lat)}" data-transfer-lng="${String(c.transfer.lng)}" data-transfer-name="${escapeHtml(transferName)}"><span class="linea-button-badge linea-badge-combo" style="background-color: ${colorA}; color: ${tc};">${escapeHtml(labelRef)}</span><div class="linea-rail-col"><div class="linea-tube-seg"><span class="linea-dot"></span></div></div><div class="linea-button-info"><span class="linea-button-ref">Línea ${escapeHtml(c.a)} → ${escapeHtml(c.b)}</span>${nameDisplay}</div><svg class="linea-button-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button></li>`;
     })
     .join('');
 
@@ -5677,5 +7248,3 @@ window.onload = async () => {
     console.error('Error al obtener la ubicación inicial:', error.message ?? error);
   }
 };
-
-document
