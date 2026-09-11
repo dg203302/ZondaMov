@@ -179,6 +179,82 @@ function obtenerIconoParadaLeaflet(colorHex = '#007BFF') {
   return icon;
 }
 
+let _marcadorDestacadoActivo = null;
+
+function crearIconoParadaDestacada(nombre = '') {
+  const safeNombre = typeof escapeHtml === 'function' ? escapeHtml(nombre) : nombre;
+  const tooltipHtml = safeNombre ? `<div class="map-highlight-tooltip-tag">${safeNombre}</div>` : '';
+  return L.divIcon({
+    className: 'map-highlight-marker-wrap',
+    iconSize: [46, 46],
+    iconAnchor: [23, 23],
+    popupAnchor: [0, -23],
+    html: `
+      <div class="map-highlight-marker">
+        <div class="map-highlight-beacon"></div>
+        <div class="map-highlight-pin" title="${safeNombre || 'Parada'}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        ${tooltipHtml}
+      </div>
+    `
+  });
+}
+
+let _userWaypointVisible = false;
+
+function destacarParadaEnMapa(lat, lng, nombre = '') {
+  // Ocultar cualquier waypoint de usuario y no desplegar marcador invasivo sobre la parada centrada
+  ocultarMarcadorUsuario();
+
+  const layerSel = typeof asegurarSeleccionParadaLayer === 'function' ? asegurarSeleccionParadaLayer() : null;
+  if (!layerSel) return;
+
+  layerSel.clearLayers();
+  _marcadorDestacadoActivo = null;
+}
+
+function ocultarMarcadorUsuario() {
+  _userWaypointVisible = false;
+  document.body.classList.add('hide-user-marker');
+
+  if (userMarker && leafletMap) {
+    try {
+      leafletMap.removeLayer(userMarker);
+    } catch {}
+  }
+  if (userMarkerHalo && leafletMap) {
+    try {
+      leafletMap.removeLayer(userMarkerHalo);
+    } catch {}
+  }
+  document.querySelectorAll('.user-waypoint-marker-icon, .user-marker-halo').forEach((el) => {
+    el.style.display = 'none';
+  });
+}
+
+function mostrarMarcadorUsuario() {
+  _userWaypointVisible = true;
+  document.body.classList.remove('hide-user-marker');
+
+  if (userMarker && leafletMap && !leafletMap.hasLayer(userMarker)) {
+    try {
+      userMarker.addTo(leafletMap);
+    } catch {}
+  }
+  if (userMarkerHalo && leafletMap && !leafletMap.hasLayer(userMarkerHalo)) {
+    try {
+      userMarkerHalo.addTo(leafletMap);
+    } catch {}
+  }
+  document.querySelectorAll('.user-waypoint-marker-icon, .user-marker-halo').forEach((el) => {
+    el.style.display = '';
+  });
+}
+
 function obtenerIconoUserWaypoint() {
   if (_iconoUserWaypointLeaflet) return _iconoUserWaypointLeaflet;
 
@@ -194,14 +270,14 @@ function obtenerIconoUserWaypoint() {
           <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
             <defs>
               <linearGradient id="userPinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#38bdf8"/>
-                <stop offset="100%" stop-color="#0284c7"/>
+                <stop offset="0%" stop-color="#ff735c"/>
+                <stop offset="100%" stop-color="#e6351d"/>
               </linearGradient>
             </defs>
             <path d="M17 1 C8.16 1 1 8.16 1 17 C1 27.5 17 41 17 41 C17 41 33 27.5 33 17 C33 8.16 25.84 1 17 1 Z" fill="url(#userPinGrad)" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
             <circle cx="17" cy="17" r="8" fill="#ffffff"/>
-            <circle cx="17" cy="17" r="4.5" fill="#0284c7"/>
-            <circle cx="17" cy="17" r="2" fill="#38bdf8"/>
+            <circle cx="17" cy="17" r="4.5" fill="#e6351d"/>
+            <circle cx="17" cy="17" r="2" fill="#ff735c"/>
           </svg>
         </div>
       </div>
@@ -220,17 +296,25 @@ function asegurarMarcadorUsuario(lat, lng) {
     userMarkerHalo = L.circleMarker(latLng, {
       radius: 18,
       weight: 0,
-      color: '#007BFF',
-      fillColor: '#007BFF',
-      fillOpacity: 0.18,
+      color: '#ff472e',
+      fillColor: '#ff472e',
+      fillOpacity: 0.2,
       interactive: false,
       className: 'user-marker-halo',
-    }).addTo(leafletMap);
+    });
+    if (_userWaypointVisible) {
+      userMarkerHalo.addTo(leafletMap);
+    }
   } else {
     userMarkerHalo.setLatLng(latLng);
     if (typeof _realtimeCenterActive !== 'undefined' && _realtimeCenterActive) {
       const el = userMarkerHalo.getElement ? userMarkerHalo.getElement() : null;
       if (el) el.classList.add('pulse-halo');
+    }
+    if (_userWaypointVisible && !leafletMap.hasLayer(userMarkerHalo)) {
+      userMarkerHalo.addTo(leafletMap);
+    } else if (!_userWaypointVisible && leafletMap.hasLayer(userMarkerHalo)) {
+      try { leafletMap.removeLayer(userMarkerHalo); } catch {}
     }
   }
 
@@ -238,9 +322,17 @@ function asegurarMarcadorUsuario(lat, lng) {
     userMarker = L.marker(latLng, {
       icon: obtenerIconoUserWaypoint(),
       zIndexOffset: 1200,
-    }).addTo(leafletMap);
+    });
+    if (_userWaypointVisible) {
+      userMarker.addTo(leafletMap);
+    }
   } else {
     userMarker.setLatLng(latLng);
+    if (_userWaypointVisible && !leafletMap.hasLayer(userMarker)) {
+      userMarker.addTo(leafletMap);
+    } else if (!_userWaypointVisible && leafletMap.hasLayer(userMarker)) {
+      try { leafletMap.removeLayer(userMarker); } catch {}
+    }
   }
 }
 
@@ -248,6 +340,9 @@ function centrarMapaEnPunto(lat, lng, zoom = ZOOM_CALLE) {
   const safeLat = Number(lat);
   const safeLng = Number(lng);
   if (!Number.isFinite(safeLat) || !Number.isFinite(safeLng)) return;
+
+  // Ocultar cualquier waypoint de usuario al centrar el mapa en un punto específico
+  ocultarMarcadorUsuario();
 
   const z = Number.isFinite(Number(zoom)) ? Number(zoom) : ZOOM_CALLE;
   window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: z };
@@ -1049,7 +1144,7 @@ function obtenerPosicionActual() {
   });
 }
 
-async function Centrar() {
+async function Centrar(esRecentradoManual = false) {
   if (!mapa) {
     console.error('No se encontró el elemento #map.');
     return;
@@ -1063,6 +1158,10 @@ async function Centrar() {
     };
     console.log(`Ubicación: ${ubicacion.lat}, ${ubicacion.lng}`);
     cargarLF(ubicacion, ZOOM_CALLE);
+    asegurarMarcadorUsuario(ubicacion.lat, ubicacion.lng);
+    if (esRecentradoManual || !document.body.classList.contains('hide-user-marker')) {
+      mostrarMarcadorUsuario();
+    }
     await dibujarParadasCercanas(ubicacion);
     void actualizarHudParadaMasCercana();
   } catch (error) {
@@ -1071,7 +1170,7 @@ async function Centrar() {
 }
 
 async function CentrarYOferécerGuardar() {
-  await Centrar();
+  await Centrar(true);
 }
 
 function abrirGuardadoDesdeMarcadorUbicacion() {
@@ -1332,7 +1431,10 @@ function guardarLineaActualDesdeBottomSheet(ref, name) {
 
 function guardarParadaActualDesdeBottomSheet(feature, customLabel = '') {
   if (!feature) return;
-  agregarParadaAFavoritos(feature, customLabel);
+  const finalLabel = (typeof customLabel === 'string' && customLabel.trim() && customLabel.trim().toLowerCase() !== 'parada desconocida')
+    ? customLabel.trim()
+    : (typeof obtenerNombreParadaCompleto === 'function' ? obtenerNombreParadaCompleto(feature) : obtenerEtiquetaParada(feature));
+  agregarParadaAFavoritos(feature, finalLabel);
   const btn = document.querySelector('button[data-save-parada="1"]');
   if (btn) {
     btn.innerHTML = `
@@ -1786,6 +1888,17 @@ function renderSeccionGuardados() {
   const lugares = obtenerLugaresFavs();
 
   const total = lineas.length + paradas.length + lugares.length;
+
+  // Actualizar contadores en la barra de filtros
+  const countAll = document.getElementById('count-fav-all');
+  if (countAll) countAll.textContent = String(total);
+  const countLineas = document.getElementById('count-fav-lineas');
+  if (countLineas) countLineas.textContent = String(lineas.length);
+  const countParadas = document.getElementById('count-fav-paradas');
+  if (countParadas) countParadas.textContent = String(paradas.length);
+  const countLugares = document.getElementById('count-fav-lugares');
+  if (countLugares) countLugares.textContent = String(lugares.length);
+
   if (total === 0) {
     container.innerHTML = `
       <div style="text-align: center; padding: 40px 16px; color: #71717a;">
@@ -1801,9 +1914,15 @@ function renderSeccionGuardados() {
 
   if (favFiltroActual === 'all' || favFiltroActual === 'lineas') {
     if (lineas.length > 0) {
-      const header = document.createElement('h3');
-      header.style.cssText = 'font-size: 13px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 4px 6px 4px;';
-      header.textContent = 'Líneas favoritas';
+      const header = document.createElement('div');
+      header.className = 'guardados-section-header';
+      header.innerHTML = `
+        <div class="guardados-section-title-wrap">
+          <span class="guardados-section-icon">🚌</span>
+          <h3 class="guardados-section-title">Líneas favoritas</h3>
+        </div>
+        <span class="guardados-section-badge">${lineas.length}</span>
+      `;
       container.appendChild(header);
 
       lineas.forEach((linea) => {
@@ -1818,22 +1937,28 @@ function renderSeccionGuardados() {
           <div class="fav-card-info">
             <span class="search-badge-line" style="background-color: ${c}; color: ${tc};">${ref}</span>
             <div class="fav-card-texts">
-              <span class="fav-card-title">${name}</span>
+              <span class="fav-card-title">${escapeHtml(name)}</span>
               <span class="fav-card-sub">Línea RedTulum</span>
             </div>
           </div>
           <div class="fav-card-actions">
             <button type="button" class="btn-fav-action btn-fav-map">Ver mapa</button>
-            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar">✕</button>
+            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar de guardados">✕</button>
           </div>
         `;
 
-        card.querySelector('.btn-fav-map')?.addEventListener('click', () => {
+        const irALinea = () => {
           cambiarVista('view-map');
           void mostrarRecorridoDeLinea(ref, name);
+        };
+
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-fav-remove')) return;
+          irALinea();
         });
 
-        card.querySelector('.btn-fav-remove')?.addEventListener('click', () => {
+        card.querySelector('.btn-fav-remove')?.addEventListener('click', (e) => {
+          e.stopPropagation();
           const next = obtenerLineasFavs().filter((l) => (l.ref || l.linea) !== ref);
           guardarLineasFavs(next);
           renderSeccionGuardados();
@@ -1846,14 +1971,20 @@ function renderSeccionGuardados() {
 
   if (favFiltroActual === 'all' || favFiltroActual === 'paradas') {
     if (paradas.length > 0) {
-      const header = document.createElement('h3');
-      header.style.cssText = 'font-size: 13px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 4px 6px 4px;';
-      header.textContent = 'Paradas favoritas';
+      const header = document.createElement('div');
+      header.className = 'guardados-section-header';
+      header.innerHTML = `
+        <div class="guardados-section-title-wrap">
+          <span class="guardados-section-icon">📍</span>
+          <h3 class="guardados-section-title">Paradas guardadas</h3>
+        </div>
+        <span class="guardados-section-badge">${paradas.length}</span>
+      `;
       container.appendChild(header);
 
       paradas.forEach((parada) => {
         const paradaId = parada.id;
-        const nombre = parada.nombre || `Parada #${paradaId}`;
+        const nombre = parada.nombre || parada.label || (paradaId ? `Parada #${paradaId.replace(/^(node|relation|way)\//i, '')}` : 'Parada');
         const lat = parada.lat;
         const lng = parada.lng;
 
@@ -1861,29 +1992,42 @@ function renderSeccionGuardados() {
         card.className = 'fav-card-item';
         card.innerHTML = `
           <div class="fav-card-info">
-            <span style="font-size: 20px;">📍</span>
+            <span class="fav-parada-icon-badge" style="margin-right: 0;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </span>
             <div class="fav-card-texts">
-              <span class="fav-card-title">${nombre}</span>
-              <span class="fav-card-sub">Parada</span>
+              <span class="fav-card-title">${escapeHtml(nombre)}</span>
+              <span class="fav-card-sub">
+                <span>Parada de colectivos</span>
+                ${parada.lineas ? `<span style="color: #38bdf8;">• Líneas: ${escapeHtml(parada.lineas)}</span>` : ''}
+              </span>
             </div>
           </div>
           <div class="fav-card-actions">
             <button type="button" class="btn-fav-action btn-fav-map">Ver mapa</button>
-            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar">✕</button>
+            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar de guardados">✕</button>
           </div>
         `;
 
-        card.querySelector('.btn-fav-map')?.addEventListener('click', () => {
-          cambiarVista('view-map');
-          if (Number.isFinite(lat) && Number.isFinite(lng)) {
-            centrarEnCoordenadas(lat, lng, ZOOM_CALLE);
-            if (paradaId && typeof consultarParadaPorId === 'function') {
-              void consultarParadaPorId(paradaId);
-            }
-          }
+        const irAParada = () => {
+          void centrarEnParadaGuardada(parada);
+        };
+
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-fav-remove')) return;
+          irAParada();
         });
 
-        card.querySelector('.btn-fav-remove')?.addEventListener('click', () => {
+        card.querySelector('.btn-fav-map')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          irAParada();
+        });
+
+        card.querySelector('.btn-fav-remove')?.addEventListener('click', (e) => {
+          e.stopPropagation();
           const next = obtenerParadasFavs().filter((p) => p.id !== paradaId);
           guardarParadasFavs(next);
           renderSeccionGuardados();
@@ -1896,9 +2040,15 @@ function renderSeccionGuardados() {
 
   if (favFiltroActual === 'all' || favFiltroActual === 'lugares') {
     if (lugares.length > 0) {
-      const header = document.createElement('h3');
-      header.style.cssText = 'font-size: 13px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 4px 6px 4px;';
-      header.textContent = 'Lugares guardados';
+      const header = document.createElement('div');
+      header.className = 'guardados-section-header';
+      header.innerHTML = `
+        <div class="guardados-section-title-wrap">
+          <span class="guardados-section-icon">📌</span>
+          <h3 class="guardados-section-title">Lugares guardados</h3>
+        </div>
+        <span class="guardados-section-badge">${lugares.length}</span>
+      `;
       container.appendChild(header);
 
       lugares.forEach((lugar) => {
@@ -1908,10 +2058,15 @@ function renderSeccionGuardados() {
 
         const card = document.createElement('div');
         card.className = 'fav-card-item';
-        card.style.cursor = 'pointer';
         card.innerHTML = `
           <div class="fav-card-info">
-            <span style="font-size: 20px;">📌</span>
+            <span class="fav-parada-icon-badge" style="margin-right: 0; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+                <line x1="9" x2="9" y1="3" y2="18"></line>
+                <line x1="15" x2="15" y1="6" y2="21"></line>
+              </svg>
+            </span>
             <div class="fav-card-texts">
               <span class="fav-card-title">${escapeHtml(nombre)}</span>
               <span class="fav-card-sub">Ubicación guardada</span>
@@ -1919,7 +2074,7 @@ function renderSeccionGuardados() {
           </div>
           <div class="fav-card-actions">
             <button type="button" class="btn-fav-action btn-fav-map">Ver mapa</button>
-            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar">✕</button>
+            <button type="button" class="btn-fav-action btn-fav-remove" title="Eliminar de guardados">✕</button>
           </div>
         `;
 
@@ -1954,15 +2109,18 @@ function setupGuardadosSearch() {
   const clearBtn = document.getElementById('fav-search-clear');
   const resultsDiv = document.getElementById('fav-search-results');
 
-  const filterBtns = document.querySelectorAll('.guardados-filter-btn');
-  filterBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      filterBtns.forEach((b) => b.classList.remove('active'));
+  const filterContainer = document.getElementById('guardados-filters-bar') || document.querySelector('.guardados-filters');
+  if (filterContainer && !filterContainer._hasFilterListener) {
+    filterContainer._hasFilterListener = true;
+    filterContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.guardados-filter-btn');
+      if (!btn) return;
+      filterContainer.querySelectorAll('.guardados-filter-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       favFiltroActual = btn.dataset.filter || 'all';
       renderSeccionGuardados();
     });
-  });
+  }
 
   clearBtn?.addEventListener('click', () => {
     if (input) input.value = '';
@@ -2084,7 +2242,7 @@ async function ejecutarBusquedaParaGuardar(query) {
         e.stopPropagation();
         const favs = obtenerParadasFavs();
         if (!favs.some((x) => x.id === pId)) {
-          favs.unshift({ id: pId, nombre: pNom, lat, lng });
+          favs.unshift({ id: pId, nombre: pNom, label: pNom, lat, lng });
           guardarParadasFavs(favs);
           renderSeccionGuardados();
           e.target.textContent = '✓ Guardado';
@@ -2116,7 +2274,26 @@ function guardarLineasFavs(arr) {
 
 function obtenerParadasFavs() {
   const arr = leerJsonLocalStorage(STORAGE_PARADAS_FAVS_KEY, []);
-  return Array.isArray(arr) ? arr : [];
+  if (!Array.isArray(arr)) return [];
+  return arr.map((f) => {
+    if (!f || typeof f !== 'object') return f;
+    let label = f.nombre || f.label || '';
+    if (!label || label.startsWith('Parada #node/') || label === 'Parada desconocida') {
+      if (f.label && !f.label.startsWith('Parada #node/') && f.label !== 'Parada desconocida') {
+        label = f.label;
+      } else if (f.id && typeof f.id === 'string') {
+        const cleanId = f.id.replace(/^(node|relation|way)\//i, '');
+        label = `Parada #${cleanId}`;
+      } else {
+        label = 'Parada';
+      }
+    }
+    return {
+      ...f,
+      nombre: label,
+      label: label
+    };
+  });
 }
 
 function guardarParadasFavs(arr) {
@@ -2461,20 +2638,13 @@ async function centrarEnLugarGuardado({ nombre, lat, lng }) {
   if (!leafletMap || typeof L === 'undefined') return;
 
   limpiarRecorrido();
+  ocultarMarcadorUsuario();
 
   const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
   const zoomTarget = Number.isFinite(z) ? Math.min(z, 18) : ZOOM_CALLE;
   window._activeMapCenter = { lat: latNum, lng: lngNum, zoom: zoomTarget };
 
-  const layerSel = asegurarSeleccionParadaLayer();
-  if (layerSel) {
-    layerSel.clearLayers();
-    L.circleMarker(
-      [latNum, lngNum],
-      { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 },
-    ).addTo(layerSel);
-  }
-
+  destacarParadaEnMapa(latNum, lngNum, nombre);
   centrarMapaEnPunto(latNum, lngNum, zoomTarget);
 
   // Abrir panel con la información del lugar guardado
@@ -2551,9 +2721,14 @@ function renderParadasFavs() {
   }
 }
 
-async function centrarEnParadaFavorita({ id, label, lat, lng }) {
-  const latNum = typeof lat === 'number' ? lat : Number(lat);
-  const lngNum = typeof lng === 'number' ? lng : Number(lng);
+async function centrarEnParadaGuardada(parada) {
+  if (!parada) return;
+  const latNum = typeof parada.lat === 'number' ? parada.lat : Number(parada.lat);
+  const lngNum = typeof parada.lng === 'number' ? parada.lng : Number(parada.lng);
+  const paradaId = parada.id || '';
+  const nombre = parada.nombre || parada.label || 'Parada';
+
+  cambiarVista('view-map');
 
   if (!leafletMap) {
     if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
@@ -2563,28 +2738,112 @@ async function centrarEnParadaFavorita({ id, label, lat, lng }) {
   if (!leafletMap || typeof L === 'undefined') return;
 
   limpiarRecorrido();
-
-  const layerSel = asegurarSeleccionParadaLayer();
-  layerSel?.clearLayers();
+  ocultarMarcadorUsuario();
 
   if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-    const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
-    leafletMap.setView([latNum, lngNum], Number.isFinite(z) ? z : ZOOM_CALLE);
-    const icon = obtenerIconoParadaLeaflet();
-    L.marker([latNum, lngNum], icon ? { icon } : undefined).addTo(layerSel);
+    const z = Math.min(typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : 18, 18);
+    window._activeMapCenter = { lat: latNum, lng: lngNum, zoom: z };
+    if (typeof leafletMap.flyTo === 'function') {
+      leafletMap.flyTo([latNum, lngNum], z, { duration: 0.8 });
+    } else {
+      leafletMap.setView([latNum, lngNum], z);
+    }
+    destacarParadaEnMapa(latNum, lngNum, nombre);
   }
 
   try {
     const puntos = await cargarParadasPuntos();
-    if (Array.isArray(puntos) && id) {
-      const found = puntos.find((p) => obtenerIdParada(p.feature) === id);
-      if (found) {
-        mostrarLineasEnContenedorParadas(found.feature);
+    let found = null;
+    if (Array.isArray(puntos)) {
+      if (paradaId) {
+        found = puntos.find((p) => p.feature && obtenerIdParada(p.feature) === paradaId);
+      }
+      if (!found && Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+        let minDist = Infinity;
+        for (const p of puntos) {
+          const d = calcularDistancia(latNum, lngNum, p.lat, p.lng);
+          if (d < 35 && d < minDist) {
+            minDist = d;
+            found = p;
+          }
+        }
       }
     }
-  } catch {
-    // noop
+
+    if (found && found.feature) {
+      mostrarLineasEnContenedorParadas(found.feature);
+    } else if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+      const fallbackHtml = `
+        <div style="padding: 12px 0;">
+          <p style="color: #94a3b8; font-size: 14px; margin-bottom: 12px;">Parada guardada en tus favoritos.</p>
+          ${parada.lineas ? `<p style="font-size: 13px; color: #38bdf8;"><strong>Líneas asociadas:</strong> ${escapeHtml(parada.lineas)}</p>` : ''}
+          <ul class="bs-nav-rows" style="margin-top: 14px;">
+            <li>
+              <button type="button" class="btn-nav-row" onclick="iniciarPlaneoRutaHaciaPunto(${latNum}, ${lngNum}, '${escapeHtml(nombre).replace(/'/g, "\\'")}')">
+                🎯 Planificar viaje hacia esta parada
+              </button>
+            </li>
+          </ul>
+        </div>
+      `;
+      abrirBottomSheet(escapeHtml(nombre), fallbackHtml, 'parada', 'Parada guardada');
+    }
+  } catch (err) {
+    console.error('Error al centrar en parada guardada:', err);
   }
+}
+
+async function centrarEnParadaFavorita({ id, label, lat, lng }) {
+  return centrarEnParadaGuardada({ id, nombre: label, label, lat, lng });
+}
+
+function obtenerNombreParadaCompleto(feature) {
+  if (!feature) return 'Parada';
+  const props = feature.properties || {};
+
+  const name = props.name || props['name:es'];
+  if (typeof name === 'string' && name.trim() && name.trim().toLowerCase() !== 'parada desconocida') {
+    return name.trim();
+  }
+
+  const street = props['addr:street'];
+  if (typeof street === 'string' && street.trim()) {
+    return `Parada en ${street.trim()}`;
+  }
+
+  const ref = props.ref;
+  if (typeof ref === 'string' && ref.trim()) {
+    return `Parada #${ref.trim()}`;
+  }
+
+  const relations = props['@relations'];
+  if (Array.isArray(relations) && relations.length > 0) {
+    const refs = [];
+    for (const rel of relations) {
+      const r = rel?.reltags?.ref;
+      if (r && !refs.includes(r)) refs.push(r);
+    }
+    if (refs.length > 0) {
+      return `Parada (Líneas ${refs.slice(0, 3).join(', ')})`;
+    }
+    for (const rel of relations) {
+      const reltags = rel?.reltags || {};
+      if (typeof reltags.from === 'string' && reltags.from.trim()) {
+        return `Parada hacia ${reltags.to || reltags.from}`;
+      }
+    }
+  }
+
+  const et = obtenerEtiquetaParada(feature);
+  if (et && et !== 'Parada' && !et.startsWith('node/')) return et;
+
+  const id = props['@id'];
+  if (typeof id === 'string' && id.trim()) {
+    const cleanId = id.replace(/^(node|relation|way)\//i, '');
+    return `Parada #${cleanId}`;
+  }
+
+  return 'Parada';
 }
 
 
@@ -4054,7 +4313,7 @@ function featurePerteneceAAlgunaRelacion(feature, relIds) {
   return rels.some((r) => Number.isFinite(r?.rel) && relIds.has(r.rel));
 }
 
-async function dibujarParadasDelRecorrido(relIds) {
+async function dibujarParadasDelRecorrido(relIds, featureRuta = null, invertido = false) {
   if (!leafletMap || typeof L === 'undefined') return;
   const layerParadas = asegurarParadasLayer();
   if (!layerParadas) return;
@@ -4072,6 +4331,21 @@ async function dibujarParadasDelRecorrido(relIds) {
       seleccion.push({ ...p, paradaId });
     }
   }
+
+  // Ordenar paradas secuencialmente siguiendo la geometría de la ruta
+  if (featureRuta) {
+    const segs = extraerSegmentosLineasDeFeature(featureRuta);
+    let latLngsRuta = segs.flat();
+    if (invertido) latLngsRuta = [...latLngsRuta].reverse();
+    if (latLngsRuta.length >= 2) {
+      seleccion.sort((a, b) => {
+        const ia = indiceMasCercanoEnCaminoPreciso(a.lat, a.lng, latLngsRuta);
+        const ib = indiceMasCercanoEnCaminoPreciso(b.lat, b.lng, latLngsRuta);
+        return ia - ib;
+      });
+    }
+  }
+
   paradasRecorrido = seleccion;
 
   const cColor = getColorForLinea(recorridoActivo?.ref);
@@ -4168,13 +4442,20 @@ function agregarLineaAFavoritos(linea, isFromCard = false) {
 
 function agregarParadaAFavoritos(feature, customLabel = '') {
   const id = obtenerIdParada(feature);
-  const defaultLabel = obtenerEtiquetaParada(feature);
-  const label = (typeof customLabel === 'string' && customLabel.trim()) ? customLabel.trim() : defaultLabel;
+  const defaultLabel = typeof obtenerNombreParadaCompleto === 'function'
+    ? obtenerNombreParadaCompleto(feature)
+    : obtenerEtiquetaParada(feature);
+  const label = (typeof customLabel === 'string' && customLabel.trim() && customLabel.trim().toLowerCase() !== 'parada desconocida')
+    ? customLabel.trim()
+    : defaultLabel;
   if (!id) return;
 
   const coords = feature?.geometry?.coordinates;
   const lng = Array.isArray(coords) && coords.length >= 2 ? Number(coords[0]) : null;
   const lat = Array.isArray(coords) && coords.length >= 2 ? Number(coords[1]) : null;
+
+  const lineas = typeof obtenerLineasDesdeRelations === 'function' ? obtenerLineasDesdeRelations(feature) : [];
+  const lineasTexto = lineas.length > 0 ? lineas.join(', ') : '';
 
   const favs = obtenerParadasFavs();
   const indice = favs.findIndex((f) => f?.id === id);
@@ -4182,13 +4463,17 @@ function agregarParadaAFavoritos(feature, customLabel = '') {
   if (indice !== -1 && !customLabel) {
     favs.splice(indice, 1);
   } else if (indice !== -1 && customLabel) {
+    favs[indice].nombre = label;
     favs[indice].label = label;
+    if (lineasTexto) favs[indice].lineas = lineasTexto;
   } else {
     favs.push({
       id,
+      nombre: label,
       label,
       lat: Number.isFinite(lat) ? lat : null,
       lng: Number.isFinite(lng) ? lng : null,
+      lineas: lineasTexto
     });
     while (favs.length > MAX_PARADAS_FAVS) {
       favs.shift();
@@ -4348,16 +4633,20 @@ function dibujarTrazoRecorridoConFlechas(layer, latLngs, colorLinea) {
   generarFlechasDireccionEnRuta(latLngs, layer);
 }
 
-function dibujarFeatureRecorridoConFlechas(layer, feature, colorLinea) {
+function dibujarFeatureRecorridoConFlechas(layer, feature, colorLinea, invertido = false) {
   if (!layer || !feature) return;
   const segmentos = extraerSegmentosLineasDeFeature(feature);
   for (const seg of segmentos) {
-    dibujarTrazoRecorridoConFlechas(layer, seg, colorLinea);
+    const finalSeg = invertido ? [...seg].reverse() : seg;
+    dibujarTrazoRecorridoConFlechas(layer, finalSeg, colorLinea);
   }
 }
 
-async function mostrarRecorridoDeLinea(ref, name = '') {
+async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, invertido = false) {
   if (!leafletMap || typeof L === 'undefined') return;
+
+  // Ocultar el waypoint del usuario al centrar una línea en el mapa
+  ocultarMarcadorUsuario();
 
   // Verificar si venimos desde una parada seleccionada
   const paradaOrigen = window._lineaDesdeParadaFeature || null;
@@ -4380,8 +4669,26 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
     return;
   }
 
-  recorridoActivo = { ref: String(ref), name: String(name || '') };
-  const relIds = obtenerRelIdsDeRutas(rutas);
+  // Determinar la variante/sentido específico a dibujar para no superponer trayectos opuestos
+  let indexElegido = 0;
+  if (typeof rutaIndex === 'number' && rutaIndex >= 0 && rutaIndex < rutas.length) {
+    indexElegido = rutaIndex;
+  } else if (name && rutas.length > 1) {
+    const nameNorm = name.toLowerCase().trim();
+    const idx = rutas.findIndex((r) => {
+      const rn = (r.properties?.name || '').toLowerCase().trim();
+      const rf = (r.properties?.from || '').toLowerCase().trim();
+      const rt = (r.properties?.to || '').toLowerCase().trim();
+      return rn.includes(nameNorm) || nameNorm.includes(rn) || (rf && nameNorm.includes(rf)) || (rt && nameNorm.includes(rt));
+    });
+    if (idx !== -1) indexElegido = idx;
+  }
+
+  const featureElegido = rutas[indexElegido];
+  const nombreVariante = featureElegido.properties?.name || (name || `Línea ${ref}`);
+
+  recorridoActivo = { ref: String(ref), name: String(nombreVariante), feature: featureElegido, invertido: Boolean(invertido) };
+  const relIds = obtenerRelIdsDeRutas([featureElegido]);
 
   const layerRec = asegurarRecorridoLayer();
   layerRec?.clearLayers();
@@ -4390,11 +4697,9 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
   layerParadas?.clearLayers();
 
   const lineColor = getColorForLinea(ref);
-  for (const f of rutas) {
-    dibujarFeatureRecorridoConFlechas(layerRec, f, lineColor);
-  }
+  dibujarFeatureRecorridoConFlechas(layerRec, featureElegido, lineColor, Boolean(invertido));
 
-  await dibujarParadasDelRecorrido(relIds);
+  await dibujarParadasDelRecorrido(relIds, featureElegido, Boolean(invertido));
 
   try {
     const bounds = layerRec.getBounds?.();
@@ -4406,10 +4711,33 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
   }
 
   window._currentLineaRef = ref;
-  window._currentLineaName = name;
+  window._currentLineaName = nombreVariante;
+  window._currentLineaIdx = indexElegido;
+  window._currentLineaInvertido = Boolean(invertido);
+
+  // Selector de sentido / variante
+  const totalVariantes = rutas.length;
+  const textoSentido = nombreVariante.replace(/^Línea\s+[^:]+:\s*/i, '');
+  const selectorSentidoHtml = `
+    <div class="route-direction-card">
+      <div class="route-direction-left">
+        <span class="route-direction-badge">Trayecto ${indexElegido + 1} de ${totalVariantes}${invertido ? ' • Orientación invertida' : ''}</span>
+        <span class="route-direction-text" title="${escapeHtml(textoSentido)}">${escapeHtml(textoSentido || 'Recorrido oficial')}</span>
+      </div>
+      ${totalVariantes > 1 ? `
+        <button type="button" class="btn-route-switch-dir" onclick="cambiarSentidoRecorrido('${escapeHtml(String(ref))}', ${(indexElegido + 1) % totalVariantes}, false)">
+          ⇄ Alternar sentido
+        </button>
+      ` : `
+        <button type="button" class="btn-route-switch-dir" onclick="cambiarSentidoRecorrido('${escapeHtml(String(ref))}', ${indexElegido}, ${!invertido})">
+          ⇄ Invertir orientación
+        </button>
+      `}
+    </div>
+  `;
 
   // Mostrar recorrido con paradas y botón de volver si venimos desde una parada
-  const tituloLinea = ref ? `Línea ${escapeHtml(ref)}` : (name ? escapeHtml(name) : 'Línea');
+  const tituloLinea = ref ? `Línea ${escapeHtml(ref)}` : escapeHtml(nombreVariante);
   const listaParadasHtml = renderListaParadasRecorrido({ mostrarTodas: true });
 
   const volverHtml = paradaOrigen
@@ -4448,7 +4776,7 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
           id="input-nombre-linea"
           type="text"
           class="save-location-input"
-          value="${escapeHtml(name ? `Línea ${ref} - ${name}` : `Línea ${ref}`)}"
+          value="${escapeHtml(nombreVariante ? `Línea ${ref} - ${nombreVariante}` : `Línea ${ref}`)}"
           placeholder="Ej: Mi colectivo, Línea ${ref}..."
           maxlength="60"
           onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('button[data-save-linea=\\'1\\']')?.click();}"
@@ -4460,7 +4788,7 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
           class="btn-save-location-primary"
           data-save-linea="1"
           data-linea-ref="${escapeHtml(String(ref))}"
-          data-linea-name="${escapeHtml(String(name || ''))}"
+          data-linea-name="${escapeHtml(String(nombreVariante))}"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
@@ -4475,12 +4803,25 @@ async function mostrarRecorridoDeLinea(ref, name = '') {
     ${volverHtml}
     ${infoArribosHtml}
     ${saveLineaHtml}
+    ${selectorSentidoHtml}
     ${listaParadasHtml}
   `;
   abrirBottomSheet(tituloLinea, html, 'linea', esLineaFav ? 'Línea guardada' : '');
 }
 
+window.cambiarSentidoRecorrido = (ref, nextIdx, isInverted = false) => {
+  const data = paradasGeojson;
+  if (!data) return;
+  const rutas = obtenerRutasDeLinea(data, ref);
+  const nextRuta = rutas[nextIdx] || rutas[0];
+  const nextName = nextRuta?.properties?.name || '';
+  void mostrarRecorridoDeLinea(ref, nextName, nextIdx, isInverted);
+};
+
 function mostrarLineasEnContenedorParadas(feature, opts = {}) {
+  // Asegurar que no quede ningún waypoint de usuario sobre la parada
+  ocultarMarcadorUsuario();
+
   if (leafletMap && feature?.geometry?.coordinates) {
     const coords = feature.geometry.coordinates;
     if (Array.isArray(coords) && coords.length >= 2) {
@@ -4503,8 +4844,18 @@ function mostrarLineasEnContenedorParadas(feature, opts = {}) {
   }
 
   // Obtener nombre de la parada desde el feature
-  const paradaNombre = feature?.properties?.name || feature?.properties?.['name:es'] || 'Parada desconocida';
+  const paradaNombre = typeof obtenerNombreParadaCompleto === 'function'
+    ? obtenerNombreParadaCompleto(feature)
+    : (feature?.properties?.name || 'Parada');
   window._currentFeature = feature;
+
+  // Destacar en el mapa la parada seleccionada con halo y pulso
+  if (feature?.geometry?.coordinates) {
+    const coords = feature.geometry.coordinates;
+    if (Array.isArray(coords) && coords.length >= 2) {
+      destacarParadaEnMapa(Number(coords[1]), Number(coords[0]), paradaNombre);
+    }
+  }
 
   const paradaId = obtenerIdParada(feature);
   const paradasFavs = obtenerParadasFavs();
@@ -4983,113 +5334,130 @@ async function trazarRutaGpsAParadaCercana(paradaItem) {
   const lngD = Number(paradaItem.lng);
   if (!Number.isFinite(latD) || !Number.isFinite(lngD)) return;
 
-  // Determinar origen
-  let latO = null;
-  let lngO = null;
-  if (ubicacion && Number.isFinite(ubicacion.lat) && Number.isFinite(ubicacion.lng)) {
-    latO = Number(ubicacion.lat);
-    lngO = Number(ubicacion.lng);
-  } else if (leafletMap && typeof leafletMap.getCenter === 'function') {
-    const c = leafletMap.getCenter();
-    if (c && Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
-      latO = Number(c.lat);
-      lngO = Number(c.lng);
-    }
-  }
+  const loadingOverlay = document.getElementById('hud-loading-overlay');
+  const hud = document.getElementById('map-nearest-stop-hud');
+  if (loadingOverlay) loadingOverlay.style.display = 'flex';
+  if (hud) hud.style.pointerEvents = 'none';
 
-  if (!Number.isFinite(latO) || !Number.isFinite(lngO)) {
-    latO = latD;
-    lngO = lngD;
-  }
-
-  const layer = asegurarIndicacionGpsLayer();
-  if (layer) layer.clearLayers();
-
-  const distM = calcularDistancia(latO, lngO, latD, lngD);
-  const minPie = Math.max(1, Math.round(distM / 75));
-  const distTexto = distM < 1000 ? `${Math.round(distM)} m` : `${(distM / 1000).toFixed(1)} km`;
-
-  let coordsRuta = [[latO, lngO], [latD, lngD]];
-
-  // Intentar consultar ruta peatonal OSRM para seguir el trazado real de las calles
   try {
-    const controller = new AbortController();
-    const toId = setTimeout(() => controller.abort(), 2500);
-    const osrmUrl = `https://router.project-osrm.org/route/v1/walking/${lngO},${latO};${lngD},${latD}?overview=full&geometries=geojson`;
-    const resp = await fetch(osrmUrl, { signal: controller.signal });
-    clearTimeout(toId);
-    if (resp.ok) {
-      const data = await resp.json();
-      const geom = data?.routes?.[0]?.geometry?.coordinates;
-      if (Array.isArray(geom) && geom.length >= 2) {
-        coordsRuta = geom.map((pt) => [pt[1], pt[0]]);
+    // Determinar origen
+    let latO = null;
+    let lngO = null;
+    if (ubicacion && Number.isFinite(ubicacion.lat) && Number.isFinite(ubicacion.lng)) {
+      latO = Number(ubicacion.lat);
+      lngO = Number(ubicacion.lng);
+    } else if (leafletMap && typeof leafletMap.getCenter === 'function') {
+      const c = leafletMap.getCenter();
+      if (c && Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
+        latO = Number(c.lat);
+        lngO = Number(c.lng);
       }
     }
-  } catch {
-    // Fallback a línea directa
-  }
 
-  if (layer && typeof L !== 'undefined') {
-    // 1. Halo / resplandor GPS exterior
-    L.polyline(coordsRuta, {
-      color: '#1d4ed8',
-      weight: 9,
-      opacity: 0.45,
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(layer);
-
-    // 2. Línea punteada GPS interior
-    L.polyline(coordsRuta, {
-      color: '#38bdf8',
-      weight: 4.5,
-      opacity: 0.95,
-      dashArray: '8, 8',
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(layer);
-
-    // 3. Marcador pin destacado en la parada
-    const stopIcon = L.divIcon({
-      className: 'gps-stop-pin-icon',
-      html: `
-        <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
-          <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(56, 189, 248, 0.35); animation: hudDotPulse 1.5s infinite ease-in-out;"></div>
-          <div style="width: 24px; height: 24px; border-radius: 50%; background: #0284c7; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #ffffff;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-          </div>
-        </div>
-      `,
-      iconSize: [34, 34],
-      iconAnchor: [17, 17],
-    });
-
-    L.marker([latD, lngD], { icon: stopIcon }).addTo(layer);
-  }
-
-  // Centrar y encuadrar mapa
-  if (leafletMap) {
-    if (distM > 35) {
-      leafletMap.fitBounds([[latO, lngO], [latD, lngD]], {
-        paddingTopLeft: [40, 40],
-        paddingBottomRight: [40, 220],
-        maxZoom: 18,
-        animate: true,
-      });
-    } else {
-      centrarMapaEnPunto(latD, lngD, 18);
+    if (!Number.isFinite(latO) || !Number.isFinite(lngO)) {
+      latO = latD;
+      lngO = lngD;
     }
+
+    const layer = asegurarIndicacionGpsLayer();
+    if (layer) layer.clearLayers();
+
+    const distM = calcularDistancia(latO, lngO, latD, lngD);
+    const minPie = Math.max(1, Math.round(distM / 75));
+    const distTexto = distM < 1000 ? `${Math.round(distM)} m` : `${(distM / 1000).toFixed(1)} km`;
+
+    let coordsRuta = [[latO, lngO], [latD, lngD]];
+
+    // Pequeño delay mínimo para que la animación de carga se aprecie visualmente de forma fluida
+    const minDelayPromise = new Promise((resolve) => setTimeout(resolve, 380));
+
+    // Intentar consultar ruta peatonal OSRM para seguir el trazado real de las calles
+    try {
+      const controller = new AbortController();
+      const toId = setTimeout(() => controller.abort(), 2500);
+      const osrmUrl = `https://router.project-osrm.org/route/v1/walking/${lngO},${latO};${lngD},${latD}?overview=full&geometries=geojson`;
+      const resp = await fetch(osrmUrl, { signal: controller.signal });
+      clearTimeout(toId);
+      if (resp.ok) {
+        const data = await resp.json();
+        const geom = data?.routes?.[0]?.geometry?.coordinates;
+        if (Array.isArray(geom) && geom.length >= 2) {
+          coordsRuta = geom.map((pt) => [pt[1], pt[0]]);
+        }
+      }
+    } catch {
+      // Fallback a línea directa
+    }
+
+    await minDelayPromise;
+
+    if (layer && typeof L !== 'undefined') {
+      // 1. Halo / resplandor GPS exterior
+      L.polyline(coordsRuta, {
+        color: '#e6351d',
+        weight: 9,
+        opacity: 0.45,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(layer);
+
+      // 2. Línea punteada GPS interior
+      L.polyline(coordsRuta, {
+        color: '#ff735c',
+        weight: 4.5,
+        opacity: 0.95,
+        dashArray: '8, 8',
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(layer);
+
+      // 3. Marcador pin destacado en la parada
+      const stopIcon = L.divIcon({
+        className: 'gps-stop-pin-icon',
+        html: `
+          <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 71, 46, 0.35); animation: hudDotPulse 1.5s infinite ease-in-out;"></div>
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #ff472e; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #ffffff;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+          </div>
+        `,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+      });
+
+      L.marker([latD, lngD], { icon: stopIcon }).addTo(layer);
+    }
+
+    // Centrar y encuadrar mapa
+    if (leafletMap) {
+      if (distM > 35) {
+        leafletMap.fitBounds([[latO, lngO], [latD, lngD]], {
+          paddingTopLeft: [40, 40],
+          paddingBottomRight: [40, 220],
+          maxZoom: 18,
+          animate: true,
+        });
+      } else {
+        centrarMapaEnPunto(latD, lngD, 18);
+      }
+    }
+
+    // Mostrar barra flotante achicada de ruta activa arriba del mapa
+    const nombreParada = typeof obtenerNombreParadaCompleto === 'function'
+      ? obtenerNombreParadaCompleto(paradaItem.feature)
+      : (paradaItem.feature?.properties?.name || 'Parada cercana');
+    mostrarBarraRutaGpsActiva(distTexto, minPie, nombreParada);
+
+    // Desplegar panel con indicación GPS peatonal y las líneas
+    mostrarLineasEnContenedorParadas(paradaItem.feature, { gpsWalk: { distTexto, minPie } });
+  } finally {
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    if (hud) hud.style.pointerEvents = '';
   }
-
-  // Mostrar barra flotante achicada de ruta activa arriba del mapa
-  const nombreParada = paradaItem.feature?.properties?.name || paradaItem.feature?.properties?.['name:es'] || 'Parada cercana';
-  mostrarBarraRutaGpsActiva(distTexto, minPie, nombreParada);
-
-  // Desplegar panel con indicación GPS peatonal y las líneas
-  mostrarLineasEnContenedorParadas(paradaItem.feature, { gpsWalk: { distTexto, minPie } });
 }
 
 function setupNearestStopHud() {
@@ -5129,23 +5497,11 @@ function cargarLF(coords, zoomObjetivo = null) {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(leafletMap);
 
-    asegurarMarcadorUsuario(coords.lat, coords.lng);
-    try {
-      userMarker.off('click');
-      userMarker.on('click', () => {
-        abrirGuardadoDesdeMarcadorUbicacion();
-      });
-    } catch {
-      // noop
-    }
-
     leafletMap.on('moveend', agendarActualizacionParadas);
     leafletMap.on('zoomend', agendarActualizacionParadas);
 
     setupLongPressGuardarUbicacionEnMapa();
   }
-
-  asegurarMarcadorUsuario(coords.lat, coords.lng);
 
   if (typeof zoomObjetivo === 'number') {
     leafletMap.setView([coords.lat, coords.lng], zoomObjetivo);
@@ -5179,11 +5535,12 @@ function setupLongPressGuardarUbicacionEnMapa() {
     const safeLng = Number(latlng.lng);
     const currentZoom = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
 
+    ocultarMarcadorUsuario();
     try {
       const layerSel = asegurarSeleccionParadaLayer();
       if (layerSel && typeof L !== 'undefined') {
         layerSel.clearLayers();
-        L.circleMarker([safeLat, safeLng], { radius: 7, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+        L.circleMarker([safeLat, safeLng], { radius: 7, weight: 2.5, color: '#e6351d', fillColor: '#ff472e', fillOpacity: 0.9 }).addTo(layerSel);
       }
     } catch {
       // noop
@@ -6030,19 +6387,9 @@ async function centrarEnLugar(lat, lng, nombreLugar) {
   window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: ZOOM_CALLE };
 
   limpiarRecorrido();
+  ocultarMarcadorUsuario();
 
-  const layerSel = asegurarSeleccionParadaLayer();
-  if (layerSel && typeof L !== 'undefined') {
-    layerSel.clearLayers();
-    L.circleMarker([safeLat, safeLng], {
-      radius: 7,
-      weight: 2,
-      color: '#007BFF',
-      fillColor: '#ffffff',
-      fillOpacity: 1,
-    }).addTo(layerSel);
-  }
-
+  destacarParadaEnMapa(safeLat, safeLng, nombreLugar);
   centrarMapaEnPunto(safeLat, safeLng, ZOOM_CALLE);
 
   // Abrir bottom-sheet con 'Cómo llegar', opción de guardar y anuncios
@@ -6475,12 +6822,13 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
     // noop
   }
 
+  ocultarMarcadorUsuario();
   // Marcadores origen/destino y conexión directa (opcional) en una capa separada.
   const layerSel = asegurarSeleccionParadaLayer();
   if (layerSel) {
     layerSel.clearLayers();
-    L.circleMarker(origen, { radius: 6, weight: 2, color: colorLinea, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
-    L.circleMarker(destino, { radius: 6, weight: 2, color: colorLinea, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+    L.circleMarker(origen, { radius: 6, weight: 2, color: colorLinea, fillColor: colorLinea, fillOpacity: 0.9 }).addTo(layerSel);
+    L.circleMarker(destino, { radius: 6, weight: 2, color: colorLinea, fillColor: colorLinea, fillOpacity: 0.9 }).addTo(layerSel);
   }
 
   try {
@@ -6744,12 +7092,13 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
     { ref: bRef, name: tramo2.mejor?.name || '', relIds: relIds2, origen: { lat: tLat, lng: tLng }, destino: { lat: dLat, lng: dLng }, nearbyStops: sel2 || [] },
   ];
 
+  ocultarMarcadorUsuario();
   const layerSel = asegurarSeleccionParadaLayer();
   if (layerSel) {
     layerSel.clearLayers();
-    L.circleMarker([latO, lngO], { radius: 6, weight: 2, color: colorA, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
-    L.circleMarker([tLat, tLng], { radius: 6, weight: 2, color: '#007BFF', fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
-    L.circleMarker([dLat, dLng], { radius: 6, weight: 2, color: colorB, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layerSel);
+    L.circleMarker([latO, lngO], { radius: 6, weight: 2, color: colorA, fillColor: colorA, fillOpacity: 0.9 }).addTo(layerSel);
+    L.circleMarker([tLat, tLng], { radius: 6, weight: 2, color: '#ff472e', fillColor: '#ff472e', fillOpacity: 0.9 }).addTo(layerSel);
+    L.circleMarker([dLat, dLng], { radius: 6, weight: 2, color: colorB, fillColor: colorB, fillOpacity: 0.9 }).addTo(layerSel);
   }
 
   try {
