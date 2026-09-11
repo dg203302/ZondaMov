@@ -1,0 +1,138 @@
+route_id,agency_id,route_short_name,route_long_name,route_type
+184765575,3760653,100,Barrio ATE API - Av. Dr. Guillermo Rawson y Santa Fe,3
+184765576,3760653,101,Barrio ATE API - Hospital Rawson,3
+184765577,3760653,102,Barrio Las Acacias  - Hospital Rawson - Estación Córdoba,3
+184765578,3760653,103,Plaza Juan Jufré - Plaza de Trinidad,3
+184765579,3760653,104,Villa del Bono - Plaza Trinidad - Estación Córdoba,3
+184765580,3760653,120,Villa Observatorio - Barrio Valle Grande,3
+184765581,3760653,121,B° Piuquén - Parque de Rivadavia - Centro,3
+184765582,3760653,122,Marquesado - Av. Dr. Guillermo Rawson y Santa Fe,3
+184765583,3760653,123,Marquesado,3
+184765584,3760653,124,B° CGT Rivadavia - Hospital Rawson,3
+184765585,3760653,125,Complejo Universitario Islas Malvinas UNSJ - Hospital M. Quiroga - Centro Cívico - Hospital Rawson,3
+184765586,3760653,126,Villa Obrera - Hospital Rawson,3
+184765587,3760653,127,Universidades - Villa América,3
+184765588,3760653,128,Barrio CGT Chimbas - Universidades,3
+184765589,3760653,129,B° CGT Rivadavia - Centro Cívico - Plaza Aberastain,3
+184765590,3760653,130,Terminal Ómnibus de San Juan -  Calle 5 y Pellegrini,3
+184765573,3760653,B,Corredor Benavidez,3
+184765574,3760653,E,Corredor Trinidad,3
+184765591,3760653,TEO1,Troncal Este - Oeste,3
+184765592,3760653,TEO2,Troncal Este - Oeste,3
+184765593,3760653,TEO3,Troncal Este - Oeste,3
+184765615,3760655,4,Inter Urbana Norte,3
+184765616,3760655,40,Perimetral Norte,3
+184765617,3760655,400,Villa Obrera - Hospital Rawson,3
+184765618,3760655,401,Villa Obrera - Centro,3
+184765619,3760655,402,Bº El Chañar - Avellaneda y Santa Fe,3
+184765620,3760655,403,Villa Paula - Centro Cívico- Hospital Rawson,3
+184765621,3760655,404,Barrio Las Calandrias - Plaza Chimbas - Hospital Rawson,3
+184765622,3760655,405,Bº Natania VIII - Centro Cívico - Hospital Rawson,3
+184765623,3760655,406,Lote Hogar 59 - Plaza Aberastain,3
+184765624,3760655,407,V ª Mariano Moreno - Salta y Av. Gral Libertador San Martin,3
+184765625,3760655,408,El Mogote - Vº P. A. de Sarmiento - Centro Cívico - Htal. Rawson,3
+184765626,3760655,420,Piedritas - Centro Civico,3
+184765627,3760655,421,Campo Afuera - Villa Gral. San Martin,3
+184765628,3760655,422,El Rincon - Hospital J. Giordano,3
+184765629,3760655,423,Villa General San Martín - Calle Lozano,3
+184765634,3760655,440-A,Villa Gral. San Martín - Villa El Salvador - Centro,3
+184765635,3760655,440-B,Albardón - Villa El Salvador - Centro,3
+184765636,3760655,440-C,Villa El Salvador - Villa Sefair - Villa General San Martín,3
+184765637,3760655,440-D,Villa El Salvador - Villa General San Martín,3
+184765638,3760655,441-A,Centro - Villa El Salvador,3
+184765639,3760655,441-B,Centro - Colonia Sur,3
+184765640,3760655,441-C,Centro - Las Tapias - Cementerio,3
+184765641,3760655,441-D,Centro - El Bosque,3
+184765642,3760655,441-E,Las Tapias - Campo de Batalla,3
+185312229,3760655,441-F,Terminal de Omnibus de San Juan - Vª El Salvador,3
+184765630,3760655,442,Vª El Salvador - El Bosque - Santa Fe y EEUU,3
+184765631,3760655,460,Dos Acequias - Vº Don Bosco - Vº Dominguito - San Isidro - Vº San Martin,3
+184765632,3760655,461,Estación Córdoba - Vº Lugano - Vº San Martin - Vº Don Bosco - Boca del Tigre,3
+184765633,3760655,462,Estación Córdoba - Dos Acequias - Vº San Martin - San Isidro - Boca del Tigre,3
+184765594,3760654,3,Inter Urbana Este,3
+184765595,3760654,320,9 de julio,3
+184765596,3760654,321,9 de Julio - Centro Cívico,3
+184765597,3760654,322,Colonia Fiorito - Estación Terminal de Ómnibus de San Juan,3
+184765598,3760654,323,Villa Cabecera de 9 de Julio - Centro Cívico,3
+184765599,3760654,340,Hospital Dr. César Aguilar - Centro Cívico,3
+184765600,3760654,341,Caucete - Centro Cívico,3
+184765601,3760654,342,Caucete - Las Talas,3
+184765602,3760654,343,Caucete - Píe de Palo - Los Médanos,3
+184765603,3760654,344,Caucete - Villa Independencia,3
+184765604,3760654,345,Caucete - San Martín - Centro Cívico,3
+184765605,3760654,346,Estación Terminal de Ómnibus de Caucete - Villa Rivadavia - Villa Etelvina,3
+184765606,3760654,360,Tupelí - Caucete,3
+184765607,3760654,361,La Chimbera - Pozo Salado - Caucete,3
+184765608,3760654,362,El Encón - Caucete,3
+184765609,3760654,363,Caucete - Las Casuarinas - Media Agua,3
+184765610,3760654,364,Tupelí - Centro Cívico,3
+184765611,3760654,700,San Juan - Calingasta,3
+184765612,3760654,701,Barreal - Villa Calingasta,3
+184765613,3760654,702,Barreal - Sorocayense -Hilario -Colón -La Isla -Alcaparrosa - A. Verde -V° Calingasta -Tamberías,3
+184765614,3760654,TNS,Troncal Norte - Sur,3
+184765651,3760657,2,Inter Urbana Sur,3
+184765653,3760657,10,Perimetral Sur - Oeste,3
+184765654,3760657,20,Perimetral Sur - Este,3
+184765655,3760657,200,Médano de Oro - Villa Krause,3
+184765656,3760657,201,Villa Bolaños - Centro Cívico - Hospital Rawson,3
+184765657,3760657,202,Pocito - Medano de Oro,3
+184765658,3760657,203,Villa Centenario - Villa Krause,3
+184765659,3760657,204,Cementerio De Rawson - Centro,3
+184765660,3760657,205,Bº Fanzolato - Salta y Laprida,3
+184765661,3760657,206,Bº Lagares - Centro Cívico - Hospital Rawson,3
+184765662,3760657,207,Bº Valle Grande - Vª Krause,3
+184765663,3760657,208,Bº Solares - Salta y Av. Gral Libertador San Martín,3
+184765664,3760657,209,Barrio Conjunto 8 - Av. Dr. Guillermo Rawson y Santa Fe,3
+184765665,3760657,210,Vª Aberastain - Centro,3
+184765666,3760657,211,Bº Valle Grande - Centro,3
+184765667,3760657,212,Villa Seminario - Villa Krause,3
+184765668,3760657,213,Barrio Pocito Norte - Hospital Rawson,3
+184765669,3760657,214,Barrio SUTIAGYF - Centro Cívico,3
+184765670,3760657,240,Plaza Libertad - Av. Cordoba y Av. Dr. Guillermo Rawson,3
+184765671,3760657,241,Villa Aberastain - Hospital Rawson,3
+184765672,3760657,242,Barrio Luz y Fuerza 4 - Hospital Rawson,3
+184765673,3760657,243,Barrio UPCN - Hospital Rawson,3
+184765674,3760657,244,Villa Aberastain - Terminal de Ómnibus de San Juan,3
+184765675,3760657,245,Barrio Ruta 40 - Villa Aberastain,3
+184765676,3760657,246,Calle 9 y Ruta N. Nº40 - Villa Krause,3
+184765677,3760657,247,Villa Aberastain - 5º Cuartel - Av. Cordoba y Av. España,3
+184765678,3760657,248,B° Campo de Batalla - Villa Aberastain,3
+184765652,3760657,C,Corredor República del Líbano,3
+184765644,3760656,30,Perimetral Este,3
+184765645,3760656,300,Colonia Fiorito - Alto de Sierra - Centro,3
+184765646,3760656,301,Colonia Gutiérrez - Centro Cívico,3
+184765647,3760656,302,Bº Villa Maria - Bº Santa Lucia - Centro,3
+184765648,3760656,303,Bº Rural - Salta y Av. Gral. Libertador San Martín,3
+184765649,3760656,304,Colonia Richet Zapata - Centro Cívico,3
+184765650,3760656,305,Bermejito - Centro Cívico,3
+184765643,3760656,D,Corredor Alto de Sierra,3
+184765686,3760659,260,Villa Media Agua - Estación Terminal de Ómnibus de San Juan,3
+184765687,3760659,261,Villa Media Agua - Villa Aberastain,3
+184765688,3760659,262,Villa Media Agua - Estación Terminal de Ómnibus de San Juan,3
+184765689,3760659,263,Pedernal - Los Berros - Villa Media Agua,3
+184765690,3760659,264,Cieneguita - Divisadero - Pedernal - Villa Media Agua,3
+184765691,3760659,265,Vª Media Agua 3 Esquinas - San Carlos,3
+184765692,3760659,266,Media Agua - Punta del Médano - Cochagual,3
+184765680,3760658,140,Sierras Azules - Terminal de Ómnibus San Juan,3
+184765681,3760658,141,Villa Tacú - Terminal de Ómnibus San Juan,3
+184765682,3760658,142,Museo Enzo Mancini - Hospital Rawson,3
+184765683,3760658,160,Barrio Agapito Gil - Hospital Rawson,3
+184765684,3760658,161,Diferimientos - Hospital Rawson,3
+184765685,3760658,162,Dique Punta Negra - Plaza Laprida,3
+184765679,3760658,A,Corredor Inter Hospitalario,3
+184765706,3760661,600,San Juan - Iglesia,3
+184765707,3760661,601,Bella Vista - Iglesia - Las Flores - Tudcum - Rodeo,3
+184765708,3760661,602,Angualasto - Las Flores - Tudcum,3
+184765693,3760660,500,San Juan - Jachal,3
+184765694,3760660,501,San José de Jáchal - El Médano,3
+184765695,3760660,502,San José de Jáchal - Entre Ríos,3
+184765696,3760660,503,San José de Jáchal - Mogna,3
+184765697,3760660,504,San José de Jáchal - Huaco,3
+184765698,3760660,505,Niquivil - San José de Jáchal,3
+184765699,3760660,560,Jachal - Bella Vista,3
+184765700,3760660,800,San Juan - Valle Fertil,3
+184765701,3760660,801,San Agustín-Balde de las Chilcas-Usno,3
+184765702,3760660,802,Vª San Agustin - Plaza Dos Oceanos,3
+184765703,3760660,803,Vª San Agustín - Chucuma,3
+184765704,3760660,808,San Juan - Bermejo,3
+184765705,3760660,850,Valle Fértil - Jáchal,3

@@ -140,6 +140,12 @@
       filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
     }
 
+    /* En modo oscuro real (html.zm-theme-dark) el mapa se ve sin el filtro de
+       arriba: se muestran las tiles de OpenStreetMap tal cual, sin invertir. */
+    html.zm-theme-dark #map .leaflet-tile-pane {
+      filter: none;
+    }
+
     .leaflet-bottom {
       bottom: 86px !important;
       transition: bottom 0.28s ease;
@@ -353,6 +359,734 @@
       color: #e4e4e7;
       margin: 0;
       text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Botón para alternar entre modo claro (por defecto) y modo oscuro real */
+    .dashboard-theme-toggle {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 4;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(20, 20, 24, 0.45);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .dashboard-theme-toggle:hover {
+      background: rgba(20, 20, 24, 0.65);
+    }
+
+    .dashboard-theme-toggle:active {
+      transform: scale(0.92);
+    }
+
+    .dashboard-theme-toggle .theme-toggle-icon-moon {
+      display: none;
+    }
+
+    html.zm-theme-dark .dashboard-theme-toggle .theme-toggle-icon-sun {
+      display: none;
+    }
+
+    html.zm-theme-dark .dashboard-theme-toggle .theme-toggle-icon-moon {
+      display: block;
+    }
+
+    /* ─── Modo oscuro real (toggle) ───────────────────────────────────────
+       Paleta oscura aplicada cuando html tiene la clase zm-theme-dark
+       (alternada por el botón de arriba). El resto de la UI ya lee estas
+       variables (--glass-*, --text-*, --btn-back-*), así que overridearlas
+       acá alcanza para la mayoría de las superficies; los pocos componentes
+       con colores fijos (no var) se repiten explícitamente más abajo. */
+    html.zm-theme-dark {
+      --glass-blur: 4px;
+      --glass-saturate: 100%;
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+      --glass-bg: rgba(28, 28, 35, 0.95);
+      --glass-bg-strong: rgba(34, 34, 42, 0.98);
+      --glass-fg: #f8fafc;
+      --text-primary: #ffffff;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --btn-back-bg: rgba(255, 255, 255, 0.06);
+      --btn-back-text: #f4f4f6;
+      --btn-back-border: rgba(255, 255, 255, 0.12);
+      --btn-back-bg-hover: rgba(255, 255, 255, 0.10);
+      --btn-back-border-hover: rgba(255, 255, 255, 0.20);
+      --brand-orange-light: #ff735c;
+      --brand-orange-glow: rgba(255, 71, 46, 0.35);
+      --brand-orange-bg: rgba(255, 71, 46, 0.14);
+      --brand-orange-border: rgba(255, 71, 46, 0.45);
+      --sidepanel-header-logo-opacity: 0.22;
+    }
+
+    html.zm-theme-dark body {
+      background: #141419;
+      color: #f8fafc;
+    }
+
+    html.zm-theme-dark .ios-switch .track {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    html.zm-theme-dark .search-bar {
+      color: #f4f4f6;
+    }
+
+    html.zm-theme-dark .search-bar::placeholder {
+      color: rgba(244, 244, 246, 0.55);
+    }
+
+    html.zm-theme-dark .sidepanel-header h1 {
+      color: #f8fafc;
+    }
+
+    html.zm-theme-dark .sidepanel-header h2 {
+      color: #cbd5e1;
+    }
+
+    html.zm-theme-dark .toggle-row span {
+      color: #f4f4f6;
+    }
+
+    html.zm-theme-dark .sidepanel-credits {
+      color: rgba(244, 244, 246, 0.65);
+    }
+
+    html.zm-theme-dark .bottom-sheet-loading {
+      color: rgba(248, 250, 252, 0.88);
+    }
+
+    html.zm-theme-dark .bottom-sheet-loading-title {
+      color: #f8fafc;
+    }
+
+    html.zm-theme-dark .bottom-sheet-loading-subtitle {
+      color: rgba(203, 213, 225, 0.85);
+    }
+
+    html.zm-theme-dark .save-location-label {
+      color: rgba(203, 213, 225, 0.85);
+    }
+
+    html.zm-theme-dark .save-location-coords {
+      color: rgba(148, 163, 184, 0.85);
+    }
+
+    html.zm-theme-dark .bottom-sheet-content .fav-row .btn-eliminar-fav {
+      border-left-color: rgba(255, 255, 255, 0.12);
+      color: rgba(203, 213, 225, 0.7);
+    }
+
+    html.zm-theme-dark .search-results-hint,
+    html.zm-theme-dark .search-results-loading {
+      color: rgba(203, 213, 225, 0.75);
+    }
+
+    html.zm-theme-dark .search-result-item {
+      border-color: rgba(255, 255, 255, 0.10);
+      background: rgba(34, 34, 42, 0.95);
+    }
+
+    html.zm-theme-dark .search-result-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.20);
+    }
+
+    html.zm-theme-dark .search-result-item-title {
+      color: #f4f4f6;
+    }
+
+    html.zm-theme-dark .search-result-item-info {
+      color: rgba(203, 213, 225, 0.75);
+    }
+
+    html.zm-theme-dark.no-transparency .search-bar-container,
+    html.zm-theme-dark.no-transparency .search-modal-content {
+      background: #1c1c23 !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+
+    html.zm-theme-dark.no-transparency .search-result-item {
+      background: #1c1c23 !important;
+      color: #f4f4f6 !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    html.zm-theme-dark.no-transparency .btn-settings,
+    html.zm-theme-dark.no-transparency footer .btn-floating {
+      background: #1c1c23 !important;
+      color: #f4f4f6 !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+
+    /* Tarjetas/superficies del rediseño del dashboard (usan #faf8f5/#211f1b
+       fijos en vez de las variables --glass-*, así que necesitan su propio
+       override acá para el modo oscuro). */
+    html.zm-theme-dark .search-unified-dropdown,
+    html.zm-theme-dark .quick-fav-chip,
+    html.zm-theme-dark .dashboard-card,
+    html.zm-theme-dark .btn-quick-explore,
+    html.zm-theme-dark .map-detail-panel,
+    html.zm-theme-dark .panel-header,
+    html.zm-theme-dark .bottom-sheet-content .btn-nearest-line,
+    html.zm-theme-dark .panel-content .btn-nearest-line,
+    html.zm-theme-dark .fav-card-item:active {
+      background: #1c1c23;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    html.zm-theme-dark .map-picking-banner {
+      background: #1c1c23;
+    }
+
+    html.zm-theme-dark .app-footer {
+      background: rgba(28, 28, 35, 0.92);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    html.zm-theme-dark .search-filter-chip:hover,
+    html.zm-theme-dark .btn-quick-explore:hover,
+    html.zm-theme-dark .fav-card-item:hover,
+    html.zm-theme-dark .bottom-sheet-content button:hover,
+    html.zm-theme-dark .panel-content button:hover,
+    html.zm-theme-dark .bottom-sheet-content .btn-action:hover,
+    html.zm-theme-dark .panel-content .btn-action:hover,
+    html.zm-theme-dark .bottom-sheet-content .btn-nearest-line:hover,
+    html.zm-theme-dark .panel-content .btn-nearest-line:hover,
+    html.zm-theme-dark .bottom-sheet-content .fav-row:hover,
+    html.zm-theme-dark .panel-content .fav-row:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    html.zm-theme-dark .search-unified-input,
+    html.zm-theme-dark .search-unified-clear:hover,
+    html.zm-theme-dark .search-unified-item,
+    html.zm-theme-dark .search-unified-item-title,
+    html.zm-theme-dark .search-badge-add,
+    html.zm-theme-dark .search-filter-chip:hover,
+    html.zm-theme-dark .nearest-stop-dash-name,
+    html.zm-theme-dark .quick-fav-chip,
+    html.zm-theme-dark .card-header-title,
+    html.zm-theme-dark .btn-text-action:hover,
+    html.zm-theme-dark .recent-item-btn,
+    html.zm-theme-dark .btn-quick-explore,
+    html.zm-theme-dark .credits-logo-row h3,
+    html.zm-theme-dark .credits-list a,
+    html.zm-theme-dark .credits-dev-title,
+    html.zm-theme-dark .credits-member-link,
+    html.zm-theme-dark .guardados-header h1,
+    html.zm-theme-dark .guardados-filter-btn:hover,
+    html.zm-theme-dark .fav-card-title,
+    html.zm-theme-dark .btn-fav-map,
+    html.zm-theme-dark .nav-tab:hover,
+    html.zm-theme-dark .map-corner-centrar,
+    html.zm-theme-dark .bottom-sheet-content button,
+    html.zm-theme-dark .panel-content button,
+    html.zm-theme-dark .bottom-sheet-content .btn-action,
+    html.zm-theme-dark .panel-content .btn-action,
+    html.zm-theme-dark .setting-toggle-label,
+    html.zm-theme-dark .recorrido-indice-left,
+    html.zm-theme-dark .planeo-timeline-title,
+    html.zm-theme-dark .save-location-toggle-text,
+    html.zm-theme-dark .save-location-title,
+    html.zm-theme-dark .bottom-sheet-content .fav-row .fav-main,
+    html.zm-theme-dark .panel-content .fav-row .fav-main {
+      color: #f4f4f6;
+    }
+
+    html.zm-theme-dark .hud-loading-title,
+    html.zm-theme-dark .active-gps-dist-time {
+      color: #f8fafc;
+    }
+
+    html.zm-theme-dark .nav-tab {
+      color: #9a968c;
+    }
+
+    html.zm-theme-dark .search-filter-chip {
+      background: #24242c;
+      border-color: rgba(255, 255, 255, 0.10);
+      color: #a3a099;
+    }
+
+    html.zm-theme-dark .search-unified-box,
+    html.zm-theme-dark .fav-card-item,
+    html.zm-theme-dark .save-location-sheet,
+    html.zm-theme-dark .bottom-sheet-content button,
+    html.zm-theme-dark .panel-content button,
+    html.zm-theme-dark .bottom-sheet-content .btn-action,
+    html.zm-theme-dark .panel-content .btn-action,
+    html.zm-theme-dark .lineas-list .btn-linea,
+    html.zm-theme-dark .bottom-sheet-content .fav-row,
+    html.zm-theme-dark .panel-content .fav-row {
+      background: #1c1c23;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    html.zm-theme-dark .lineas-list .btn-linea {
+      color: #f4f4f6 !important;
+    }
+
+    html.zm-theme-dark .lineas-list .btn-linea:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.20);
+    }
+
+    html.zm-theme-dark .lineas-list .btn-linea .linea-button-ref {
+      color: #f4f4f6 !important;
+    }
+
+    html.zm-theme-dark .lineas-list .btn-linea .linea-button-name {
+      color: #a8adb8 !important;
+    }
+
+    html.zm-theme-dark .hero-bg-overlay {
+      background: linear-gradient(180deg,
+          rgba(10, 10, 14, 0.04) 0%,
+          rgba(10, 10, 14, 0.10) 25%,
+          rgba(10, 10, 14, 0.28) 48%,
+          rgba(10, 10, 14, 0.58) 68%,
+          rgba(10, 10, 14, 0.85) 84%,
+          #141419 100%);
+    }
+
+    /* ==== BLOQUE GENERADO: overrides oscuros para superficies/texto/bordes neutros ==== */
+    html.zm-theme-dark html,
+    html.zm-theme-dark body,
+    html.zm-theme-dark .search-unified-box,
+    html.zm-theme-dark .search-unified-dropdown,
+    html.zm-theme-dark .search-filter-chip,
+    html.zm-theme-dark .quick-fav-chip,
+    html.zm-theme-dark .dashboard-card,
+    html.zm-theme-dark .btn-quick-explore,
+    html.zm-theme-dark .fav-card-item,
+    html.zm-theme-dark .fav-card-item:active,
+    html.zm-theme-dark .map-detail-panel,
+    html.zm-theme-dark .panel-header,
+    html.zm-theme-dark .bottom-sheet-content button,
+    html.zm-theme-dark .panel-content button,
+    html.zm-theme-dark .bottom-sheet-content .btn-action,
+    html.zm-theme-dark .panel-content .btn-action,
+    html.zm-theme-dark .lineas-list .btn-linea,
+    html.zm-theme-dark .lineas-list .btn-linea:hover,
+    html.zm-theme-dark .save-location-sheet,
+    html.zm-theme-dark .bottom-sheet-content .btn-nearest-line,
+    html.zm-theme-dark .panel-content .btn-nearest-line,
+    html.zm-theme-dark .bottom-sheet-content .fav-row,
+    html.zm-theme-dark .panel-content .fav-row {
+      background: #1c1c23;
+    }
+
+    html.zm-theme-dark html,
+    html.zm-theme-dark body,
+    html.zm-theme-dark .hud-loading-title,
+    html.zm-theme-dark .active-gps-dist-time,
+    html.zm-theme-dark .bottom-sheet-loading-title,
+    html.zm-theme-dark .search-result-item-title {
+      color: #f8fafc;
+    }
+
+    html.zm-theme-dark .hero-bg-overlay {
+      background: linear-gradient(180deg,
+          rgba(10, 10, 14, 0.04) 0%,
+          rgba(10, 10, 14, 0.10) 25%,
+          rgba(10, 10, 14, 0.28) 48%,
+          rgba(10, 10, 14, 0.58) 68%,
+          rgba(70, 71, 75, 0.55) 84%,
+          #1c1c23 100%);
+    }
+
+    html.zm-theme-dark .search-unified-box,
+    html.zm-theme-dark .trip-planner-row .trip-planner-row-btn {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    html.zm-theme-dark .search-unified-wrapper.dashboard-card > .search-unified-box,
+    html.zm-theme-dark .panel-action-btn {
+      border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    html.zm-theme-dark .search-unified-wrapper.dashboard-card > .search-unified-box:focus-within {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    html.zm-theme-dark .search-unified-icon,
+    html.zm-theme-dark .search-unified-input::placeholder,
+    html.zm-theme-dark .search-unified-clear,
+    html.zm-theme-dark .search-unified-item-sub,
+    html.zm-theme-dark .search-filter-chip,
+    html.zm-theme-dark .btn-text-action,
+    html.zm-theme-dark .recent-delete-btn,
+    html.zm-theme-dark .recent-empty-hint,
+    html.zm-theme-dark .credits-logo-row p,
+    html.zm-theme-dark .credits-list,
+    html.zm-theme-dark .credits-dev-member,
+    html.zm-theme-dark .credits-member-text,
+    html.zm-theme-dark .guardados-header p,
+    html.zm-theme-dark .guardados-filter-btn,
+    html.zm-theme-dark .btn-fav-remove,
+    html.zm-theme-dark .nav-tab,
+    html.zm-theme-dark .lineas-list .btn-linea .linea-button-arrow,
+    html.zm-theme-dark .setting-toggle-desc,
+    html.zm-theme-dark .transit-stop-time,
+    html.zm-theme-dark .save-location-toggle-chevron,
+    html.zm-theme-dark .save-location-label,
+    html.zm-theme-dark .save-location-input::placeholder {
+      color: #a8a49b;
+    }
+
+    html.zm-theme-dark .search-unified-input,
+    html.zm-theme-dark .search-unified-clear:hover,
+    html.zm-theme-dark .search-unified-item,
+    html.zm-theme-dark .search-unified-item-title,
+    html.zm-theme-dark .search-badge-add,
+    html.zm-theme-dark .search-filter-chip:hover,
+    html.zm-theme-dark .nearest-stop-dash-name,
+    html.zm-theme-dark .quick-fav-chip,
+    html.zm-theme-dark .card-header-title,
+    html.zm-theme-dark .btn-text-action:hover,
+    html.zm-theme-dark .recent-item-btn,
+    html.zm-theme-dark .btn-quick-explore,
+    html.zm-theme-dark .credits-logo-row h3,
+    html.zm-theme-dark .credits-list a,
+    html.zm-theme-dark .credits-dev-title,
+    html.zm-theme-dark .credits-member-link,
+    html.zm-theme-dark .guardados-header h1,
+    html.zm-theme-dark .guardados-filter-btn:hover,
+    html.zm-theme-dark .fav-card-title,
+    html.zm-theme-dark .btn-fav-map,
+    html.zm-theme-dark .nav-tab:hover,
+    html.zm-theme-dark .map-corner-centrar,
+    html.zm-theme-dark .panel-action-btn:hover,
+    html.zm-theme-dark .panel-action-btn:hover .panel-btn-label,
+    html.zm-theme-dark .bottom-sheet-content button,
+    html.zm-theme-dark .panel-content button,
+    html.zm-theme-dark .bottom-sheet-content .btn-action,
+    html.zm-theme-dark .panel-content .btn-action,
+    html.zm-theme-dark .bottom-sheet-content button:hover,
+    html.zm-theme-dark .panel-content button:hover,
+    html.zm-theme-dark .bottom-sheet-content .btn-action:hover,
+    html.zm-theme-dark .panel-content .btn-action:hover,
+    html.zm-theme-dark .bottom-sheet-content button.btn-nav-row:hover,
+    html.zm-theme-dark .panel-content button.btn-nav-row:hover,
+    html.zm-theme-dark .lineas-list .btn-linea:hover .linea-button-arrow,
+    html.zm-theme-dark .hud-stop-dist,
+    html.zm-theme-dark .hud-stop-name,
+    html.zm-theme-dark .setting-toggle-label,
+    html.zm-theme-dark .btn-active-gps-clear:hover,
+    html.zm-theme-dark .recorrido-indice-left,
+    html.zm-theme-dark .transit-stop-name-primary,
+    html.zm-theme-dark .transit-accordion-icon,
+    html.zm-theme-dark .transit-accordion-label,
+    html.zm-theme-dark .planeo-timeline-title,
+    html.zm-theme-dark .save-location-toggle-text,
+    html.zm-theme-dark .save-location-title,
+    html.zm-theme-dark .save-location-input,
+    html.zm-theme-dark .bottom-sheet-content .btn-nearest-line,
+    html.zm-theme-dark .panel-content .btn-nearest-line,
+    html.zm-theme-dark .bottom-sheet-content .btn-nearest-line:hover,
+    html.zm-theme-dark .panel-content .btn-nearest-line:hover,
+    html.zm-theme-dark .bottom-sheet-content .fav-row .fav-main,
+    html.zm-theme-dark .panel-content .fav-row .fav-main,
+    html.zm-theme-dark .btn-primary,
+    html.zm-theme-dark .route-direction-text {
+      color: #f4f4f6;
+    }
+
+    html.zm-theme-dark .search-unified-dropdown,
+    html.zm-theme-dark .btn-quick-explore,
+    html.zm-theme-dark .fav-card-item,
+    html.zm-theme-dark .app-footer,
+    html.zm-theme-dark .switch-slider {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    html.zm-theme-dark .route-origin-row,
+    html.zm-theme-dark .trip-planner-row {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    html.zm-theme-dark .route-origin-row,
+    html.zm-theme-dark .trip-planner-row,
+    html.zm-theme-dark .quick-fav-chip,
+    html.zm-theme-dark .dashboard-card,
+    html.zm-theme-dark .credits-dev-box,
+    html.zm-theme-dark .bottom-sheet-content button,
+    html.zm-theme-dark .panel-content button,
+    html.zm-theme-dark .bottom-sheet-content .btn-action,
+    html.zm-theme-dark .panel-content .btn-action,
+    html.zm-theme-dark .lineas-list .btn-linea,
+    html.zm-theme-dark .bottom-sheet-content .btn-nearest-line,
+    html.zm-theme-dark .panel-content .btn-nearest-line,
+    html.zm-theme-dark .bottom-sheet-content .fav-row,
+    html.zm-theme-dark .panel-content .fav-row,
+    html.zm-theme-dark .search-result-item {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    html.zm-theme-dark .route-origin-row-name,
+    html.zm-theme-dark .trip-planner-row-value,
+    html.zm-theme-dark .trip-planner-row .trip-planner-row-btn {
+      color: var(--text-primary, #f4f4f6);
+    }
+
+    html.zm-theme-dark .map-picking-banner {
+      color: var(--text-primary, #f8fafc);
+    }
+
+    html.zm-theme-dark .map-picking-banner-cancel,
+    html.zm-theme-dark .btn-text-action:hover,
+    html.zm-theme-dark .save-location-input {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    html.zm-theme-dark .map-picking-banner-cancel:hover {
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    html.zm-theme-dark .trip-planner-rows::before {
+      background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 0 4px, transparent 4px 8px);
+    }
+
+    html.zm-theme-dark .trip-planner-row .trip-planner-row-btn,
+    html.zm-theme-dark .credits-mini-logo,
+    html.zm-theme-dark .guardados-filter-btn,
+    html.zm-theme-dark .nav-tab:hover,
+    html.zm-theme-dark .confirm-modal button.btn-nav-row,
+    html.zm-theme-dark .panel-action-btn,
+    html.zm-theme-dark .transit-accordion-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    html.zm-theme-dark .search-unified-item,
+    html.zm-theme-dark .recent-item-btn,
+    html.zm-theme-dark .credits-dev-box,
+    html.zm-theme-dark .bottom-sheet-content .search-unified-item,
+    html.zm-theme-dark .panel-content .search-unified-item,
+    html.zm-theme-dark .transit-stop-btn,
+    html.zm-theme-dark .bottom-sheet-content .fav-empty,
+    html.zm-theme-dark .panel-content .fav-empty {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    html.zm-theme-dark .search-unified-item,
+    html.zm-theme-dark .recent-item-btn,
+    html.zm-theme-dark .bottom-sheet-content .search-unified-item,
+    html.zm-theme-dark .panel-content .search-unified-item {
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    html.zm-theme-dark .search-unified-item:hover,
+    html.zm-theme-dark .search-badge-add,
+    html.zm-theme-dark .search-filter-chip:hover,
+    html.zm-theme-dark .nearest-stop-dash-divider,
+    html.zm-theme-dark .quick-fav-chip:hover,
+    html.zm-theme-dark .quick-fav-chip-icon,
+    html.zm-theme-dark .btn-quick-explore:hover,
+    html.zm-theme-dark .fav-card-item:hover,
+    html.zm-theme-dark .btn-fav-map,
+    html.zm-theme-dark .map-corner-centrar:hover,
+    html.zm-theme-dark footer .btn-floating:hover,
+    html.zm-theme-dark .bottom-sheet-content button:hover,
+    html.zm-theme-dark .panel-content button:hover,
+    html.zm-theme-dark .bottom-sheet-content .btn-action:hover,
+    html.zm-theme-dark .panel-content .btn-action:hover,
+    html.zm-theme-dark .bottom-sheet-content .search-unified-item:hover,
+    html.zm-theme-dark .panel-content .search-unified-item:hover,
+    html.zm-theme-dark .bottom-sheet-content .btn-nearest-line:hover,
+    html.zm-theme-dark .panel-content .btn-nearest-line:hover,
+    html.zm-theme-dark .bottom-sheet-content .fav-row:hover,
+    html.zm-theme-dark .panel-content .fav-row:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    html.zm-theme-dark .search-unified-item:hover,
+    html.zm-theme-dark .bottom-sheet-content .search-unified-item:hover,
+    html.zm-theme-dark .panel-content .search-unified-item:hover {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    html.zm-theme-dark .search-badge-add:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    html.zm-theme-dark .recent-item-btn:hover,
+    html.zm-theme-dark .guardados-section-badge {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    html.zm-theme-dark .credits-logo-row,
+    html.zm-theme-dark .panel-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    html.zm-theme-dark .guardados-filter-btn:hover,
+    html.zm-theme-dark .confirm-modal button.btn-nav-row:hover,
+    html.zm-theme-dark .save-location-input:focus {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    html.zm-theme-dark .guardados-filter-btn:hover,
+    html.zm-theme-dark footer .btn-floating:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    html.zm-theme-dark .guardados-filter-count {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    html.zm-theme-dark .guardados-section-title,
+    html.zm-theme-dark .guardados-section-badge,
+    html.zm-theme-dark .fav-card-sub,
+    html.zm-theme-dark .panel-btn-label,
+    html.zm-theme-dark .panel-subtitle,
+    html.zm-theme-dark .hud-stop-instruction,
+    html.zm-theme-dark .hud-lines-caption,
+    html.zm-theme-dark .hud-line-more,
+    html.zm-theme-dark .hud-loading-subtitle,
+    html.zm-theme-dark .active-gps-target,
+    html.zm-theme-dark .transit-stop-meta,
+    html.zm-theme-dark .transit-row-origin .transit-stop-time,
+    html.zm-theme-dark .transit-row-dest .transit-stop-time,
+    html.zm-theme-dark .transit-accordion-time,
+    html.zm-theme-dark .save-location-description,
+    html.zm-theme-dark .bottom-sheet-loading-subtitle,
+    html.zm-theme-dark .save-location-label,
+    html.zm-theme-dark .save-location-coords,
+    html.zm-theme-dark .bottom-sheet-content .fav-empty,
+    html.zm-theme-dark .panel-content .fav-empty,
+    html.zm-theme-dark .bottom-sheet-content .fav-row .btn-eliminar-fav,
+    html.zm-theme-dark .panel-content .fav-row .btn-eliminar-fav,
+    html.zm-theme-dark .search-results-hint,
+    html.zm-theme-dark .search-results-loading,
+    html.zm-theme-dark .search-result-item-info {
+      color: #a3a8b3;
+    }
+
+    html.zm-theme-dark .btn-fav-map:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    html.zm-theme-dark .app-footer {
+      background: rgba(28, 28, 35, 0.90);
+    }
+
+    html.zm-theme-dark .map-corner-centrar,
+    html.zm-theme-dark .map-nearest-stop-hud:hover {
+      background: rgba(28, 28, 35, 0.96);
+    }
+
+    html.zm-theme-dark .map-corner-centrar {
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    html.zm-theme-dark .confirm-overlay {
+      background: rgba(28, 28, 35, 0.55);
+    }
+
+    html.zm-theme-dark .confirm-modal button.btn-nav-row:hover {
+      border-color: rgba(255, 255, 255, 0.26);
+    }
+
+    html.zm-theme-dark .map-detail-panel {
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    html.zm-theme-dark .panel-action-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    html.zm-theme-dark .btn-volver-parada:hover,
+    html.zm-theme-dark .lineas-list .btn-linea,
+    html.zm-theme-dark .lineas-list .btn-linea .linea-button-ref,
+    html.zm-theme-dark.no-transparency .search-result-item,
+    html.zm-theme-dark.no-transparency .btn-settings,
+    html.zm-theme-dark.no-transparency footer .btn-floating {
+      color: #f4f4f6 !important;
+    }
+
+    html.zm-theme-dark .lineas-list .btn-linea .linea-button-badge {
+      color: var(--line-text, #f4f4f6);
+    }
+
+    html.zm-theme-dark .lineas-list .btn-linea .linea-button-name {
+      color: #a3a8b3 !important;
+    }
+
+    html.zm-theme-dark .map-nearest-stop-hud {
+      background: rgba(28, 28, 35, 0.92);
+    }
+
+    html.zm-theme-dark .hud-bottom-row {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    html.zm-theme-dark .switch-slider {
+      background-color: rgba(255, 255, 255, 0.14);
+    }
+
+    html.zm-theme-dark .transit-faint-dot {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    html.zm-theme-dark .transit-stop-btn {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    html.zm-theme-dark .save-location-sheet {
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    html.zm-theme-dark .save-location-input,
+    html.zm-theme-dark .bottom-sheet-content .btn-save-location,
+    html.zm-theme-dark .panel-content .btn-save-location {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    html.zm-theme-dark .bottom-sheet-content .fav-row .btn-eliminar-fav,
+    html.zm-theme-dark .panel-content .fav-row .btn-eliminar-fav {
+      border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    html.zm-theme-dark .search-result-item.has-line-color .search-result-item-title,
+    html.zm-theme-dark .search-result-item.has-line-color .search-result-item-info {
+      color: var(--line-text, #f4f4f6) !important;
+    }
+
+    html.zm-theme-dark.no-transparency .btn-settings,
+    html.zm-theme-dark.no-transparency footer .btn-floating,
+    html.zm-theme-dark.no-transparency .search-bar-container,
+    html.zm-theme-dark.no-transparency .search-modal-content {
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    html.zm-theme-dark.no-transparency .search-modal-content,
+    html.zm-theme-dark.no-transparency .search-result-item,
+    html.zm-theme-dark.no-transparency .btn-settings,
+    html.zm-theme-dark.no-transparency footer .btn-floating {
+      background: #1c1c23 !important;
+    }
+
+    html.zm-theme-dark.no-transparency .search-result-item {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    html.zm-theme-dark .map-highlight-tooltip-tag::after {
+      border-color: rgba(28, 28, 35, 0.96) transparent transparent transparent;
     }
 
     /* Buscador Unificado Moderno */
@@ -5201,6 +5935,25 @@
             </div>
           </div>
           <div class="hero-bg-overlay" aria-hidden="true"></div>
+          <button type="button" id="btn-theme-toggle" class="dashboard-theme-toggle" aria-pressed="false"
+            aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro">
+            <svg class="theme-toggle-icon-sun" width="19" height="19" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2"></path>
+              <path d="M12 20v2"></path>
+              <path d="m4.93 4.93 1.41 1.41"></path>
+              <path d="m17.66 17.66 1.41 1.41"></path>
+              <path d="M2 12h2"></path>
+              <path d="M20 12h2"></path>
+              <path d="m6.34 17.66-1.41 1.41"></path>
+              <path d="m19.07 4.93-1.41 1.41"></path>
+            </svg>
+            <svg class="theme-toggle-icon-moon" width="19" height="19" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+            </svg>
+          </button>
           <div class="dashboard-hero-content">
             <div class="dashboard-logo-container">
               <img src="Icons/logo transit.png" alt="ZondaMov" class="dashboard-logo" />

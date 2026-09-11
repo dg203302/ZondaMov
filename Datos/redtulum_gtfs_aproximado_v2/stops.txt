@@ -1,0 +1,5372 @@
+stop_id,stop_name
+ST0001,B° Ate-Api S
+ST0002,Molina Y Cipolletti
+ST0003,Virgen De Lourdes Y Zuluaga S
+ST0004,Vice Gdor. Cattani Y Fray M. Esquiú O
+ST0005,Escuela General Mariano Bartolomé Carreras O
+ST0006,Bazán Agras Y Zuluaga N
+ST0007,Bazan Agras Y Cipolleti N
+ST0008,Cipolletti Y Bazán Agras O
+ST0009,Cipolletti Y Cabildo O
+ST0010,Cipolletti Y Sgto. Cabral
+ST0011,Polideportivo B° Fuva S
+ST0012,B° Fuva - Dr. Driolet
+ST0013,Plaza B° Fuva
+ST0014,San Lorenzo Y Olegario Andrade S
+ST0015,San Lorenzo Y Esteban Echeverría
+ST0016,Esteban Echeverría Y Tacuarí E
+ST0017,Esteban Echeverría Y Sgto. Cabral
+ST0018,Sgto. Cabral Y Roger Balet S
+ST0019,Sgto. Cabral Y López Mansilla
+ST0020,Club Enfermera Medina S
+ST0021,Sgto. Cabral Y Viamonte
+ST0022,Sgto. Cabral Y Paula A. De Sarmiento S
+ST0023,San Lorenzo Y Perito Moreno S
+ST0024,San Lorenzo Y French S
+ST0025,Caps Dr. Alfonso Barassi N
+ST0026,Capilla Ntra. Sra. Del Carmen
+ST0027,Matias Zavalla Y Falucho
+ST0028,Matías Zavalla Y Noruega O
+ST0029,Matías Zavalla Y Juan Jufré
+ST0030,Juan Jufré Y Borja Toranzo S
+ST0031,Juan Jufré Y Urquiza
+ST0032,Plaza Ejército Argentino O
+ST0033,Urquiza Y Alberdi
+ST0034,Museo De La Memoria Urbana S
+ST0035,25 De Mayo Y Dr. Ortega S
+ST0036,Centro De Convenciones
+ST0037,Av. España Y San Luis
+ST0038,Av. Libertador Y Salta S -B
+ST0039,Plaza Laprida S -A
+ST0040,Av. Libertador Y Mendoza S -B
+ST0041,Av. Libertador Y Tucumán S -B
+ST0042,Av. Libertador Y Caseros S -B
+ST0043,Av. Libertador Y Av. Rawson S -A
+ST0044,Av. Rawson Y Mitre O -B
+ST0045,Av. Rawson Y Av. Córdoba O -A
+ST0046,Av. Córdoba Y Aberastain N
+ST0047,Av. Córdoba Y Av. Rioja N -B
+ST0048,Av. Córdoba Y Gral. Acha -A
+ST0049,Av. Córdoba Y Catamarca N -A
+ST0050,Av. Córdoba Y Salta N
+ST0051,Av. Córdoba Y Las Heras
+ST0052,Las Heras Y Av. Ig. De La Roza
+ST0053,Las Heras Y Laprida -B
+ST0054,Las Heras Y San Luis
+ST0055,25 De Mayo Y Dr. Ortega N
+ST0056,Escuela Luis Fontana
+ST0057,Auditorio Juan Victoria
+ST0058,Plaza Ejército Argentino E
+ST0059,Juan Jufré Y Borja Toranzo N
+ST0060,Juan Jufré Y Matías Zavalla
+ST0061,Matías Zavalla Y Noruega E
+ST0062,Caps Dr. Alfonso Barassi S
+ST0063,San Lorenzo Y French N
+ST0064,San Lorenzo Y Antonio Garbini
+ST0065,San Lorenzo Y Moreno N
+ST0066,San Lorenzo Y Paula A. De Sarmiento
+ST0067,Sgto. Cabral Y Viamonte N
+ST0068,Club Enfermera Medina N
+ST0069,Sgto. Cabral Y Dorrego
+ST0070,Sgto. Cabral Y Granaderos
+ST0071,Esteban Echeverría Y Tacuarí O
+ST0072,Esteban Echeverría Y San Lorenzo
+ST0073,San Lorenzo Y Olegario Andrade N
+ST0074,San Lorenzo - Bº Fuva
+ST0075,San Lorenzo Y Driollet
+ST0076,Driollet Y Sargento Cabral
+ST0077,Polideportivo B° Fuva E
+ST0078,Sgto. Cabral Y Cipolletti
+ST0079,Cipolletti Y Cabildo E
+ST0080,Cipolletti Y Bazán Agras E
+ST0081,Bazán Agras Y Zuluaga S
+ST0082,Vice Gdor. Cattani Y Bazán Agras
+ST0083,Escuela General Mariano Bartolomé Carreras E
+ST0084,Vice Gdor. Cattani Y Fray M. Esquiú E
+ST0085,Virgen De Lourdes Y Zuluaga N
+ST0086,Virgen De Lourdes Y Cipolletti
+ST0087,Molina Y Santa María De Oro
+ST0088,B° Ate-Api N
+ST0089,Escuela De Educación Especial José De Cupertino N
+ST0090,Plaza Polideportivo B° Aramburu O
+ST0091,Loteo Casares O
+ST0092,Zuluaga Y Bolívar
+ST0093,Bolívar Y Cattani
+ST0094,Bolívar Y Músicos Rim 22
+ST0095,Músicos Rim 22 Y Virgen De Lourdes O
+ST0096,Laprida Y Paula A. De Sarmiento
+ST0097,Granaderos Y Colectividad Española
+ST0098,Granaderos Y Larralde
+ST0099,Capitán Hugo Emilio Y Paula A. De Sarmiento
+ST0100,Paula A. De Sarmiento Y Granaderos
+ST0101,B° Sargento Cabral O
+ST0102,Granaderos Y Sgto. Cabral
+ST0103,Paula A. De Sarmiento Y Lateral Av. De Circunvalación O
+ST0104,Escuela De Fruticultura Y Enología O
+ST0105,Complejo Deportivo El Palomar Unsj S
+ST0106,25 De Mayo Y Matías Zavalla S
+ST0107,25 De Mayo Y Toranzo
+ST0108,Club Obras Sanitarias S
+ST0109,25 De Mayo Y Urquiza
+ST0110,Av. Libertador Y Aberastain S -B
+ST0111,Aberastain Y Rivadavia
+ST0112,Aberastain Y Santa Fe
+ST0113,Av. Córdoba Y Caseros S -C
+ST0114,9 De Julio Y Patricias Sanjuaninas
+ST0115,Terminal De Ómnibus San Juan Acceso B
+ST0116,Hospital De Niños Dr. Juan Carlos Navarro N
+ST0117,Av. Rawson Y Rivadavia E
+ST0118,Av. Libertador Y Güemes N
+ST0119,Av. Libertador Y Aberastain N -B
+ST0120,Av. Libertador Y Av. Rioja N -B
+ST0121,Av. Libertador Y Gral. Acha N
+ST0122,Av. Libertador Y Entre Ríos N -A
+ST0123,Av. Libertador Y Catamarca N -A
+ST0124,Plaza España -B
+ST0125,Las Heras Y 25 De Mayo -B
+ST0126,25 De Mayo Y Ramón Y Cajal
+ST0127,Club Obras Sanitarias N
+ST0128,25 De Mayo Y Marcial Quiroga
+ST0129,Salud Universitaria
+ST0130,Complejo Deportivo El Palomar Unsj N
+ST0131,25 De Mayo Y Paula A. De Sarmiento N
+ST0132,Escuela De Fruticultura Y Enología E
+ST0133,Paula A. De Sarmiento Y Falucho
+ST0134,Paula A. De Sarmiento Y San Lorenzo
+ST0135,B° Sargento Cabral E
+ST0136,Granaderos Y Paula A. De Sarmiento
+ST0137,Granaderos Y Roque Carranza
+ST0138,Granaderos Y Balbín
+ST0139,Granaderos Y Laprida
+ST0140,Músicos Rim 22 Y Virgen De Lourdes E
+ST0141,Músicos Rim 22 Y Bolívar
+ST0142,Bolívar Y Zuluaga
+ST0143,Loteo Casares E
+ST0144,Plaza Polideportivo B° Aramburu E
+ST0145,Cipolletti Y Molina O
+ST0146,Viamonte Y Dominguito O
+ST0147,Los Almendros Y Viamonte S
+ST0148,Plaza Bº Las Acacias S
+ST0149,Perito Moreno Y Dominguito E
+ST0150,Dominguito - Pasajes S
+ST0151,Unión Vecinal B° Mutual Banco San Juan E
+ST0152,Matías Zavalla Y Virgen De Lourdes E
+ST0153,B° Cooperarq VII S
+ST0154,Virgen De Lourdes Y Mercedarios S
+ST0155,Virgen De Lourdes Y Cristóbal Colón
+ST0156,Cristóbal Colón Y Dominguito O
+ST0157,Museo Graffigna O
+ST0158,Sgto. Cabral Y Cristóbal Colón S
+ST0159,Sgto. Cabral Y Scalabrini Ortiz S
+ST0160,Sgto. Cabral - Centro Comercial S
+ST0161,Piedrabuena Y Los Nogales
+ST0162,Piedrabuena Y Los Nogales E
+ST0163,Los Aromos Y Octavio Gil S
+ST0164,Sgto. Cabral Y España
+ST0165,Sgto. Cabral Y Salta S
+ST0166,Salta Y Corrientes E
+ST0167,Corrientes Y Catamarca S
+ST0168,Antigua Bodega O
+ST0169,B° San Martín - Ingreso Norte O
+ST0170,B° San Martín - Central O
+ST0171,Catamarca Y Falucho O
+ST0172,Falucho Y Av. Alem N
+ST0173,Av. Alem Y Juan Jufré
+ST0174,Av. Alem Y Cereceto O
+ST0175,Bodega López Peláez O
+ST0176,Escuela De Comercio Manuel Belgrano O
+ST0177,Av. Alem Y Maipú
+ST0178,Av. Alem Y 25 De Mayo O
+ST0179,Av. Alem Y San Luis
+ST0180,Av. Libertador Y Av. Rawson S -B
+ST0181,Estación Córdoba - Capital - Rawson - Rivadavia
+ST0182,Las Heras Y Maipú E
+ST0183,Centro Tecnológico Infinito Por Descubrir E
+ST0184,Cementerio Municipal De La Ciudad De San Juan
+ST0185,Cortínez Y Salta
+ST0186,Av. Alem Y Cereceto E
+ST0187,Av. Alem Y Falucho
+ST0188,Falucho Y Gral. Roca
+ST0189,B° San Martín - Central E
+ST0190,B° San Martín - Ingreso Norte E
+ST0191,Antigua Bodega E
+ST0192,Catamarca Y Corrientes
+ST0193,Corrientes Y Salta N
+ST0194,Salta Y Sgto. Cabral O
+ST0195,Bº Los Aromos N
+ST0196,Sgto. Cabral Y Segundino Aguiar
+ST0197,Los Aromos Y Octavio Gil N
+ST0198,Piedrabuena Y Los Nogales O
+ST0199,Sgto. Cabral - Centro Comercial N
+ST0200,Sgto. Cabral Y Scalabrini Ortiz N -B
+ST0201,Sgto. Cabral Y Cristóbal Colón N
+ST0202,Museo Graffigna E
+ST0203,Cristóbal Colón Y Dominguito E
+ST0204,Cristóbal Colón Y Virgen De Lourdes E
+ST0205,Virgen De Lourdes Y Mercedarios N
+ST0206,B° Cooperarq VII N
+ST0207,Virgen De Lourdes Y Matías Zavalla
+ST0208,Unión Vecinal B° Mutual Banco San Juan O
+ST0209,Dominguito - Pasajes N
+ST0210,Perito Moreno Y Los Aromos
+ST0211,Plaza Bº Las Acacias N
+ST0212,Los Almendros Y Viamonte N
+ST0213,Viamonte Y Dominguito E
+ST0214,Av. Rawson Y Colombia O
+ST0215,Av. Rawson Y Juan Jufré
+ST0216,Juan Jufré Y Güemes
+ST0217,Juan Jufré Y Aberastain E
+ST0218,Juan Jufré Y Jujuy
+ST0219,Parroquia Inmaculada Concepción
+ST0220,Tucumán Y Lautaro
+ST0221,Escuela Dr. Guillermo Rawson E
+ST0222,San Lorenzo Y Gral. Acha. N
+ST0223,San Lorenzo Y Mendoza
+ST0224,Mendoza Y Lautaro O
+ST0225,Mendoza Y Juan Jufré O
+ST0226,Juan Jufré Y Catamarca
+ST0227,Juan Jufré Y Av. Alem
+ST0228,Pedro Echagüe Y Salta
+ST0229,Av. España Y San Luis -B
+ST0230,Av. Libertador Y Salta -C
+ST0231,Av. Rioja Y Mitre O
+ST0232,Santa Fe Y Gral. Acha -D
+ST0233,Registro Civil Capital -A
+ST0234,Av. Alem Y Av. Córdoba O
+ST0235,Av. Alem Y 9 De Julio O
+ST0236,Av. Alem Y Rosselot
+ST0237,Av. Alem Y Mariano Moreno O
+ST0238,Av. Alem Y Fray Mamerto Esquiú O
+ST0239,Av. Alem Y Abraham Tapia O
+ST0240,Av. Alem Y Estrada O
+ST0241,Pedro De Valdivia Y Mendoza
+ST0242,Pedro De Valdivia Y Gral. Acha
+ST0243,Plaza Almirante Brown - Trinidad N
+ST0244,Plaza De Trinidad S
+ST0245,Agustín Gómez Y Mendoza
+ST0246,Agustín Gómez Y Av. Alem E
+ST0247,Av. Alem Y Saturnino Sarassa
+ST0248,Lateral Sur Av. De Circunvalación Y Guillermo Marconi
+ST0249,H. Yrigoyen Y Santa Fe E
+ST0250,Santa Fe Y Gral. Soler S
+ST0251,Gral. Soler Y 9 De Julio O
+ST0252,Gral. Soler Y Arenales O
+ST0253,Santa María De Oro Y Tulum O
+ST0254,Santa María De Oro Y Cmte. Cabot
+ST0255,Cmte. Cabot Y Esteban Echeverría S
+ST0256,Victoria Y González
+ST0257,Victoria Y Tulum E
+ST0258,Victoria Y Pasaje San Pablo E
+ST0259,Victoria Y Arenales E
+ST0260,Victoria Y Brasil
+ST0261,Brasil Y Echeverria
+ST0262,9 De Julio Y Victoria S
+ST0263,Hermógenes Ruiz Y Brasil O
+ST0264,9 De Julio Y Riobamba S
+ST0265,9 De Julio Y Lateral Av. De Circunvalación
+ST0266,9 De Julio Y Paula A. De Sarmiento S
+ST0267,Plaza Norte B° Las Heras O
+ST0268,Capilla Ntra. Sra. Del Rosario O
+ST0269,Plaza B° Las Heras O
+ST0270,Paula A. De Sarmiento Y Pedro De Valdivia O
+ST0271,Pedro De Valdivia Y José Martí S
+ST0272,Pedro De Valdivia Y Urquiza S
+ST0273,Pedro De Valdivia Y Navarro S
+ST0274,Pedro De Valdivia Y Pineda S
+ST0275,Pedro De Valdivia Y Cano S
+ST0276,Pedro De Valdivia Y Av. España S
+ST0277,Pedro De Valdivia Y Santiago Del Estero
+ST0278,Pedro De Valdivia Y Periodistas Sanjuaninos S
+ST0279,Pedro De Valdivia Y Av. Alem
+ST0280,Colegio El Tránsito E
+ST0281,Gral. Acha Y Fray Mamerto Esquiú -A
+ST0282,Gral. Acha Y Mariano Moreno -B
+ST0283,Plaza H. Yrigoyen E -B
+ST0284,Av. Córdoba Y Tucumán -A
+ST0285,Av. Rawson Y Santa Fe E -C
+ST0286,Av. Alem Y Laprida O
+ST0287,Av. Alem Y Av. Ig. De La Roza -A
+ST0288,Av. Alem Y Santa Fe
+ST0289,Santa Fe Y Salta -B
+ST0290,Estación Córdoba - Rivadavia - Ullúm -Zonda
+ST0291,Av. España Y Brasil
+ST0292,Av. España Y Belgrano O
+ST0293,Av. España Y Laspiur
+ST0294,Av. España Y Pedro De Valdivia O
+ST0295,Pedro De Valdivia Y Cano N
+ST0296,Pedro De Valdivia Y Pineda N
+ST0297,Pedro De Valdivia Y Navarro N
+ST0298,Pedro De Valdivia Y Urquiza N
+ST0299,Pedro De Valdivia Y José Martí N
+ST0300,Pedro De Valdivia Y Paula A. De Sarmiento
+ST0301,Plaza Sur B° Las Heras E
+ST0302,Capilla Ntra. Sra. Del Rosario E
+ST0303,Plaza Norte B° Las Heras E
+ST0304,9 De Julio Y Paula A. De Sarmiento N
+ST0305,9 De Julio Y Riobamba N
+ST0306,Club Unión Deportiva Bancaria E
+ST0307,9 De Julio Y Victoria N
+ST0308,9 De Julio Y Esteban Echeverría N
+ST0309,Esteban Echeverría Y Brasil
+ST0310,Brasil Y Victoria
+ST0311,Victoria Y Arenales
+ST0312,Victoria Y Pasaje San Pablo O
+ST0313,Victoria Y Tulum O
+ST0314,Victoria Y González O
+ST0315,Cmte. Cabot Y Esteban Echeverría N
+ST0316,Cmte. Cabot Y Santa María De Oro
+ST0317,Santa María De Oro Y Tulum E
+ST0318,Gral. Soler Y Arenales E
+ST0319,Arenales E H. Yrigoyen E
+ST0320,Colegio Mercedario - B° San Miguel
+ST0321,Av. Libertador Y Sgto. Baigorria S
+ST0322,Av. Libertador Y Pellegrini S
+ST0323,Rotondas De Ingreso A Marquesado S -B
+ST0324,Coll Y B° Lote Hogar 53 S
+ST0325,Coll Y Acceso B° El Cóndor
+ST0326,Bº El Arriero S
+ST0327,Acceso Bº Rincón Del Syrah S
+ST0328,Huazihul Rugby Club S
+ST0329,Coll Y Refugio S
+ST0330,Escuela Timoteo Maradona S
+ST0331,Rastreador Calivar Y Las Viñitas
+ST0332,Rastreador Calivar Y Conscripto Argentino
+ST0333,Rastreador Calívar - B° Orlando Marino
+ST0334,Rastreador Calivar Y Dr. Arturo Zorrilla O
+ST0335,Rastreador Calívar - Hospital Marcial Quiroga
+ST0336,Rastreador Calivar Y Salvador María Del Carril O
+ST0337,Rastreador Calívar Y Plaza Bº Natania XV O -B
+ST0338,Rastreador Calivar Y Lavalle O -B
+ST0339,Plazoleta Carlos Gardel Bº Natania XV O
+ST0340,Av. Ig. De La Roza Y Julio Cortázar N
+ST0341,Av. Ig. De La Roza - B° El Huarpe N
+ST0342,Av. Ig. De La Roza Y Callejón Silva N
+ST0343,Escuela Juan José Castelli N
+ST0344,Av. Ig. De La Roza Y Sgto. Baigorria N
+ST0345,Av. Ig. De La Roza Y Fernández N
+ST0346,Av. Ig. De La Roza Y Brasil N
+ST0347,Av. Ig. De La Roza Y Comercio N
+ST0348,Comercio Y Paraguay
+ST0349,Comercio Y Libertad E
+ST0350,Atencio Y Santiago Del Estero N
+ST0351,Atencio Y Morón N
+ST0352,Morón Y Agustín Roberto
+ST0353,Morón E Av. Ig. De La Roza
+ST0354,Av. Ig. De La Roza Y Morón S
+ST0355,Av. Ig. De La Roza Y Gral. Roca S
+ST0356,Av. Ig. De La Roza Y Sgto. Del Estero S
+ST0357,Av. Ig. De La Roza Y Comercio S
+ST0358,Comercio Y 9 De Julio O
+ST0359,Comercio Y Calle Nueva O -B
+ST0360,Centro Deportivo Y Cultural D. F. Sarmiento S -A
+ST0361,Anexo Escuela Diógenes Perramón S
+ST0362,Plaza Lote Hogar 24 S
+ST0363,B° Puesta Del Sol S
+ST0364,Carlos Yornet Y Pellegrini
+ST0365,Escuela Diógenes Perramón O
+ST0366,Dr. Ortega Y Pellegrini S
+ST0367,Plaza B° Conjunto 1-2-3 S
+ST0368,Dr. Ortega Y Chacabuco B° Conjunto 3 S
+ST0369,Chacabuco Y Proyectada B° Valle Grande O
+ST0370,Chacabuco Y Calle Ppal. B° Valle Grande
+ST0371,Chacabuco Y Calle Proyectada XIX O
+ST0372,Chacabuco Y Agustín Gómez O
+ST0373,Agustín Gómez Y Pelegrini E
+ST0374,Pellegrini Cementerio Parque Cerro Del Oeste
+ST0375,Pelegrini Y Pacheco E
+ST0376,Pacheco Y B. Rivadavia N
+ST0377,Vº San Justo E
+ST0378,Evita Y José Clemente E
+ST0379,Plaza B° Conjunto 5
+ST0380,Morón Y Calle Nueva O -B
+ST0381,Comercio Y Calle Nueva E
+ST0382,Comercio Y Acceso B° El Jilguero E
+ST0383,Comercio Y Carlos Yornet E -B
+ST0384,Escuela Nuevo Cuyo E
+ST0385,Comercio Y Calle Nueva E -B
+ST0386,Comercio Y Av. Ig. De La Roza E
+ST0387,Av. Ig. De La Roza Y Sgto. Del Estero N
+ST0388,Av. Ig. De La Roza Y Santa Cruz N
+ST0389,Av. Ig. De La Roza Y Gral. Roca N
+ST0390,Av. Ig. De La Roza Y Morón N
+ST0391,Atencio Y Morón
+ST0392,Atencio Y Santiago Del Estero
+ST0393,Atencio Y Comercio
+ST0394,Comercio Y Tierra Del Fuego
+ST0395,Comercio Y Av. Ig. De La Roza
+ST0396,Av. Ig. De La Roza Y Brasil S
+ST0397,Av. Ig. De La Roza Y Fernández S
+ST0398,Av. Ig. De La Roza Y Sgto. Baigorria S
+ST0399,Av. Ig. De La Roza Y Pellegrini S
+ST0400,Av. Ig. De La Roza Y Callejón Silva S
+ST0401,Av. Ig. De La Roza - B° El Huarpe S
+ST0402,Av. Ig. De La Roza Y Julio Cortázar S
+ST0403,Rastreador Calivar Y Honorio Pueyrredón
+ST0404,Rastreador Calivar Y Lavalle E -B
+ST0405,Rastreador Calívar Y Colón
+ST0406,Rastreador Calívar Y Plaza Bº Natania XV E
+ST0407,Rastreador Calivar Y Salvador María Del Carril E
+ST0408,Paseo Sarmiento
+ST0409,Hospital Dr. Marcial Quiroga N -B
+ST0410,Rastreador Calívar Y Av. Libertador
+ST0411,Cepas Sanjuaninas E
+ST0412,Rastreador Calivar Y Dr. Arturo Zorrilla E
+ST0413,Rastreador Calívar - B° Udap II
+ST0414,Rastreador Calivar Y Conscripto Argentino E
+ST0415,Rastreador Calivar Y Las Viñitas E
+ST0416,Rastreador Calívar Y Sgto. Cabral E -B
+ST0417,Coll Y Refugio N
+ST0418,Huazihul Rugby Club N
+ST0419,Acceso Bº Rincón Del Syrah N
+ST0420,Estación Transformadora Punta De Rieles
+ST0421,Acceso Sur B° Cerro Blanco E
+ST0422,Los Olivos Y Proyectada 1 - Bº Cerro Blanco E
+ST0423,Los Olivos Y Proyectada 2 - Bº Cerro Blanco E
+ST0424,Plaza B° Cerro Blanco E
+ST0425,Unión Vecinal B° Marquesado III
+ST0426,Plaza B° Marquesado I
+ST0427,Proyectada 8 Y Los Almendros
+ST0428,Las Golondrinas Y Los Zorzales
+ST0429,Plaza B° Los Zorzales
+ST0430,El Ceibo Y Los Almendros
+ST0431,Escuela Nivel Inicial N°30 - Elsa Bornemann
+ST0432,Unión Vecinal B° Marquesado I
+ST0433,Plaza B° Marquesado III
+ST0434,Plaza B° Cerro Blanco O
+ST0435,Los Olivos Y Proyectada 2 - Bº Cerro Blanco O
+ST0436,Los Olivos Y Proyectada 1 - Bº Cerro Blanco O
+ST0437,Acceso Sur B° Cerro Blanco O
+ST0438,Coll Y B° Lote Hogar 53 N
+ST0439,Rotonda De Ingreso A Marquesado N -B
+ST0440,Casa De Betania N
+ST0441,Av. Libertador Y Galíndez N
+ST0442,Galíndez Y San Juan E
+ST0443,San Juan Y Sgto. Bautista Baigorria
+ST0444,Boulonge Sur Y Ara San Juan
+ST0445,Malvinas Argentinas Y Martín Miguel De Güemes
+ST0446,Blvd. B° Soeva N
+ST0447,Rastreador Calivar Y Molina Campos E
+ST0448,Plaza Humoristas Argentinos E
+ST0449,Rastreador Calivar Y Cmte. Cabot E
+ST0450,Rastreador Calivar Y Av. Ig. De La Roza
+ST0451,Punta De Rieles Y Malvinas Argentinas
+ST0452,Salvador María Del Carril Y Paso De Los Andes
+ST0453,Paso De Los Andes Y Lavalle O
+ST0454,Juan Lavalle Y Martín Alzaga S
+ST0455,Reconquista Y Provincia De Corrientes S
+ST0456,Plaza Elvira Nobile De Poolini
+ST0457,Meglioli Y Antonio Sánchez Ramos O
+ST0458,Meglioli Y Av. Ig. De La Roza O -B
+ST0459,Meglioli Y Abel Di Prospero -B
+ST0460,Meglioli Y Pablo Antonio Ramella
+ST0461,Meglioli Y Tulum O -B
+ST0462,Club Atlético El Globo O
+ST0463,Cmte. Cabot - B° Natania XX S
+ST0464,Cmte. Cabot Y Charcas S
+ST0465,Cmte. Cabot Y Sgto. Acosta S
+ST0466,Cmte. Cabot Y 1 De Mayo
+ST0467,Cmte. Cabot Y Riobamba S
+ST0468,Cmte. Cabot Y O'Higgins S
+ST0469,Cmte. Cabot Y Buenos Aires
+ST0470,Cmte. Cabot Y Paula A. De Sarmiento S
+ST0471,Cmte. Cabot Y Urquiza S
+ST0472,Urquiza Y Pedro De Valdivia S
+ST0473,Urquiza Y Gral. Arenales E
+ST0474,Colegio Ntra. Sra. De Luján S
+ST0475,Gral. Arenales Y Las Heras
+ST0476,Las Heras Y Belgrano
+ST0477,Las Heras Y Brasil
+ST0478,Las Heras Y 9 De Julio -B
+ST0479,Las Heras Y Av. Córdoba
+ST0480,9 De Julio Y Las Heras -A
+ST0481,Dr. V. Lloveras Y Brasil
+ST0482,Las Heras Y Gral. Arenales
+ST0483,Gral. Arenales Y Segundino Navarro
+ST0484,Gral. Arenales Y Urquiza N
+ST0485,Urquiza Y Laspiur O
+ST0486,Urquiza Y Pedro De Valdivia
+ST0487,Urquiza Y Agustín Gómez
+ST0488,Cmte. Cabot Y Hudson N
+ST0489,Cmte. Cabot Y Sto. Tomás De Aquino
+ST0490,Cmte. Cabot Y Urquiza N
+ST0491,Cmte. Cabot Y O'Higgins N
+ST0492,Cmte. Cabot Y Riobamba N
+ST0493,Cmte. Cabot Y B. Rivadavia N
+ST0494,Cmte. Cabot Y Dr. Victoria N
+ST0495,Cmte. Cabot Y Esmeralda N
+ST0496,Cmte. Cabot E H. Yrigoyen
+ST0497,Cmte. Cabot Y Charcas N
+ST0498,Cmte. Cabot - B° Natania XX N
+ST0499,Cmte. Cabot Y Meglioli
+ST0500,Meglioli Y Av. Coratina E
+ST0501,Meglioli Y Villalonga
+ST0502,Talleres Unsj
+ST0503,Meglioli Y Av. Ig. De La Roza E -B
+ST0504,Meglioli Y Antonio Sánchez Ramos E
+ST0505,Meglioli Y Reconquista S
+ST0506,Reconquista Y Provincia De Corrientes N
+ST0507,Juan Lavalle Y Martín Alzaga N
+ST0508,Paso De Los Andes Y Colón
+ST0509,Malvinas Argentinas Y Punta De Rieles
+ST0510,Rastreador Calivar Y Cmte. Cabot O
+ST0511,Plaza Humoristas Argentinos O
+ST0512,Rastreador Calivar Y Molina Campos O
+ST0513,Martín Miguel De Güemes Y Alberto Orlando Olmedo -S
+ST0514,Martín Güemes Y Malvinas Argentinas
+ST0515,Plaza Bº Piuquén N
+ST0516,Escuela Cruce De Los Andes B° Piuquén O
+ST0517,Av. Rawson Y Santa Fe O -A
+ST0518,Escuela Industrial D. F. Sarmiento -B
+ST0519,Santa Fe Y Av. Rioja -A
+ST0520,Registro Civil Capital -B
+ST0521,Santa Fe Y Av. Alem -D
+ST0522,Casa De Gobierno O
+ST0523,Av. Libertador Y Av. De Circunvalación N -B
+ST0524,Av. Libertador Y Adán Quiroga N
+ST0525,Plaza Desamparados N -B
+ST0526,Santa María De Oro Y Falucho E
+ST0527,Amable Jones Y Jujuy N
+ST0528,Amable Jones Y Cornelio Saavedra N
+ST0529,Talcahuano E Hipólito Vieytes N
+ST0530,Talcahuano Y Plaza 2 De Agosto N
+ST0531,Manuel Zavalla Y Talcahuano N
+ST0532,Talcahuano Y Las Palmas
+ST0533,Las Palmas Y Los Tilos
+ST0534,Las Palmas Y Boggian S
+ST0535,Boggian Y Espejo N
+ST0536,Boggian Y Sanidad Argentina
+ST0537,Sanidad Argentina E Illia
+ST0538,21 De Septiembre Y Sanidad Argentina N
+ST0539,Sanidad Argentina Y Olmos
+ST0540,Sgto. Cabral Y Mercedario N
+ST0541,Acceso B° Los Álamos 2 Natania N
+ST0542,Sgto. Cabral Y Cerro Tronador N
+ST0543,Sgto. Cabral E Isla Victoria N
+ST0544,Escuela Timoteo Maradona N
+ST0545,Acceso B° El Arriero N
+ST0546,Los Olivos Y Proyectada 2- B° Marquesado III O
+ST0547,Av. Libertador Y Tejada N
+ST0548,Av. Libertador Y Sgto. Baigorria N
+ST0549,Cementerio Parque El Mirador
+ST0550,Av. Libertador Y Godoy S
+ST0551,Av. Libertador Y F. Ameghino S
+ST0552,Escuela Roque Sáenz Peña S
+ST0553,Marquesado - Estación De Servicio
+ST0554,Casa De Betania S
+ST0555,Camping Las Palmeras S
+ST0556,B° Uta - Unión Tranviarios Automotor S
+ST0557,Plaza B° 20 De Noviembre
+ST0558,Av. Libertador Y R. Salinas
+ST0559,Av. Libertador Y Kenny
+ST0560,Hospital Dr. Marcial Quiroga S -A
+ST0561,Av. Libertador Y Pasaje Escolar S -B
+ST0562,Av. Libertador - B° Gendarmería S
+ST0563,Av. Libertador Y Boulogne Sur Mer S
+ST0564,Av. Libertador Y Gómez S -B
+ST0565,Gómez Y Gendarme Argentino O
+ST0566,Plaza De La Santísima Virgen María O
+ST0567,Sancassani Y Aguirre
+ST0568,Sancassani Y Meglioli
+ST0569,Meglioli E Ituzaingó
+ST0570,Ituzaingó Y Manuel Belgrano S
+ST0571,Ituzaingó Y Libertad S
+ST0572,Ituzaingó Y Juan B. Justo
+ST0573,Ituzaingó E H. Yrigoyen
+ST0574,Juan José Paso Y Santa María De Oro
+ST0575,Juan José Paso Y Adán Quiroga
+ST0576,Juan José Paso Y Esteban Echeverría
+ST0577,Av. Libertador Y Del Bono S -B
+ST0578,Av. Libertador Y Av. De Circunvalación S -B
+ST0579,Av. Libertador Y Paula A. De Sarmiento S
+ST0580,Av. Libertador Y Matías Zavalla S -A
+ST0581,U.N.S.J. - Facultad De Ingeniería S
+ST0582,Museo Franklin Rawson
+ST0583,Aberastain Y Laprida
+ST0584,Santa Fe Y Av. Alem -B
+ST0585,Av. Alem Y Mitre
+ST0586,Av. Alem Y Laprida E
+ST0587,U.N.S.J. - Facultad De Ingeniería N
+ST0588,Av. Libertador Y Matías Zavalla N -A
+ST0589,Av. Libertador Y Paula A. De Sarmiento N -B
+ST0590,Av. Libertador Y Del Bono N
+ST0591,Juan José Paso Y Jofré
+ST0592,Cornelio Saavedra Y Jofré
+ST0593,Cornelio Saavedra Y Esteban Echeverría
+ST0594,Cornelio Saavedra Y Adán Quiroga
+ST0595,Cornelio Saavedra Y Santa María De Oro
+ST0596,Cornelio Saavedra E H. Yrigoyen
+ST0597,Ituzaingó Y Mariano Moreno
+ST0598,Ituzaingó Y Libertad N
+ST0599,Ituzaingó Y Manuel Belgrano N
+ST0600,Ituzaingó - Conjunto Ipv
+ST0601,Ituzaingó Y Meglioli
+ST0602,Meglioli Y Sancassani O
+ST0603,Plaza De La Santísima Virgen María
+ST0604,Gómez Y Gendarme Argentino E
+ST0605,Av. Libertador Y Gral. Espejo N
+ST0606,Av. Libertador Y Boulogne Sur Mer N -B
+ST0607,Av. Libertador - B° Gendarmería N
+ST0608,Av. Libertador Y Santo Domingo N -B
+ST0609,Plazoleta Dr. Salvador Mazza
+ST0610,Antigua Industria
+ST0611,B° Terrazas Al Oeste N
+ST0612,B° Uta - Unión Tranviarios Automotor N
+ST0613,Plazoleta Soldado Argentino
+ST0614,Sgto. Bautista Baigorria Y Soldado Argentino
+ST0615,Galíndez Y San Juan O
+ST0616,Plaza De Marquesado O
+ST0617,Correo Argentino Marquesado
+ST0618,Escuela Roque Sáenz Peña N
+ST0619,Av. Libertador Y F. Ameghino N
+ST0620,Av. Libertador Y Morón N
+ST0621,Av. Libertador Y Godoy N
+ST0622,Jorge Luis Borges Y Los Quebrachos S
+ST0623,Jorge Luis Borges Y Blvd. O
+ST0624,Jorge Luis Borges Y Ramón Salinas
+ST0625,Ramón Salinas Y Valenzuela Varas E
+ST0626,Ramón Salinas Y Los Plátanos E
+ST0627,Ramón Salinas Y Periodistas Argentinos
+ST0628,Periodistas Argentinos Y Domingo Cortínez
+ST0629,Wilfredo Kenny Y Justo Pacheco
+ST0630,Valenzuela Varas Y Rastreador Calivar
+ST0631,Valenzuela Varas Y Gral. Madariaga N
+ST0632,Valenzuela Varas Y Pablo Di Marco N
+ST0633,Valenzuela Varas Y Wilfredo Kenny
+ST0634,Plaza Ara San Juan
+ST0635,Colón Y Carlos Montaña
+ST0636,Lavalle Y Carlos Montaña S
+ST0637,Lavalle Y Atahualpa Yupanqui S
+ST0638,Lavalle Y Rastreador Calivar S
+ST0639,Colón Y Malvinas Argentinas
+ST0640,Colón Y Aberastain S
+ST0641,Paso De Los Andes Y Av. Ig. De La Roza
+ST0642,Universidad Católica De Cuyo S -B
+ST0643,Parroquia Del Divino Salvador S
+ST0644,Av. Ig. De La Roza Y Los Jesuitas S -A
+ST0645,Reconquista Y Falucho S
+ST0646,Reconquista Y Zonda S
+ST0647,Reconquista Y Juan B. Justo S
+ST0648,Reconquista Y D. Vélez Sarsfield
+ST0649,Reconquista E H. Yrigoyen
+ST0650,H. Yrigoyen Y Pueyrredón O
+ST0651,H. Yrigoyen Y Balcarce O
+ST0652,Colegio Mercedario Ingreso
+ST0653,H. Yrigoyen Y Arenales O
+ST0654,Arenales Y Santa María De Oro S
+ST0655,Gral. Soler Y Brasil E
+ST0656,Gral. Soler Y 9 De Julio E
+ST0657,9 De Julio Y Esteban Echeverría S
+ST0658,9 De Julio Y Hermógenes Ruiz Y
+ST0659,Hermógenes Ruiz Y F. Rawson E
+ST0660,Hermógenes Ruiz Y Córdoba E
+ST0661,Hermógenes Ruíz Y Santa Fe E
+ST0662,Ausonia
+ST0663,Paseo Comercial - Alto Del Bono Shopping S -A
+ST0664,Av. Ig. De La Roza Y Alvear
+ST0665,Av. Ig. De La Roza Y Ameghino S -A
+ST0666,Av. Ig. De La Roza Y José Rodriguez S -B
+ST0667,Av. Ig. De La Roza Y Segundino Navarro
+ST0668,Av. Ig. De La Roza Y Agustín Gnecco S
+ST0669,Agustín Gnecco Y Av. Córdoba
+ST0670,Av. Córdoba Y Suipacha
+ST0671,Av. Córdoba Y Salta S
+ST0672,Av. Córdoba Y Sarmiento S -B
+ST0673,Av. Córdoba Y Jujuy
+ST0674,Av. Córdoba Y Av. Rawson -C
+ST0675,Santa Fe Y Caseros -C
+ST0676,Aberastain Y Av. Córdoba -B
+ST0677,Av. Córdoba Y Agustín Gnecco
+ST0678,Av. Córdoba Y Segundino Navarro N
+ST0679,Segundino Navarro Y Av. Ig. De La Roza
+ST0680,Av. Ig. De La Roza Y Urquiza N
+ST0681,Colegio Central Universitario
+ST0682,Av. Ig. De La Roza Y Paula A. De Sarmiento N -A
+ST0683,Paseo Comercial - Alto Del Bono Shopping N
+ST0684,Hermógenes Ruíz Y Santa Fe O
+ST0685,Hermógenes Ruiz Y Córdoba O
+ST0686,Hermógenes Ruiz Y F. Rawson O
+ST0687,Hermógenes Ruiz Y 9 De Julio O
+ST0688,Plazoleta B° Los Alamos N
+ST0689,Gral. Soler Y Brasil O
+ST0690,H. Yrigoyen Y Av. Ig. De La Roza
+ST0691,H. Yrigoyen Y Pueyrredón E
+ST0692,H. Yrigoyen Y Reconquista
+ST0693,Reconquista Y Juan B. Justo N
+ST0694,Reconquista Y Zonda N
+ST0695,Reconquista Y Mariano Moreno N
+ST0696,Reconquista Y Manuel Belgrano
+ST0697,Reconquista Y Meglioli N
+ST0698,Av. Ig. De La Roza Y Francisco Gil
+ST0699,Av. Ig. De La Roza Y Paso De Los Andes
+ST0700,Paso De Los Andes Y Pueyrredón
+ST0701,Paso De Los Andes Y Lavalle E
+ST0702,Colón Y Aberastain N
+ST0703,Colón Y Malvinas Argentinas N
+ST0704,Colón Y Rastreador Calivar N
+ST0705,Lavalle Y Atahualpa Yupanqui N
+ST0706,Lavalle Y Cortázar
+ST0707,Lavalle Y Carlos Montaña N
+ST0708,Carlos Montaña Y Colón
+ST0709,Wilfredo Kenny Y Antonio De La Torre
+ST0710,Wilfredo Kenny Y Valenzuela Varas
+ST0711,Valenzuela Varas Y Pablo Di Marco S
+ST0712,Valenzuela Varas Y Gral. Madariaga S
+ST0713,Wilfredo Kenny Y Enrique Fernandéz
+ST0714,Periodistas Argentinos Y Domingo Cortínez N
+ST0715,Periodistas Argentinos Y Ramón Salinas
+ST0716,Ramón Salinas Y Los Plátanos O
+ST0717,Ramón Salinas Y Valenzuela Varas O
+ST0718,Jorge Luis Borges Y Boulevard Este
+ST0719,Jorge Luis Borges Y Los Quebrachos N
+ST0720,I.N.P.R.E.S N
+ST0721,Roger Ballet Y Echegaray E
+ST0722,Roger Ballet Y Juan De Flores
+ST0723,Juan De Flores Y Maurín
+ST0724,Esteban Echeverría Y Flores
+ST0725,Falucho Y Adán Quiroga N
+ST0726,Falucho Y Santa María De Oro
+ST0727,Santa María De Oro Y Pasteur E
+ST0728,Santa María De Oro Y San Lorenzo E
+ST0729,Santa María De Oro Y Sgto. Cabral E
+ST0730,Sgto. Cabral Y Misiones N
+ST0731,Sgto. Cabral Y Jujuy
+ST0732,Sgto. Cabral Y Liniers N
+ST0733,Sgto. Cabral Y Almte. Brown N
+ST0734,Almte. Brown Y Cabildo E
+ST0735,Escuela Cornelio Saavedra
+ST0736,Almte. Brown Y Laprida E
+ST0737,Laprida Y Juan José Paso N
+ST0738,Laprida Y José Avelín N
+ST0739,Plazoleta B° Parque Rivadavia Norte N
+ST0740,Caps B° Parque Rivadavia Norte
+ST0741,Escuela B° Parque Rivadavia Norte N
+ST0742,Plaza B° Parque Rivadavia Norte N
+ST0743,Escuela Ciudad Del Sol
+ST0744,Arnobio Sánchez Y Sgto. Cabral N
+ST0745,Velázquez Y 21 De Setiembre N
+ST0746,Plaza Madre Teresa De Calcuta N
+ST0747,Juan Widmer Y 21 De Septiembre O
+ST0748,Juan Widmer Y Arturo Illia
+ST0749,Arturo Illia Y Santo Domingo
+ST0750,Santo Domingo Y B° Natania Residencial II O
+ST0751,Santo Domingo Y Barud De Quattropani E
+ST0752,Plaza Liva Otilla Clavel
+ST0753,Ivonne B. De Quattropani Y Rastreador Calivar
+ST0754,Polideportivo B° Atsa IV - N
+ST0755,Dr. Arturo Zorrilla Y Juan Blanes N
+ST0756,Plaza Dr. René Favaloro O
+ST0757,Polideportivo B° Atsa IV
+ST0758,Dr. Castillo Y Rastreador Calivar
+ST0759,Av. Ig. De La Roza Y Malvinas Argentinas S -A
+ST0760,Complejo Universitario Islas Malvinas Unsj S -A
+ST0761,Av. Benavídez Y El Domador S
+ST0762,Av. Benavídez Y Mancini S
+ST0763,Av. Benavídez Y J. Vidable S
+ST0764,Av. Benavídez Y Velázquez S
+ST0765,Arnobio Sánchez Y Costa Canal
+ST0766,Acceso B° Parque Rivadavia Norte O
+ST0767,Plaza B° Rivadavia Norte S
+ST0768,Comisaría 23 S
+ST0769,Escuela Bº Parque Rivadavia Norte S
+ST0770,Capilla B° Parque Rivadavia Norte S
+ST0771,Laprida Y José Avelín S
+ST0772,Laprida Y Juan José Paso S
+ST0773,Laprida Y Almte. Brown S
+ST0774,Laprida Y Liniers
+ST0775,Escuela De Educación Especial José De Cupertino S
+ST0776,Virgen De Lourdes Y Dorrego S
+ST0777,Paula A. De Sarmiento Y Virgen De Lourdes O
+ST0778,Plaza Juan José Viamonte S
+ST0779,Cervantes Y Perito Moreno S
+ST0780,Escuela Campaña Del Desierto O
+ST0781,Perito Moreno Y Dominguito O
+ST0782,Dominguito Y Viamonte
+ST0783,Bº Privado Vía Aurelia
+ST0784,Paula A. De Sarmiento Y Rotonda Sgto. Cabral
+ST0785,Av. Libertador Y Catamarca S
+ST0786,Av. Libertador Y Mendoza S -A
+ST0787,Av. Libertador Y Tucumán S -C
+ST0788,Jujuy Y Mitre
+ST0789,Jujuy Y Laprida
+ST0790,Paula A. De Sarmiento Y Sgto. Cabral
+ST0791,Paula A. De Sarmiento Y Viamonte E
+ST0792,Diagonal Viamonte Y Los Almendros
+ST0793,Dominguito Y Perito Moreno
+ST0794,Escuela Campaña Del Desierto E
+ST0795,Perito Moreno Y Cervantes E
+ST0796,Plaza Juan José Viamonte N
+ST0797,Paula A. De Sarmiento Y Cervantes E
+ST0798,Virgen De Lourdes Y Dorrego N
+ST0799,Virgen De Lourdes Y Músicos Rim 22
+ST0800,Liniers Y Laprida O
+ST0801,Laprida Y Almte. Brown N
+ST0802,Arnobio Sánchez Y Miguel Cervantes
+ST0803,Velázquez Y Av. Benavídez
+ST0804,Escuela Arturo Illia -Ingreso
+ST0805,Av. Benavídez Y J. Vidable N
+ST0806,Av. Benavídez Y Mancini N
+ST0807,Av. Benavídez Y El Domador N
+ST0808,Necochea Y San Lorenzo
+ST0809,San Lorenzo Y Estados Unidos
+ST0810,Av. Rawson Y San Lorenzo O
+ST0811,Juan Jufré Y Mendoza
+ST0812,Juan Jufré Y Salta
+ST0813,Salta Y Av. De Circunvalación S
+ST0814,Lateral Av. De Circunvalación Y Las Heras N
+ST0815,Scalabrini Ortiz Y Lateral Av. De Circunvalación N
+ST0816,Scalibrini Ortiz Y Juan Jufré
+ST0817,Juan Jufré Y Las Heras
+ST0818,Las Heras Y Cereceto O
+ST0819,Las Heras Y Marcial Quiroga O
+ST0820,Cementerio Municipal Ciudad De San Juan
+ST0821,Parque Manuel Belgrano
+ST0822,Av. España Y Pedro Echagüe
+ST0823,Urquiza Y San Luis E
+ST0824,Sgto. Cabral Y Posta De Yatasto
+ST0825,Sgto. Cabral Y Driollet N
+ST0826,Sgto. Cabral Y Juan José Paso N
+ST0827,Sgto. Cabral Y Callejón Coria N
+ST0828,Sgto. Cabral Y Manuel Zavalla N
+ST0829,Manuel Zavalla E Illia
+ST0830,Las Palmas Y Blanco
+ST0831,Las Palmas Y Boggian N
+ST0832,Boggian Y Manuel Zavalla
+ST0833,Manuel Zavalla Y Los Tilos O
+ST0834,Manuel Zavalla Y Suipacha O
+ST0835,Manuel Zavalla Y Av. Libertador
+ST0836,Escuela Provincia De Salta
+ST0837,Meglioli Y Punta De Rieles
+ST0838,Parroquia Del Divino Salvador N
+ST0839,Universidad Católica De Cuyo N -B
+ST0840,Av. Ig. De La Roza Y Malvinas Argentinas -B
+ST0841,Malvinas Argentinas Y Lavalle
+ST0842,Malvinas Argentinas Y S. M. Del Carril
+ST0843,Pueyrredón Y Curupayti
+ST0844,Juncal Y Av. Ig. De La Roza O
+ST0845,Av. Ignacio De La Roza Y Meglioli N -A
+ST0846,Av. Ig. De La Roza Y Rastreador Calivar N -B
+ST0847,Rastreador Calívar Y Sgto. Cabral E -A
+ST0848,Rastreador Calívar Y Pasaje Castro E -A
+ST0849,Rastreador Calívar Y Av. Benavídez E
+ST0850,Av. Benavídez Y Porres S
+ST0851,B° Las Lajas S
+ST0852,Almte. Brown Y Prov. De Río Negro
+ST0853,Almte. Brown Y Laprida O
+ST0854,Cipolletti Y Av. Benavídez
+ST0855,Av. Benavídez Y 2 De Septiembre S
+ST0856,Av .Benavidez Y Paula A. Sarmiento S -A
+ST0857,Av. Benavídez Y Díaz S
+ST0858,Av. Benavidez Y Tierney S
+ST0859,Av. Benavídez Y América S
+ST0860,Av. Benavídez Y Maradona S
+ST0861,Cristóbal Colón Y Virgen De Lourdes O
+ST0862,Sgto. Cabral Y Segundo Aguiar S
+ST0863,Corrientes Y Entre Ríos
+ST0864,Mendoza Y Corrientes S
+ST0865,Corrientes Y Sánchez S
+ST0866,Corrientes Y Tucumán
+ST0867,Corrientes Y Caseros
+ST0868,Corrientes Y Rotonda Acceso Norte
+ST0869,Corrientes Y Soler
+ST0870,Gral. Soler Y Yapeyú E
+ST0871,Posadas Y Correa E
+ST0872,Posadas Y Funes
+ST0873,Posadas Y Telésfora S. De Benavídez
+ST0874,Telésfora S. De Benavídez Y Necochea
+ST0875,Thomas Edison Y Federico Cantoni S
+ST0876,Thomas Edison Y Chacabuco S
+ST0877,Chacabuco Y Sgto. Méndez E
+ST0878,B° Noroeste III Chacabuco E -A
+ST0879,Chacabuco Y Burgos E
+ST0880,Chacabuco Y Av. Benavídez
+ST0881,Av. Benavídez - Fábrica N
+ST0882,Av. Benavídez Y Necochea N
+ST0883,Escuela Werfield Salinas
+ST0884,Necochea Y Oro E
+ST0885,Alberdi Y Liniers
+ST0886,Reconquista Y Gral. Soler
+ST0887,Porres Y Greco N
+ST0888,Colegio Dr. Manuel A. López O
+ST0889,Greco Y Patagonia O
+ST0890,Grecco Y Esmeralda O
+ST0891,Necochea Y Rubí Alós O
+ST0892,Necochea Y Urquiza O -B
+ST0893,Necochea Y Quiroga O
+ST0894,Necochea Y B. Luna
+ST0895,Necochea Y Thomas Edison O
+ST0896,Necochea Y Gertrudis Funes
+ST0897,Plazoleta B° Las Rosas
+ST0898,Posadas Y Correa O
+ST0899,Gral. Soler Y Yapeyú O
+ST0900,B° Corrientes
+ST0901,Corrientes Y Perú N
+ST0902,Corrientes Y Ruta N. N°40
+ST0903,Corrientes Y Caseros E
+ST0904,Corrientes Y Sánchez N
+ST0905,Mendoza Y Corrientes O
+ST0906,Corrientes Y Sarmiento N
+ST0907,Corrientes Y Catamarca N
+ST0908,Sgto. Cabral Y Las Heras
+ST0909,Av. Benavídez Y América N -A
+ST0910,Av. Benavidez Y Tierney N
+ST0911,Av. Benavidez Y Misiones
+ST0912,Av. Benavídez Y Díaz N
+ST0913,Av. Benavídez Y Paula A. De Sarmiento N -B
+ST0914,Av. Benavídez Y 2 De Septiembre N
+ST0915,Av .Benavídez Y Cipolletti N -B
+ST0916,Almte. Brown Y Cervantes E
+ST0917,Almte. Brown Y Av. Benavídez E
+ST0918,Av. Benavídez Y Juan José Paso
+ST0919,B° Las Lajas N
+ST0920,Av. Benavídez Y Porres N
+ST0921,Av. Benavídez Y Velázquez N
+ST0922,Av. Benavídez Y Rastreador Calivar N
+ST0923,Rastreador Calívar Y Pasaje Castro O -A
+ST0924,Rastreador Calívar Y Sgto. Cabral O
+ST0925,Cepas Sanjuaninas O
+ST0926,Av. Ig. De La Roza Y Meglioli S -A
+ST0927,Cortinez Y Valenzuela Varas O
+ST0928,Av. Ig. De La Roza Y Bellas Artes -A
+ST0929,Centro Comercial - Espacio San Juan S
+ST0930,Escuela Provincia De Tucumán S
+ST0931,Av. Ig. De La Roza E H. Yrigoyen S
+ST0932,Av. Ig. De La Roza Y Soler S
+ST0933,Av. Ig. De La Roza Y E. Echeverría S
+ST0934,Av. Ig. De La Roza Y Hermógenes Ruíz
+ST0935,Las Heras Y Laprida -C
+ST0936,Parroquia Ntra. Sra. De La Merced
+ST0937,Av. España Y Av. Libertador -B
+ST0938,Av. Ignacio De La Roza Y Ricardo Rojas N -A
+ST0939,Av. Ig. De La Roza Y Ángel D. Rojas N
+ST0940,Av. Ig. De La Roza Y E. Echeverría N
+ST0941,Av. Ig. De La Roza E H. Yrigoyen N
+ST0942,Escuela Provincia De Tucumán N
+ST0943,Centro Comercial - Espacio San Juan N
+ST0944,Av. Ig. De La Roza Y Curupayti
+ST0945,Cortínez Y Av. Periodistas Argentinos
+ST0946,Plaza B° Conjunto 1-2-3 N
+ST0947,Dr. Ortega Y Pellegrini N
+ST0948,Pellegrini Y Carlos Yornet E
+ST0949,Camping De Udap E
+ST0950,Pellegrini Y Republica Del Libano
+ST0951,República Del Líbano Y Tte. Primero Francisco Ibañez N
+ST0952,Republica Del Libano Y Baigorria
+ST0953,Granadero Baigorría Y Dominguito -E
+ST0954,Baigorria Y 9 De Julio S
+ST0955,9 De Julio E Ibáñez S
+ST0956,9 De Julio Y Pellegrini
+ST0957,Pellegrini Y Av. Ignacio De La Roza
+ST0958,Av. Ignacio De La Roza E Yupanqui
+ST0959,Ara San Juan Y Boulogne Sur Mer -S
+ST0960,Martín De Alzaga Y Martín Miguel De Güemes
+ST0961,Martín Miguel De Güemes Y Dr. A. B. Sabin
+ST0962,Martín Miguel De Güemes Y Los Jesuitas -S
+ST0963,Martín Miguel De Güemes Y Meglioli -S
+ST0964,Club Atlético El Globo E
+ST0965,Bellas Artes Y Av. Coratina S
+ST0966,Bellas Artes Y Agrimensor M. García E
+ST0967,Bellas Artes Y Domingo Di Próspero E
+ST0968,Bellas Artes Y Av. Ig. De La Roza
+ST0969,Mitre Y Güemes
+ST0970,Mitre Y Estados Unidos
+ST0971,Estación Terminal De Ómnibus San Juan
+ST0972,Estación Córdoba - V° Observatorio. Chimbas
+ST0973,Las Heras Y Laprida -A
+ST0974,Av. Libertador Y Salta S -A
+ST0975,Plaza Laprida S -D
+ST0976,Av. Libertador Y Gral Acha S -A
+ST0977,Av. Libertador Y Av. Rioja S -A
+ST0978,Av. Libertador Y Aberastain S
+ST0979,Av. Rawson Y 25 De Mayo E
+ST0980,Av. Rawson Y Pedro Echagüe E
+ST0981,Av. Rawson Y Maipú E
+ST0982,Escuela 25 De Mayo E
+ST0983,Plaza Evita E -B
+ST0984,Av. Rawson Y San Lorenzo E
+ST0985,Ruta N. N°40 E Iguazú -B
+ST0986,Ruta N. N°40 Y Av. Benavídez E -A
+ST0987,Av. Benavidez Y San Juan N
+ST0988,Parque De Chimbas N
+ST0989,Av. Benavídez Y Mendoza N
+ST0990,Av. Benavídez Y Sarmiento N
+ST0991,Av. Benavídez Y Salta N
+ST0992,Av. Benavídez Y Las Flores N
+ST0993,Av. Benavídez Y Fernández N -A
+ST0994,Av. Benavídez Y Maradona N
+ST0995,Av. Benavídez Y Cipolletti N
+ST0996,Av. Benavídez Y Pasaje N
+ST0997,Av. Benavídez Y Bonduel N
+ST0998,Av. Benavídez Y Martín Fierro N
+ST0999,Servicio Penitenciario N -A
+ST1000,Av. Benavídez Y Pellegrini N
+ST1001,Escuela De Policías N
+ST1002,Av. Nazario Benavidez Y Torti N
+ST1003,Observatorio Astronómico Félix Aguilar N
+ST1004,Av. Almte. Brown Y Ruta Del Sol O
+ST1005,Acceso Bº Suboficiales Del Ejército O
+ST1006,Enrique Godoy Y Sto. Baigorria
+ST1007,Plaza Almirante Brown - Trinidad E -A
+ST1008,Av. Rioja Y Fray Mamerto Esquiú E
+ST1009,Av. Rioja Y Manuel Belgrano E
+ST1010,Av. Rioja Y 9 De Julio E
+ST1011,Av. Rioja Y Av. Córdoba E
+ST1012,Av. Rioja Y Mitre E -B
+ST1013,Av. Rioja Y Laprida E -A
+ST1014,Av. Libertador Y Mendoza N -B
+ST1015,Av. Libertador Y Av. Alem N -A
+ST1016,Plaza España -A
+ST1017,Las Heras Y 25 De Mayo -A
+ST1018,Centro Tecnológico Infinito Por Descubrir E -A
+ST1019,Las Heras Y Juan Jufré E -A
+ST1020,Las Heras Y San Lorenzo
+ST1021,Las Heras Y Sgto. Cabral E
+ST1022,Sgto. Cabral Y Scalabrini Ortiz N -A
+ST1023,Scalabrini Ortiz Y Lateral Av. De Circunvalación O
+ST1024,Cortinez Y Urquiza
+ST1025,Urquiza Y San Luis O
+ST1026,Urquiza Y Rivadavia O
+ST1027,Urquiza Y Mitre O
+ST1028,Urquiza Y Av. Córdoba O
+ST1029,Av. Córdoba Y Segundino Navarro S
+ST1030,Estación Córdoba - Plaza Almirante Brown. Trinidad
+ST1031,Av. Rioja Y Av. Córdoba O
+ST1032,Av. Rioja Y 9 De Julio O
+ST1033,Av. Rioja Y Manuel Belgrano O
+ST1034,Av. Rioja Y Fray Mamerto Esquiú O
+ST1035,Abraham Tapia Y Agustín Gómez
+ST1036,Av. Ignacio De La Roza Y Kenny S
+ST1037,Escuela Juan José Castelli S
+ST1038,Av. Ig. De La Roza Y Rastreador Calívar S
+ST1039,Universidad Católica De Cuyo S -A
+ST1040,Av. Ig. De La Roza Y Paula A. De Sarmiento S -A
+ST1041,Av. Ig. De La Roza Y Urquiza S
+ST1042,Av. Ig. De La Roza Y Suipacha
+ST1043,Av. España Y Mitre -A
+ST1044,Av. Córdoba Y Catamarca S -B
+ST1045,Av. Córdoba Y Mendoza S -A
+ST1046,Av. Rioja Y Mitre E -A
+ST1047,Estación Mitre - La Bebida
+ST1048,Hospital Dr. Guillermo Rawson O -A
+ST1049,Av. Libertador Y Av. Rioja N -A
+ST1050,Av. Libertador Y Av. Alem N -B
+ST1051,Av. España Y Av. Libertador -A
+ST1052,Estación Córdoba - La Bebida
+ST1053,Av. Ig. De La Roza Y Espora
+ST1054,Complejo Universitario Islas Malvinas Unsj - N -A
+ST1055,Av. Ignacio De La Roza E Yupanqui N
+ST1056,Av. Ig. De La Roza Y Pellegrini N
+ST1057,Av. Ignacio De La Roza Y Kenny N
+ST1058,Chubut Y Moron
+ST1059,Av. H. Yrigoyen Y Av. Sarmiento N
+ST1060,Hipólito Yrigoyen Y Marcial Quiroga N
+ST1061,Plaza De Santa Lucía N -B
+ST1062,Av. H. Yrigoyen Y José María Del Carril N
+ST1063,Av. 9 De Julio Y Aristóbulo Del Valle N -B
+ST1064,Av. 9 De Julio Y Estados Unidos N -B
+ST1065,Av. Ig. De La Roza Y Malvinas Argentinas -A
+ST1066,Pellegrini Y 9 De Julio O
+ST1067,9 De Julio E Ibáñez N
+ST1068,9 De Julio - B° Jardín De La Bebida N
+ST1069,Luis Estay Y Dominguito
+ST1070,Proyectada Y Luis Martinez
+ST1071,Anexo Escuela Diógenes Perramón N -A
+ST1072,Centro Deportivo Y Cultural D. F. Sarmiento N -A
+ST1073,Morón Y Acceso B° La Colonia O
+ST1074,Morón Y Acceso Bº Conjunto 7 O
+ST1075,Morón Y Calle Nueva O -A
+ST1076,Comercio Y Carlos Yornet E -A
+ST1077,Comercio Y Calle Nueva E -A
+ST1078,9 De Julio Y Comercio S
+ST1079,9 De Julio - B° Jardín De La Bebida S
+ST1080,Estación Córdoba - Esquina Del Sauce. Santa Lucia
+ST1081,Estación Mitre - Esquina Del Sauce. Santa Lucía
+ST1082,Av. 9 De Julio Y Aristóbulo Del Valle S -B
+ST1083,B° Villa Del Parque S
+ST1084,Av. H. Yrigoyen Y Corvalán
+ST1085,Av. H. Yrigoyen Y Av. Sarmiento S
+ST1086,Pellegrini Y Carlos Yornet O
+ST1087,B° Puesta Del Sol N -A
+ST1088,Plaza Lote Hogar 24 N -A
+ST1089,Plaza De Santa Lucía S
+ST1090,Villa Villicum O
+ST1091,Obrero Municipal Y Castro O -A
+ST1092,Obrero Municipal Y Castro O -B
+ST1093,Maestro Aciar Y Progreso O -B
+ST1094,Maestro Aciar Y Las Flores O
+ST1095,Maestro Aciar Y Florencio Varela O
+ST1096,Aciar Y Franchini S
+ST1097,Nacional Y Nieto S
+ST1098,Nacional Y Padre De Las Tuscas S
+ST1099,Las Tuscas Y Proyectada 7 S -A
+ST1100,Las Tuscas Y Proyectada 5 S
+ST1101,Calle Sin Nombre 2 Y Colombo N
+ST1102,Colombo Y Calle Sin Nombre 1 O -A
+ST1103,Plaza Eva Perón
+ST1104,Nacional Y Lahoz S -A
+ST1105,B° Los Ciruelos S
+ST1106,Escuela Provincia De Jujuy S
+ST1107,Nacional Y Marcos Gómez S
+ST1108,Marcos Gómez Y Proyectada
+ST1109,B° Marcos Gómez Mz. O
+ST1110,Callejón Perú Y La Paz
+ST1111,Escuela De Educación Especial Videla De Oro S
+ST1112,La Paz Y Rawson S
+ST1113,Laprida Entre Arenales Y Rawson O
+ST1114,Arenales Y Marambio S -B
+ST1115,Arenales Y Mombrun Ocampo S
+ST1116,Escuela Juan Montovani O
+ST1117,Plaza San Martín -B
+ST1118,Independencia Y Mitre E
+ST1119,Mitre Y Proyectada
+ST1120,Proyectada Y Sarmiento O
+ST1121,Sarmiento E Independencia N -A
+ST1122,Sarmiento Y Santa María De Oro N
+ST1123,Sarmiento Y Laprida
+ST1124,Ruta N. N°40 E Italia O -A
+ST1125,Ruta N. Nº 40 Y Plazoleta B° Albardón Primero O
+ST1126,Lateral Ruta N. Nº 40 Y Chile
+ST1127,Ruta N. Nº 40 Y Buenaventura Luna O
+ST1128,Lateral Ruta N. Nº40 Y Segundo Sombra O
+ST1129,Ruta N. N°40 Y Callejón Blanco O
+ST1130,Ruta N. N°40 Y Centenario O
+ST1131,Centenario Y Tucuman
+ST1132,Gdor. Izasa Y 5 De Octubre O
+ST1133,Catriel Y Andacollo O
+ST1134,Catriel Y Aviadores Argentinos O
+ST1135,Catriel E Yrigoyen O
+ST1136,Catriel - Barrio Mons. R. Báez Laspiur O
+ST1137,Catriel Y Di Stéfano
+ST1138,Plaza B° Virgen De Andacollo IX N
+ST1139,Di Stéfano Y Gdor. Rojas
+ST1140,Plaza De Chimbas O -A
+ST1141,Mendoza Y 11 De Septiembre O
+ST1142,Mendoza Y Oro O -B
+ST1143,Oro Y Catriel S
+ST1144,Oro Y Tucumán S
+ST1145,Oro Y San Juan S
+ST1146,Oro Y Urquiza S
+ST1147,Urquiza Y Ruperto Godoy O
+ST1148,Urquiza Y Reconquista O
+ST1149,Porres Y Ruta N. Nº40 S
+ST1150,Lateral Ruta N. Nº 40 Y Neuquén
+ST1151,Lateral Ruta N. N°40 Y Ameghino O
+ST1152,Ruta N. N°40 Y Benavídez O
+ST1153,Camping De Luz Y Fuerza
+ST1154,Ruta N. N°40 Y Corrientes -B
+ST1155,Av. Rawson Y Cereceto
+ST1156,Escuela 25 De Mayo O
+ST1157,Av. Rawson Y Chile O
+ST1158,Av. Rawson Y Maipú O -B
+ST1159,Av. Rawson Y Pedro Echagüe O
+ST1160,Av. Libertador Y Aberastain N -A
+ST1161,Estación Córdoba - V° Gral. San Martín - Campo Afuera
+ST1162,Av. Rawson Y Santa Fe E -B
+ST1163,Dirección Nac. De Vialidad
+ST1164,Av. Rawson Y Chile E
+ST1165,B° Villa América
+ST1166,Av. Rawson Y Av. Colombia E
+ST1167,Ruta N. N°40 Y Ameghino
+ST1168,Ruta N. N°40 Y Porres E
+ST1169,Porres Y Urquiza N
+ST1170,Urquiza Y Ruperto Godoy E
+ST1171,Urquiza Y Oro E
+ST1172,Oro Y San Juan N
+ST1173,Camping Sat Said N
+ST1174,Oro Y Catriel N
+ST1175,Oro Y Mendoza
+ST1176,Mendoza Y 11 De Septiembre
+ST1177,Plaza De Chimbas E
+ST1178,Mendoza Y Di Stefano E
+ST1179,Di Stéfano Y Concordia
+ST1180,Plaza B° Virgen De Andacollo IX S
+ST1181,Di Stéfano Y Catriel
+ST1182,Catriel - Barrio Mons. R. Báez Laspiur E
+ST1183,Catriel E Yrigoyen E
+ST1184,Catriel Y Aviadores Argentinos E
+ST1185,Catriel Y 5 De Octubre E
+ST1186,Gdor. Izasa Y Centenario
+ST1187,Ruta N. N°40 Y Centenario
+ST1188,Ruta N. N°40 Y Callejón Blanco E
+ST1189,Lateral Ruta N. Nº40 Y Segundo Sombra E
+ST1190,Lateral Ruta N. Nº40 Y Ávile E
+ST1191,Ruta N. Nº 40 Y Buenaventura Luna E
+ST1192,Ruta N. Nº 40 Y Plazoleta B° Albardón Primero E
+ST1193,Ruta N. N°40 E Italia E -A
+ST1194,Ruta N. N°40 Y Sarmiento E -A
+ST1195,Sarmiento Y Guerrero S
+ST1196,Sarmiento Y Santa María De Oro S
+ST1197,Sarmiento Y Libertad S
+ST1198,Proyectada Y Sarmiento E
+ST1199,Proyectada Y Mitre E
+ST1200,Mitre E Independencia
+ST1201,Mitre Y Salvador M. Del Carril N -A
+ST1202,Salvador M. Del Carril Y 29 De Agosto -A
+ST1203,Arenales Y Santa María De Oro N
+ST1204,Arenales Y Mombrun Ocampo N
+ST1205,Arenales Y Laprida N -B
+ST1206,Laprida Entre Arenales Y Rawson E
+ST1207,La Paz Y Rawson N
+ST1208,Escuela De Educación Especial Videla De Oro N
+ST1209,La Paz Y Marcos Gómez N
+ST1210,B° Marcos Gómez Mz. A
+ST1211,Marcos Gómez Y Capilla E
+ST1212,Marcos Gómez Y Nacional E
+ST1213,Escuela Provincia De Jujuy N
+ST1214,B° Los Ciruelos N
+ST1215,Nacional Y Colombo N
+ST1216,Colombo Y Calle Sin Nombre 1 E -A
+ST1217,Colombo Y Proyectada 2 S -A
+ST1218,Proyectada 5 Y Las Tuscas
+ST1219,Las Tuscas Y Proyectada 7 N -A
+ST1220,Las Tuscas Y Nacional N
+ST1221,Nacional Y Nieto N
+ST1222,Nacional Y Franchini
+ST1223,Franchni Y Aciar
+ST1224,Maestro Aciar Y Florencio Varela E
+ST1225,Maestro Aciar Y Las Flores E
+ST1226,Aciar Y Las Flores E -A
+ST1227,Obrero Municipal Y Castro E
+ST1228,Obrero Municipal Y A. Carrascosa E
+ST1229,Plaza Villa Villicum -A
+ST1230,Rodríguez Y Misiones -A
+ST1231,Rodríguez Y 9 De Julio N
+ST1232,Rodríguez Y Salta E
+ST1233,Escuela Pdte. Avellaneda E
+ST1234,Plaza Bº Güemes N
+ST1235,Maradona Y Salvador M. Del Carril O
+ST1236,25 De Mayo Y Díaz N
+ST1237,Escuela Enrique Pestalozzi N
+ST1238,Plaza B° La Amistad N
+ST1239,Parque Industrial De Chimbas N -A
+ST1240,Barrio Upcn II N
+ST1241,Padre Ianelli Y El Cosechero O
+ST1242,Bachillerato José Manuel Estrada N
+ST1243,El Sembrador Y El Gringo N
+ST1244,Plaza De Vº Obrera N
+ST1245,Tulum Y Martina Chapanay N
+ST1246,Lote Hogar 62 N -A
+ST1247,Quiroga Y Malvinas N
+ST1248,Escuela De Policías S -A
+ST1249,Servicio Penitenciario S
+ST1250,Av. Benavídez Y Martín Fierro S
+ST1251,Av. Benavídez Y Rastreador Calívar S
+ST1252,Parque De Rivadavia O -A
+ST1253,Rastreador Calívar Y Plaza Bº Natania XV O -A
+ST1254,Meglioli Y Av. Ig. De La Roza E -A
+ST1255,Valle Fértil Y Quiroga E
+ST1256,Quiroga Y Valle Fértil
+ST1257,Quiroga Y Vicente López Y Planes
+ST1258,Quiroga Y Malvinas S
+ST1259,Quiroga Y Carlos Pellegrini
+ST1260,Lote Hogar 62 S -D
+ST1261,Lote Hogar 62 S -B
+ST1262,Tulum Y Martína Chapanay S
+ST1263,El Carrerito Y El Sembrador
+ST1264,El Sembrador Y El Domador S
+ST1265,El Sembrador Y El Cosechero S
+ST1266,El Sembrador Y Mancini S
+ST1267,El Sembrador Y Dominguito S
+ST1268,Bachillerato José Manuel Estrada S
+ST1269,El Sembrador Y Vidable S
+ST1270,B° Costanera III - Manzana P
+ST1271,Plaza B° 17 De Octubre
+ST1272,Padre Ianelli Y El Cosechero E
+ST1273,Padre Mariano Ianelli Y Tulum
+ST1274,Barrio Upcn II S
+ST1275,Parque Industrial De Chimbas S -A
+ST1276,Reconquista Y Bonduel S
+ST1277,Pasaje Complejo Las Lajas II O
+ST1278,Bonduel Y Av. Benavídez
+ST1279,Almte. Brown Y Cervantes O
+ST1280,Almte. Brown Y Roque Saénz Peña O
+ST1281,Almte. Brown Y Primera Junta
+ST1282,Almte. Brown Y Sgto. Cabral O
+ST1283,Sgto. Cabral Y Liniers S
+ST1284,Sgto. Cabral Y Cordillera De Los Andes S
+ST1285,Sgto. Cabral Y Misiones S
+ST1286,Santa María De Oro Y Sgto. Cabral O
+ST1287,Santa María De Oro Y San Lorenzo O
+ST1288,Santa María De Oro Y Pasteur O
+ST1289,Santa María De Oro Y Colombia O
+ST1290,Santa María De Oro Y Tomás Cruz
+ST1291,Av. Libertador Y Adán Quiroga S
+ST1292,Av. Libertador Y Esteban Echeverría S -B
+ST1293,Paula A. De Sarmiento Y San Rafael
+ST1294,Escuela Técnica Obrero Argentino
+ST1295,Paula A. De Sarmiento Y Av. Ig. De La Roza O
+ST1296,Paula A. De Sarmiento Y Av. Córdoba O
+ST1297,Av. Córdoba Y Antequeda S
+ST1298,Av. Córdoba Y Ameghino S
+ST1299,Av. Córdoba Y Urquiza S
+ST1300,Av. Córdoba Y Las Heras S
+ST1301,Av. Córdoba Y Catamarca S -A
+ST1302,Av. Córdoba Y Caseros S -B
+ST1303,Santa Fe Y Caseros -B
+ST1304,Santa Fe Y Av. Rioja -C
+ST1305,Santa Fe Y Gral. Acha -C
+ST1306,Av. España Y Av. Córdoba -A
+ST1307,Estación Córdoba - Chimbas - Angaco - San Martín
+ST1308,Av. Córdoba Y Urquiza N
+ST1309,Av. Córdoba Y Ameghino N
+ST1310,Av. Córdoba Y Antequeda N
+ST1311,Av. Córdoba Y Paula A. De Sarmiento
+ST1312,Paula A. De Sarmiento Y Av. Ig. De La Roza E
+ST1313,Escuela Técnica Obrero Argentino E
+ST1314,Paula A. De Sarmiento Y Av. Libertador E
+ST1315,Santa María De Oro Y Dr. A. Echegaray
+ST1316,Pasaje Complejo Las Lajas II E
+ST1317,Reconquista Y Bonduel E
+ST1318,Reconquista Y Padre Mariano Iannelli
+ST1319,Padre M. Iannelli Y El Sembrador O
+ST1320,B° Costanera III - Manzana Q
+ST1321,Sembrador Y Vidable N
+ST1322,El Sembrador Y Dominguito N
+ST1323,El Sembrador Y Mancini N
+ST1324,El Sembrador Y El Domador N
+ST1325,Rastreador Calivar Y Tulum E
+ST1326,Lote Hogar 62 N -B
+ST1327,López Y Planes Y Av. Benavidez
+ST1328,Rastreador Calivar Y El Paisano E
+ST1329,El Paisano Y El Domador
+ST1330,El Paisano Y El Gringo S
+ST1331,El Paisano Y Mancini
+ST1332,Mancini Y El Arriero E
+ST1333,Mancini Y El Sembrador
+ST1334,Plaza Bº 17 De Octubre O
+ST1335,Padre Ianelli Y Neuquén O
+ST1336,Escuela Arturo Illia O
+ST1337,Sgto. Cabral Y Manuel Zavalla S
+ST1338,Sgto. Cabral Y Callejón Coria S
+ST1339,Sgto. Cabral Y Juan José Paso S
+ST1340,Sgto. Cabral Y Almte. Brown S
+ST1341,Sgto. Cabral Y Andrade
+ST1342,Sgto. Cabral Y Perito Moreno S
+ST1343,Sgto. Cabral Y Colombia
+ST1344,Sgto. Cabral Y Matías Zavalla So
+ST1345,Sgto. Cabral Y Matías Zavalla S
+ST1346,Bodega Y Museo Santiago Graffigna
+ST1347,Escuela Esteban Echeverría O
+ST1348,Salta Y Lateral Av. De Circunvalación N
+ST1349,Salta Y Falucho N
+ST1350,Antigua Bodega
+ST1351,Cortínez Y Av. España
+ST1352,Plaza Laprida S -B
+ST1353,Av. Libertador Y Tucumán S -A
+ST1354,Av. Libertador Y Jujuy S
+ST1355,Av. Libertador Y Caseros S -A
+ST1356,Av. Libertador Y Gral. Acha N -A
+ST1357,Av. Libertador Y Entre Ríos N -B
+ST1358,Av. Libertador Y Catamarca N -B
+ST1359,Salta Y San Luis
+ST1360,Salta Y Pedro Echagüe
+ST1361,Salta Y Jorge Newbery
+ST1362,Salta Y Cortínez N
+ST1363,Salta Y Juan Jufré N
+ST1364,Escuela Esteban Echeverría E
+ST1365,Club Colón
+ST1366,Sgto. Cabral Y Matías Zavalla N
+ST1367,Sgto. Cabral Y Las Higueras N
+ST1368,Sgto. Cabral Y Perito Moreno N
+ST1369,Sgto. Cabral Y Paula A. De Sarmiento N
+ST1370,Paula Albarracín Y San Lorenzo
+ST1371,San Lorenzo Y Sargento Cabral
+ST1372,Sgto. Cabral Y Arnobio Sánchez
+ST1373,Arnobio Sánchez Y Echegaray E
+ST1374,Acceso B° Parque Rivadavia Norte E
+ST1375,Escuela Arturo Illia E
+ST1376,Padre Ianelli Y Neuquén E
+ST1377,Unión Vecinal B° La Estancia
+ST1378,Plaza Bº 17 De Octubre E
+ST1379,Mancini Y El Arriero O
+ST1380,Mancini Y Paisano
+ST1381,El Paisano Y El Baqueano
+ST1382,El Criollo Y Rastreador Calivar
+ST1383,Centenario Y Proyectada S
+ST1384,Centenario Y Calle 1
+ST1385,Centenario Y Cipolletti S
+ST1386,Cipolletti Y Proyectada O
+ST1387,Cipolletti Y 25 De Mayo O
+ST1388,Plaza B° René Favaloro O
+ST1389,Cipolletti Y Favaloro O
+ST1390,Cipolletti Y Chatard
+ST1391,Cipolletti Y Nueva Argentina O
+ST1392,Nueva Argentina Y Sgto. Cabral S
+ST1393,Nueva Argentina Y 2 De Septiembre S
+ST1394,Nueva Argentina Y 30 De Agosto
+ST1395,Nueva Argentina Y Diaz S
+ST1396,Díaz Y La Pampa O
+ST1397,Diaz Y Formosa E
+ST1398,Díaz Y Av. Benavídez N
+ST1399,Paula A. De Sarmiento Y Lourdes O
+ST1400,Paula A. De Sarmiento Y Pablo Rojas O
+ST1401,Paula A. De Sarmiento Y Diag. Viamonte O
+ST1402,Av. Córdoba Y Lugones S
+ST1403,Avellaneda Y Santa Fe
+ST1404,Plaza De Chimbas N
+ST1405,Rodríguez Y Misiones -B
+ST1406,Rodríguez Y Chaco
+ST1407,9 De Julio Y Corrientes E
+ST1408,9 De Julio E H. Yrigoyen E
+ST1409,9 De Julio E Hipólito Yrigoyen E
+ST1410,9 De Julio Y 5 De Octubre E
+ST1411,9 De Julio Y Centenario E
+ST1412,Union Vecinal Chimbas Norte N
+ST1413,Centenario Y Salta N
+ST1414,Salta - Loteo Las Margaritas O
+ST1415,Salta E Hipólito Yrigoyen
+ST1416,Hipólito Yrigoyen Y Diaz Vélez N
+ST1417,Hipólito Yrigoyen Y Sarmiento N
+ST1418,Colón E H.Yrigoyen E
+ST1419,Colon Y Proyectada E
+ST1420,Centenario Y Colon
+ST1421,Centenario Y Proyectada 1 N
+ST1422,Centenario Y Díaz N
+ST1423,Centenario Y Proyectada 3 N
+ST1424,Centenario Y Tacuarí
+ST1425,Plaza Bº 19 De Noviembre
+ST1426,Tacuarí Y 25 De Mayo O
+ST1427,Tacuarí Y Sarmiento
+ST1428,Sarmiento - B° Los Toneles S
+ST1429,25 De Mayo - B° Los Toneles E
+ST1430,25 De Mayo Y Díaz S
+ST1431,Díaz - Conjunto 8 O
+ST1432,Díaz - Conjunto XII O
+ST1433,Díaz Y Chatart O
+ST1434,Díaz Y Santa Cruz O
+ST1435,Díaz Y Nueva Argentina
+ST1436,Patagonia Y Misiones S
+ST1437,Patagonia Y Gaspar Vitaz
+ST1438,Capilla Medalla Milagrosa
+ST1439,Patagonia Y Colón
+ST1440,Patagonia Y Maradona N
+ST1441,Patagonia Y Fernández
+ST1442,Fernández Y Neuquén
+ST1443,Neuquén Y Jáchal S
+ST1444,Neuquén Y Río Gallegos S
+ST1445,Neuquén Y Salta
+ST1446,Salta Y Patagonia
+ST1447,Salta Y Río Negro O
+ST1448,Escuela Leandro Nicéforo Alem O
+ST1449,Salta Y Av. Benavídez O
+ST1450,Bº Energía San Juan E
+ST1451,Salta Y Dominguito
+ST1452,Salta Y Corrientes O
+ST1453,Av. Rawson Y Av. Ig. De La Roza O
+ST1454,Pueyrredón Y Santa Fe E
+ST1455,Hospital De Niños Dr. Juan Carlos Navarro -C
+ST1456,Gral. Acha Y Pedro Echagüe
+ST1457,Gral. Acha Y Chile
+ST1458,Gral. Acha Y Cereceto
+ST1459,Gral. Acha Y Juan Jufré
+ST1460,Mendoza Y Falucho E
+ST1461,Mendoza Y Lautaro E
+ST1462,Club Atlético San Martín E
+ST1463,Mendoza Y Monteagudo E
+ST1464,Mendoza Y Corrientes E
+ST1465,Mendoza Y Almte. Brown
+ST1466,Mendoza Y Mary O'Graham E
+ST1467,Mendoza Y Av. Benavídez E
+ST1468,Mendoza Y Chubut E
+ST1469,Mendoza Y Patagonia E
+ST1470,Mendoza Y Neuquén E -B
+ST1471,Neuquen Y Entre Rios
+ST1472,Neuquén Y Catamarca N
+ST1473,Catamarca Y Porres
+ST1474,Plaza Bº Centinela 3 E
+ST1475,Saavedra Y Sarmiento S
+ST1476,Saavedra Y Mendoza
+ST1477,Escuela Ernesto Bavio E -B
+ST1478,Mendoza Y Oro E
+ST1479,Mendoza Y R. E. De San Martín
+ST1480,Rodríguez Y Soria N
+ST1481,Rodríguez Y Alem
+ST1482,Salvador M. Del Carril Y Díaz Vélez E
+ST1483,Salvador M. Del Carril Y Maradona
+ST1484,25 De Mayo Y Colón S
+ST1485,Díaz - B° Díaz Norte E
+ST1486,Centenario Y 2 De Septiembre
+ST1487,2 De Septiembre Y Proyectada
+ST1488,Cipolletti Y Proyectada E
+ST1489,Plaza Barrio El Chañar
+ST1490,Centenario Y Proyectada 7 N
+ST1491,Centenario Y Proyectada 8 N
+ST1492,Centenario Y Proyectada N
+ST1493,25 De Mayo - Bº Las Calandrias
+ST1494,Bonduel Y 25 De Mayo
+ST1495,Subcomisaría Bº Cipolletti S
+ST1496,Plaza B° La Amistad S
+ST1497,25 De Mayo Y Cipolletti O
+ST1498,Escuela Enrique Pestalozzi S
+ST1499,Plaza Bº Parque Industrial
+ST1500,25 De Mayo Y Tacuarí S
+ST1501,25 De Mayo - B° Conjunto 8
+ST1502,25 De Mayo Y Colón N
+ST1503,25 De Mayo Y Maradona
+ST1504,Maradona Y Salvador M. Del Carril E
+ST1505,Salvador M. Del Carril Y Díaz Vélez O
+ST1506,Rodríguez Y Salta O
+ST1507,Escuela De Educación Especial Martina Chapanay
+ST1508,25 De Mayo Y Alem - Escuela Martina Chapanay S
+ST1509,25 De Mayo Y Azcuénaga S -B
+ST1510,25 De Mayo Y Misiones
+ST1511,Escuela Ernesto Bavio O -B
+ST1512,Mendoza Y Saavedra
+ST1513,Saavedra Y Jehan N
+ST1514,Plaza Bº Centinela 3 O
+ST1515,Catamarca Y Santa Cruz
+ST1516,Catamarca Y Neuquén
+ST1517,Neuquén Y Mendoza
+ST1518,Mendoza Y Patagonia O
+ST1519,Mendoza Y Chubut O
+ST1520,Mendoza Y Av. Benavídez O -B
+ST1521,Cuartel De Bomberos Y Policía
+ST1522,Mendoza Y Correa O
+ST1523,Club Atlético San Martín O
+ST1524,Mendoza Y Cereceto
+ST1525,Club Julio Mocoroa
+ST1526,Mendoza Y Maipú
+ST1527,Mendoza Y Pedro Echagüe
+ST1528,C.F.D Margarita Ferrá De Bartol
+ST1529,Plaza B° Natania VIII
+ST1530,Paraguay Y República Argentina
+ST1531,República Argentina Y Ecuador
+ST1532,República Argentina Y Centenario
+ST1533,Centenario Y Misiones S
+ST1534,Centenario Y Proyectada - Bº 5 De Octubre S
+ST1535,Centenario Y Mendoza
+ST1536,Escuela Provincia De La Rioja O
+ST1537,Mendoza E Hipólito Yrigoyen O
+ST1538,Mendoza Y Báez Laspiur O
+ST1539,Colegio Ntra. Sra. Del Rosario De Andacollo
+ST1540,Plaza De Chimbas O -B
+ST1541,25 De Mayo Y Yapeyú
+ST1542,25 De Mayo Y Azcuénaga N -B
+ST1543,25 De Mayo Y Catamarca
+ST1544,25 De Mayo Y Alem - Escuela Martina Chapanay N
+ST1545,Salta Y Hernández O
+ST1546,Loteo Salta O
+ST1547,Salta Y Reconquista O
+ST1548,Salta Y Ramón Godoy O
+ST1549,Ramón Godoy Y Proyectada 2 N
+ST1550,Ramón Godoy Y Díaz Vélez N
+ST1551,Ramón Godoy Y 11 De Septiembre N
+ST1552,Maradona - Loteo Parque Norte O
+ST1553,B° Jardines Del Sol O
+ST1554,Maradona Y Santa Cruz O
+ST1555,Maradona Y Patagonia E
+ST1556,Maradona Y Formosa O
+ST1557,Maradona Y Av. Benavídez
+ST1558,Av. Benavídez Y Fernández S -A
+ST1559,Av. Benavídez Y Las Flores S
+ST1560,Las Flores Y Santiago Graffigna
+ST1561,La Flores Y Octavio Gil
+ST1562,Octavio Gil Y Cmte. Piedrabuena S
+ST1563,Piedrabuena Y Los Aromos O
+ST1564,Scalabrini Ortiz Y Centro Comercial O
+ST1565,Scalabrini Ortiz Y San Lorenzo O
+ST1566,Juan Jufré Y Víctor Mercante S
+ST1567,Plaza Lote Hogar 59
+ST1568,B° Lote Hogar 59 -A
+ST1569,Proyectada Y Rioja N
+ST1570,Catriel - Plaza B° Centenario
+ST1571,B° Centenario - Ingreso
+ST1572,Catriel Y Centenario O
+ST1573,Centenario Y Gdor. Rojas N
+ST1574,Mendoza Y 5 De Octubre
+ST1575,Hipólito Yrigoyen - B° Las Vicuñas N
+ST1576,Hipólito Yrigoyen Y Yapeyú N
+ST1577,Hipólito Yrigoyen Y 9 De Julio N
+ST1578,9 De Julio Y Yrigoyen O
+ST1579,9 De Julio Y Corrientes O
+ST1580,Corrientes Y Chaco S
+ST1581,Yapeyú Y Di Stéfano S
+ST1582,Di Stéfano Y Laprida S
+ST1583,Di Stéfano Y San Martín S
+ST1584,Mendoza Y Rodríguez O
+ST1585,Remedios De Escalada Y Concordia
+ST1586,Concordia Y Rodríguez
+ST1587,Rodríguez Y Catriel S
+ST1588,Rodríguez Y Tucumán S
+ST1589,Tucumán Y 25 De Mayo
+ST1590,Plaza B° Sindicato De Televisión O
+ST1591,Camping Sat Said O
+ST1592,Tucumán Y Reconquista O
+ST1593,Tucumán Y Godoy
+ST1594,Godoy Y Córdoba S
+ST1595,R. Godoy Y San Luis
+ST1596,San Luis Y Porres O
+ST1597,San Luis Y Neuquén O
+ST1598,Escuela Ingenieros De San Juan N
+ST1599,San Juan Y Av. Benavidez
+ST1600,Benavídez Y Córdoba N
+ST1601,Tucumán Y Av. Benavídez O
+ST1602,Tucumán Y Mary O'Graham O
+ST1603,Tucumán Y Dorrego O
+ST1604,Escuela Francisco Ibáñez O
+ST1605,Tucumán Y Monteagudo
+ST1606,Monteagudo Y Jujuy
+ST1607,Aberastain Y San Lorenzo
+ST1608,Aberastain Y Colombia
+ST1609,Aberastain Y Juan Jufré O
+ST1610,Aberastain Y Paraguay
+ST1611,Aberastain Y Chile
+ST1612,Aberastain Y Maipú
+ST1613,Aberastain Y 25 De Mayo
+ST1614,Salta Y Mitre
+ST1615,Salta Y Av. Libertador -B
+ST1616,Plaza Laprida S -C
+ST1617,Av. Rioja Y Av. Libertador E
+ST1618,Av. Rioja Y 25 De Mayo E
+ST1619,Plaza Gertrudis Funes
+ST1620,Caseros Y Maipú
+ST1621,Caseros Y Santo Domingo
+ST1622,Caseros Y Paraguay
+ST1623,Caseros Y Juan Jufré
+ST1624,Caseros Y Colombia
+ST1625,San Lorenzo Y Jujuy
+ST1626,Tucumán Y San Lorenzo
+ST1627,Tucumán Y Lateral Av. De Circunvalación -N
+ST1628,Escuela Francisco Ibáñez E
+ST1629,Tucumán Y Mary O'Graham
+ST1630,Tucumán Y Av. Benavídez E
+ST1631,Benavídez Y Córdoba S
+ST1632,San Juan Y Chubut
+ST1633,Escuela Ingenieros De San Juan E
+ST1634,San Luis Y Neuquén E
+ST1635,Escuela Policía Federal Argentina
+ST1636,San Luis Y R. Godoy
+ST1637,Godoy Y Cordoba N
+ST1638,Godoy Y Tucumán
+ST1639,Tucumán Y Reconquista E
+ST1640,Tucuman Y Oro E
+ST1641,Plaza B° Sindicato De Televisión E
+ST1642,Tucumán Y 25 De Mayo E
+ST1643,Tucumán Y Rodríguez
+ST1644,Rodríguez Y Catriel N
+ST1645,Rodríguez Y Mendoza N
+ST1646,Mendoza Y Báez Laspiur E
+ST1647,Di Stéfano Y San Martín N
+ST1648,Di Stéfano - Plaza De Los Murales
+ST1649,Corrientes Y Yapeyú N
+ST1650,Corrientes Y Chaco N
+ST1651,Corrientes Y 9 De Julio N
+ST1652,Hipólito Yrigoyen Y Yapeyú S
+ST1653,Hipólito Yrigoyen - B° Las Vicuñas S
+ST1654,Hipólito Yrigoyen Y Mendoza S
+ST1655,Escuela Provincia De La Rioja E
+ST1656,Mendoza Y Centenario E
+ST1657,Centenario Y Concordia S
+ST1658,Centenario Y Catriel S
+ST1659,Catriel Y Paraguay E
+ST1660,Plaza B° Centenario S
+ST1661,Proyectada Y Rioja S
+ST1662,B° Lote Hogar 59
+ST1663,13 De Junio Y 3 De Febrero
+ST1664,3 De Febrero Y La Rioja
+ST1665,3 De Febrero Y Blanco O
+ST1666,3 De Febrero Y Proyectada O
+ST1667,Plaza B° 2 De Abril O
+ST1668,2 De Abril O
+ST1669,2 De Abril Y Proyectada 5 O
+ST1670,2 De Abril Y Centenario
+ST1671,Escuela Paso De Valle Hermoso S
+ST1672,Centenario Y Anexo Escuela S
+ST1673,Centenario Y Bulevar B° Santa María O
+ST1674,Bulevar B° Santa María Y Calle Plazoleta O
+ST1675,Rotonda B° Santa María N
+ST1676,Proyectada Rotonda B° Santa María N
+ST1677,Plaza B° Conjunto 11 O
+ST1678,B° Conjunto 11 S
+ST1679,Plaza B° Conjunto 3 So
+ST1680,Necochea Y Callejón O
+ST1681,Necochea Y Rodríguez N
+ST1682,Necochea Y Callejón Muñoz O
+ST1683,Necochea Y Oro O
+ST1684,Oro Y Obrero Argentino N
+ST1685,Obrero Argentino Y Reconquista O
+ST1686,Porres Y Perito Moreno S
+ST1687,Patagonia Y Soler S
+ST1688,Obrero Argentino Y Esmeralda O
+ST1689,Jorge Bence Y Leonidas Escudero O
+ST1690,B° Arturo Frondizzi
+ST1691,Buenaventura Luna Y Rodolfo Paez Oro
+ST1692,Av. Rawson Y Monteagudo
+ST1693,Av. Rawson Y Av. Libertador O -B
+ST1694,Av. Libertador Y Caseros S -C
+ST1695,Corrientes Y Perú S
+ST1696,Buenaventura Luna Y Villavicencio
+ST1697,Buenaventura Luna Y Jorge Bence
+ST1698,Antonio De La Torre Y Jorge Bence
+ST1699,Necochea Y Av. Benavídez E
+ST1700,Obrero Argentino Y Esmeralda E
+ST1701,Obreros Argentinos Y Patagonia O
+ST1702,Patagonia Y Soler N
+ST1703,Colegio Dr. Manuel A. López E
+ST1704,Soler Y Reconquista
+ST1705,Obrero Argentino Y Alberdi E
+ST1706,Obrero Argentino Y Oro
+ST1707,Oro Y Necochea
+ST1708,Necochea Y Callejón Muñoz E
+ST1709,Necochea Y Rodríguez E
+ST1710,Plaza B° Conjunto 3 E
+ST1711,B° Conjunto 11 N
+ST1712,Plaza B° Conjunto 11 E
+ST1713,Proyectada Rotonda B° Santa María S
+ST1714,Rotonda B° Santa María S
+ST1715,Bulevar B° Santa María Y Calle Plazoleta E
+ST1716,Bulevar B° Santa María Y Proyectada
+ST1717,Centenario Y Anexo Escuela N
+ST1718,Escuela Paso De Valle Hermoso
+ST1719,2 De Abril Y Proyectada 5 E
+ST1720,2 De Abril E
+ST1721,Plaza B° 2 De Abril E
+ST1722,Proyectada Y 3 De Febrero
+ST1723,3 De Febrero Y Blanco E
+ST1724,Ruta N. N°40 Y 13 De Junio
+ST1725,Mendoza Y Bandera Argentina E
+ST1726,Oro Y Ruta N. N°40 S
+ST1727,Oro Y P. Moreno S
+ST1728,Oro Y Obrero Argentino S
+ST1729,Plaza B° Conjunto 2 S
+ST1730,B° Conjunto 2 Y Proyectada
+ST1731,B° Conjunto 2 Y Necochea
+ST1732,Necochea - B° Santa María Conjunto 3 E
+ST1733,Proyectada - B° Santa María Conjunto 3
+ST1734,Plaza B° Conjunto 3 O
+ST1735,Rodríguez Y Club Rivera S
+ST1736,Rodríguez Y Buenaventura Luna
+ST1737,Rodríguez Y Angualasto S
+ST1738,Rodríguez Y Oratorio
+ST1739,Escuela Tránsito De Oro De Rodríguez O
+ST1740,Pelayes Y Callejón S
+ST1741,Blanco Y Pelayes O
+ST1742,Blanco Y Av. Benavídez
+ST1743,Av. Benavídez Y Flores S
+ST1744,Av. Benavídez Y Flores N
+ST1745,Av. Benavídez Y Blanco
+ST1746,Blanco Y Pelayes E
+ST1747,Fernández Y Rodríguez E
+ST1748,Fernández Y Curva Tanque E
+ST1749,Fernández Y Curva Casa N
+ST1750,Fernández Y Curva Norte N
+ST1751,Fernández Y Curva Sur N
+ST1752,Villa Videla 3 N
+ST1753,Villa Videla 2 N
+ST1754,Villa Videla 1 N
+ST1755,Diagonal Fernández O
+ST1756,Buenaventura Luna Y Rodríguez
+ST1757,Rodríguez Y Club Rivera N
+ST1758,Oro Y P. Moreno N
+ST1759,Oro Y Ruta N. N°40 NE
+ST1760,Oro Y Ruta N. N°40 O
+ST1761,Oro Y Urquiza N
+ST1762,Mendoza Y Bandera Argentina O
+ST1763,Mendoza Y Santa Cruz O
+ST1764,Ruta N. N°40 Y Gertrudis Funes
+ST1765,Ruta N. N°40 Y Av. Benavídez E -B
+ST1766,Ruta N. N°40 Y Oro E
+ST1767,Ruta N. N°40 Y Rodríguez E
+ST1768,Ruta N. N°40 E Italia E -B
+ST1769,Ruta N. N°40 Y Sarmiento E -B
+ST1770,Sarmiento Y Carlos Sandez S
+ST1771,Plaza Ntra. Sra. De Los Scouts -B
+ST1772,Mitre Y Salvador M. Del Carril N -B
+ST1773,Salvador M. Del Carril Y 29 De Agosto -B
+ST1774,29 De Agosto Y Arenales
+ST1775,Escuela Ciencias De La Salud Unsj E
+ST1776,Rawson Y Nacional
+ST1777,Nacional Y Arenales S
+ST1778,Radio Santa Bárbara S
+ST1779,Escuela Camilo Rojo S
+ST1780,Nacional Y Tucumán S -B
+ST1781,Nacional Y Tucumán S -A
+ST1782,Chalet José Andrada O
+ST1783,Tucumán Y Pizarro O
+ST1784,Tucumán Y Ruso O
+ST1785,Tucumán E Independencia O
+ST1786,Sarmiento Y La Laja S
+ST1787,La Laja Y Ruso - B° Salta E
+ST1788,La Laja Y Callejón Ortiz E
+ST1789,La Laja Y Sandez E
+ST1790,La Laja Y Eusebio Pizarro E
+ST1791,La Laja Y Chacabuco
+ST1792,La Laja Y Nacional E
+ST1793,Unión Vecinal Manuel Belgrano E
+ST1794,La Laja Y Pasaje La Laja E
+ST1795,La Laja Y Callao E
+ST1796,La Laja Y Suipacha
+ST1797,Escuela Vicente López Y Planes
+ST1798,La Laja Y Buenos Aires E
+ST1799,B° Santa Bárbara II E
+ST1800,La Laja Y Callejón Sánchez
+ST1801,La Laja Y España E
+ST1802,Caps Las Lomitas E
+ST1803,Club Instituto La Laja E
+ST1804,La Laja Y Callejón Palacio E
+ST1805,La Laja Y Bº Recabarren E
+ST1806,Escuela Regimiento De Los Patricios E
+ST1807,La Laja Y Pasero Lomas Del Sol E
+ST1808,La Laja Y Rodríguez E
+ST1809,La Laja Y Doce E
+ST1810,La Laja - Tierra Norte E
+ST1811,Escuela Ejército De Los Andes E
+ST1812,La Laja Y Las Piedritas E
+ST1813,Parque Latinoamericano De Albardón N -B
+ST1814,Sarmiento Y Hospital Giordano
+ST1815,Sarmiento Y Tucumán S
+ST1816,B° Aoma N
+ST1817,Colegio De Luzuriaga N
+ST1818,Nacional Y Tucumán N -A
+ST1819,Nacional Y Tucumán N -B
+ST1820,Escuela Camilo Rojo N
+ST1821,Radio Santa Bárbara N
+ST1822,Consorcio Arturo Illia
+ST1823,Nacional Y Rawson N
+ST1824,Nacional Y Lahoz N -B
+ST1825,Colombo Y Calle Sin Nombre 1 E -B
+ST1826,Las Tuscas Y Proyectada 7 N -B
+ST1827,Las Tuscas Y Anea O
+ST1828,Nacional Y Gómes N
+ST1829,Aciar Y Progreso E -B
+ST1830,Progreso Y Obrero Municipal E
+ST1831,Obrero Municipal Y Antonio Russo
+ST1832,Plaza Villa Villicum -B
+ST1833,Escuela Adán Quiroga E
+ST1834,Rawson Y Callejón Carrizo S
+ST1835,Rawson Y Canal Quiroga S
+ST1836,Rawson Y Callejón Coria S
+ST1837,Callejón Coria Y Fortín De Las Tapias S
+ST1838,Sarmiento Y El Rincón
+ST1839,B° El Rincón E
+ST1840,Escuela Benita Dávila De Los Ríos E
+ST1841,De Los Ríos Y Cabo Godoy S
+ST1842,De Los Ríos Y Fray Mamerto Esquiú
+ST1843,Fray Mamerto Esquiú Y Rawson
+ST1844,B° Andacollo N
+ST1845,Rawson Y Sarmiento
+ST1846,Sarmiento S
+ST1847,Sarmiento Entre Rawson Y Ruta N. Nº40 S
+ST1848,Sarmiento Y Ruta N. N°40 S
+ST1849,Cic Albardón
+ST1850,Nacional Y Lozano
+ST1851,Lozano Y Juan Jufré
+ST1852,Escuela Vicecomodoro Gustavo Marambio
+ST1853,B° Luján
+ST1854,Lozano Y Los Patos
+ST1855,Lozano Casi Callejón Arévalo
+ST1856,Lozano Y Loteo Sánchez
+ST1857,Lozano Y Santa Fe
+ST1858,Lozano Y Avellaneda
+ST1859,España Y Lozano
+ST1860,España Y Callejón Verón
+ST1861,España Y La Laja
+ST1862,La Laja Y Kennedy
+ST1863,Kennedy Y Calle B
+ST1864,Kennedy Y Calle C
+ST1865,Kennedy Y Tucumán
+ST1866,Tucumán Y Buenos Aires
+ST1867,Tucumán Y Villa Evita Mz. F
+ST1868,Benjamín Lucero Y Eusebio Pizarro
+ST1869,Villa Evita Mz. K
+ST1870,Lucero Y La Laja S
+ST1871,La Laja Y Callejón Arévalo
+ST1872,La Laja Y Callao O
+ST1873,La Laja Y Pasaje La Laja O
+ST1874,Unión Vecinal Manuel Belgrano O
+ST1875,La Laja Y Nacional O
+ST1876,Nacional Y Arenales N
+ST1877,Arenales Y Yacampis O
+ST1878,Arenales Y Callejón Vargas O
+ST1879,Arenales Y 29 De Agosto
+ST1880,Parque Latinoamericano De Albardón S -B
+ST1881,Sarmiento Frente Al Hospital Giordano
+ST1882,Sarmiento Y La Vía S
+ST1883,Sarmiento Y Gral. Acha S
+ST1884,Sarmiento Y Aberastain S
+ST1885,Aguilera Y Ontiveros S
+ST1886,Deportivo Angaco S
+ST1887,Aguilera Y Tucumán S
+ST1888,Aguilera Y Nueva España S
+ST1889,Aguilera Y Bodega S
+ST1890,Aguilera Y Zapata S
+ST1891,Capilla De Ntra. Sra De San Nicolás S
+ST1892,Escuela José Alejandro Segovia S
+ST1893,Aguilera Y Canal S
+ST1894,Aguilera Y Nacional S
+ST1895,Nacional Y Aguilera O -B
+ST1896,Nacional Y Sarmiento O
+ST1897,Sarmiento Y Rawson S
+ST1898,Sarmiento Y Segovia S
+ST1899,Sarmiento Y Juan Jufré S
+ST1900,Juan Jufré Y San Martín O
+ST1901,Escuela Juan Jufré O
+ST1902,Juan Jufré Y Bartolomé Mitre O
+ST1903,Juan Jufré Y Alem O
+ST1904,Alem Y Segovia E
+ST1905,Segovia Y 9 De Julio E
+ST1906,Segovia Y Santa María De Oro
+ST1907,Santa María De Oro Y Rawson N
+ST1908,Santa María De Oro Y Nacional N
+ST1909,Colegio Cacique Angaco O
+ST1910,Nacional Y Divisoria Alamito O
+ST1911,Nacional Y Callejón Medina O
+ST1912,Nacional Y Laprida O
+ST1913,Nacional Y Nicolás Vega O
+ST1914,Nacional Y Rodríguez O
+ST1915,Escuela Provincia De Neuquén O
+ST1916,B° Filiberto Jofré O
+ST1917,Cic Dos Acequias O
+ST1918,Nacional Y Divisoria De Alamito
+ST1919,Nacional Y Quiroga O
+ST1920,Nacional Y Florida
+ST1921,Nacional Y Av. Sarmiento O
+ST1922,Esquina De Pico
+ST1923,Lavalle Y Juan José Paso N
+ST1924,B° Difunta Correa - Alto De Sierra
+ST1925,Av. Libertador Y Martín Fierro N -A
+ST1926,Av. Libertador Y Buenaventura Luna N -A
+ST1927,Av. Libertador Y Curva N -B
+ST1928,Av. Libertador Y Josefina Storni N
+ST1929,Escuela José Pedro Cortínez N -A
+ST1930,Capilla San Antonio De Padua N -A
+ST1931,B° El Paso N
+ST1932,Av. Libertador E Hilario Cuadros N -A
+ST1933,Correo Alto De Sierra N
+ST1934,Av. Libertador Y Libertad N -A
+ST1935,Av. Libertador Y 4 De Abril N -B
+ST1936,B° Natania 24 N -A
+ST1937,Av. Libertador Y Balcarce N -B
+ST1938,Av. Libertador Y Zapata N -A
+ST1939,Av. Libertador Y J. M. De Rosas N -B
+ST1940,Escuela Provincia De Corrientes N -A
+ST1941,Av. Libertador - Pajas Blancas N -A
+ST1942,Av. Libertador Y San Francisco N -A
+ST1943,Av. Libertador Y Pelagio Luna N -A
+ST1944,Av. Libertador Y Pasteur -A
+ST1945,Av. Libertador Y Colón N -A
+ST1946,Av. Libertador Y 26 De Septiembre N -A
+ST1947,Av. Libertador Y Franz Schubert N -A
+ST1948,Av. Libertador Y Balaguer N
+ST1949,Av. Libertador Y Pueyrredón N -A
+ST1950,Av. Libertador Y Estados Unidos N
+ST1951,Av. Rioja Y Av. Libertador O
+ST1952,Av. Córdoba Y Av. Rawson -B
+ST1953,Av. Rawson Y Santa Fe E -A
+ST1954,Escuela José María Paz O
+ST1955,Gral. Acha Y Alamito O
+ST1956,Alamito Y Aberastain S
+ST1957,Aberastain Y La Cañada E
+ST1958,Escuela Cirilo Sarmiento S
+ST1959,Aberastain Y Sarmiento E
+ST1960,Nacional Y Santa María De Oro O
+ST1961,Santa María De Oro Y Rawson S
+ST1962,Santa María De Oro Y Segovia
+ST1963,Segovia Y Alem O
+ST1964,Alem Y Juan Jufré
+ST1965,Juan Jufré Y Alem E
+ST1966,Juan Jufré Y Bartolomé Mitre E
+ST1967,Juan Jufré Y Santa María De Oro E
+ST1968,Juan Jufré Y San Martín E
+ST1969,Juan Jufré Y Sarmiento
+ST1970,Sarmiento Y Fray Justo Sta. María De Oro
+ST1971,Sarmiento Y Rawson
+ST1972,Sarmiento Y Nacional
+ST1973,Nacional Y Aguilera E
+ST1974,Divisoria El Alamito Y Zapata N
+ST1975,Divisoria Alamito Y Florida N
+ST1976,Divisoria El Alamito Y Ontiveros N
+ST1977,Escuela Combate De San Lorenzo
+ST1978,Florida Y Ontiveros O
+ST1979,Florida Y Laprida O
+ST1980,Florida Y Rodríguez O
+ST1981,Florida Y Quiroga O
+ST1982,Santa Fe Y Estados Unidos N -B
+ST1983,Hospital De Niños Dr. Juan Carlos Navarro -B
+ST1984,Escuela Industrial D. F. Sarmiento -D
+ST1985,Av. Libertador Y P. Sanjuaninas S -A
+ST1986,Av. Libertador Y Estados Unidos S -A
+ST1987,Av. Libertador Y Castro S -B
+ST1988,Av. Libertador Y Pueyrredón S
+ST1989,Av. Libertador Y Miguel Ridao S -A
+ST1990,Av. Libertador Y Balaguer S
+ST1991,Av. Libertador Y Franz Schubert S -B
+ST1992,Av. Libertador Y 26 De Septiembre S -A
+ST1993,Av. Libertador Y Colón S -B
+ST1994,Av. Libertador Y Obispo Sarmiento S -A
+ST1995,B° Nicolás Avellaneda -A
+ST1996,Av. Libertador Y Paolini S -B
+ST1997,Escuela Provincia De Corrientes S -B
+ST1998,Av. Libertador Y De Oro S -A
+ST1999,Av. Libertador Y Juan Jufré S -B
+ST2000,Av. Libertador Y Zavalla S -A
+ST2001,Av. Libertador Y Balcarce S -A
+ST2002,Av. Libertador Y 4 De Abril S -B
+ST2003,Correo Alto De Sierra S
+ST2004,Av. Libertador Y Callejón Arroyo S -A
+ST2005,Av. Libertador Y Ramírez S -A
+ST2006,Av. Libertador Y 30 De Octubre S-A
+ST2007,Escuela José Pedro Cortínez S -A
+ST2008,Av. Libertador Y Callejón Torres S-A
+ST2009,Av. Libertador Y Josefina Storni S
+ST2010,Av. Libertador Y Curva S -B
+ST2011,Av. Libertador Y Buenaventura Luna S -A
+ST2012,Av. Libertador Y Martín Fierro S -B
+ST2013,Av. Libertador Y Bahía Blanca S
+ST2014,Lavalle Y Azcuénaga
+ST2015,Juan Lavalle Y G. Rawson
+ST2016,Nacional Y Salvador María Del Carril
+ST2017,Nacional Y Quiroga E
+ST2018,Cic Dos Acequias E
+ST2019,Escuela Provincia De Neuquén E
+ST2020,Nacional Y Nicolás Vega E
+ST2021,Nacional Y Laprida E
+ST2022,Nacional Y Callejón Medina E
+ST2023,Nacional Y Divisoria Alamito E
+ST2024,Colegio Cacique Angaco E
+ST2025,Nacional Y Santa María De Oro E
+ST2026,Nacional Y El Bosque E
+ST2027,El Bosque Y Olivera S
+ST2028,El Bosque Y Belgrano S
+ST2029,Belgrano Y Velázquez E
+ST2030,Belgrano Y 21 De Febrero E
+ST2031,21 De Febrero Y Olivera N
+ST2032,Olivera Y Punta Del Monte E
+ST2033,Cementerio Municipal De Angaco
+ST2034,Olivera Y Punta Del Monte O
+ST2035,Olivera Y 21 De Febrero O
+ST2036,Escuela Juan José Paso N
+ST2037,21 De Febrero Y Nacional (Capilla Niño Jesús)
+ST2038,B° 14 De Mayo O
+ST2039,Nacional Y Velázquez O
+ST2040,Nacional Y El Bosque O
+ST2041,Aguilera Y Fray Justo Sta. María De Oro S
+ST2042,Sarmiento Y Olivera S
+ST2043,B° 14 De Mayo E
+ST2044,Belgrano Y El Bosque E
+ST2045,El Bosque Y Santa Elena S
+ST2046,Escuela Marambio O
+ST2047,Nacional Y 21 De Febrero E
+ST2048,Escuela Juan José Paso S
+ST2049,21 De Febrero Y Olivera So
+ST2050,San Isidro Y Divisoria El Alamito E
+ST2051,El Bosque Y Pinchagual S
+ST2052,Capilla De Santo Domingo Y San Expedito O
+ST2053,21 De Febrero Y Belgrano N
+ST2054,Escuela Huarpes E
+ST2055,Pinchagual Y Punta Del Monte E
+ST2056,Escuela Huarpes O
+ST2057,El Bosque Y Rosental S
+ST2058,Proyectada Y Campodónico N
+ST2059,Campodónico Y El Bosque
+ST2060,El Bosque Y Pinchagual
+ST2061,Pinchagual Y Velázquez E
+ST2062,Punta Del Monte Y Belgrano N
+ST2063,Proyección Belgrano Y 21 De Febrero
+ST2064,21 De Febrero Y Belgrano S
+ST2065,21 De Febrero Y Belgrano
+ST2066,Punta Del Monte Y Belgrano S
+ST2067,Punta Del Monte Y Varas
+ST2068,Pinchagual Y Punta Del Monte O
+ST2069,Pinchagual Y Velázquez O
+ST2070,Pinchagual Y El Bosque
+ST2071,Rosenthal Y Proyectada
+ST2072,El Bosque Y Pinchagual N
+ST2073,El Bosque Y San Isidro N
+ST2074,San Isidro Y Ruta Nacional N°71
+ST2075,San Isidro Y Divisoria El Alamito O
+ST2076,Divisorio El Alamito Y Santa Elena
+ST2077,Escuela Marambio E
+ST2078,Santa Elena Y El Bosque
+ST2079,El Bosque Y Belgrano
+ST2080,Belgrano Y Aguilera O
+ST2081,Aguilera Y Olivera N
+ST2082,Aguilera Y Fray Justo Sta. María De Oro N
+ST2083,Nacional Y Proyectada O
+ST2084,Nacional Y De La Estación O
+ST2085,B° Intendente Francisco Césped N
+ST2086,Escuela Mary Mann N
+ST2087,21 De Febrero Y Zapata
+ST2088,Zapata Y El Bosque
+ST2089,El Bosque Y Nueva España N
+ST2090,El Bosque Y Cinco N
+ST2091,B° Campo De Batalla O
+ST2092,Capilla San Francisco De Asís O
+ST2093,Av. Libertador Y San Francisco S -A
+ST2094,Escuela Provincia De Corrientes S -A
+ST2095,Av. Libertador Y Libertad S -A
+ST2096,Nacional Y Av. Sarmiento E
+ST2097,Nacional Y De La Estación E
+ST2098,Segovia Y 9 De Julio O
+ST2099,El Bosque Y Rosental N
+ST2100,Capilla De Santo Domingo Y San Expedito E
+ST2101,Escuela Profesor Víctor Mercante
+ST2102,B° Intendente Francisco Césped S
+ST2103,21 De Febrero Y Nacional O
+ST2104,Escuela Doctor Bernardo Haussay E
+ST2105,Club Punta Del Monte E
+ST2106,Club Punta Del Monte O
+ST2107,Escuela Doctor Bernardo Houssay
+ST2108,Capilla Niño Jesús O
+ST2109,Nacional Y Aguilera O -A
+ST2110,Las Heras Y Av. Ig. De La Roza -C
+ST2111,Av. Libertador Y Gral. Acha S -B
+ST2112,Av. Libertador Y Av. Rioja S -C
+ST2113,Av. Libertador - Barrio Quintas Del Libertador S -B
+ST2114,Av. Libertador E Hilario Cuadros S
+ST2115,Quiroga Y Nacional
+ST2116,Quiroga Y Bodega S
+ST2117,Belgrano Y Quiroga O
+ST2118,Escuela República Del Perú O
+ST2119,Belgrano Y Salvador María Del Carril O
+ST2120,Av. Sarmiento Y Belgrano S
+ST2121,Av. Sarmiento Y Luis Bustos S
+ST2122,Av. Sarmiento Y Godoy Cruz S
+ST2123,Plaza Bª Ipv O
+ST2124,Godoy Cruz Y Cortínez O
+ST2125,Rawson Y Godoy Cruz S
+ST2126,Colegio Parroquial San Juan Bosco S
+ST2127,Colegio Secundario Augusto Pulenta S
+ST2128,G. Rawson Y República S
+ST2129,G. Rawson Y Colón S
+ST2130,G. Rawson E Independencia S
+ST2131,G. Rawson Y Dr. René Favaloro
+ST2132,Alfonsina Storni Y Ceferino Namuncurá E
+ST2133,Escuela Antonio Pulenta N
+ST2134,N. Laprida Y Proyectada N
+ST2135,N. Laprida Y Del Carril N
+ST2136,Laprida E Industria De Jugos Y Vinos N
+ST2137,Escuela Juan Larrea O
+ST2138,San Isidro Y Zonda O
+ST2139,San Isidro Y Albardón O
+ST2140,Escuela Crucero Ara Gral. Belgrano O
+ST2141,Escuela Crucero Ara Gral. Belgrano E
+ST2142,San Isidro Y Albardón E
+ST2143,San Isidro Y Zonda E
+ST2144,Escuela Juan Larrea E
+ST2145,San Isidro Y Av. Sarmiento O
+ST2146,Av. Sarmiento Y Colón N
+ST2147,Av. Sarmiento Y V. Busto N
+ST2148,Av. Sarmiento Y República N
+ST2149,Av. Sarmiento Y Godoy Cruz N
+ST2150,Municipalidad De San Martín N
+ST2151,Meglioli Y Comodoro Rivadavia E
+ST2152,Meglioli Y Miguel Blanco
+ST2153,Humberto Boero Y Linton E
+ST2154,Humberto Boero Y Linton O
+ST2155,Luis Bustos Y Miguel Blanco
+ST2156,Luis Bustos Y Tinto
+ST2157,Av. Sarmiento Y Luis Bustos N
+ST2158,Av. Sarmiento Y Belgrano N
+ST2159,Av. Sarmiento Y Montevideo N
+ST2160,Escuela Julio Verne N
+ST2161,Av. Sarmiento Y María De Guzmán N
+ST2162,Pueyrredón Y Laprida O
+ST2163,Pueyrredón Y Bernardino Rivadavia -B
+ST2164,Avellaneda Y Mitre C
+ST2165,Av. Córdoba Y Gral. Acha -C
+ST2166,Av. Córdoba Y Catamarca N -B
+ST2167,Av. Córdoba Y Sarmiento S -A
+ST2168,Av. Rawson Y Mitre E
+ST2169,Luis Bustos Y Comodoro Rivadavia
+ST2170,Luis Bustos Y Humberto Boero
+ST2171,Humberto Boero Y Linton S
+ST2172,Humberto Boero Y Meglioli
+ST2173,Meglioli Y Comodoro Rivadavia O
+ST2174,Hospital Dra. Stella Molina
+ST2175,Godoy Cruz Y Comodoro Rivadavia
+ST2176,Godoy Cruz Y Humberto Boero E
+ST2177,Godoy Cruz E
+ST2178,Cementerio Municipal De San Martín E
+ST2179,Godoy Cruz Y N. Laprida
+ST2180,N. Laprida Y Colón S
+ST2181,N. Laprida E Iglesia S
+ST2182,Jáchal Y Santa Lucía E
+ST2183,Capilla De San Isidro Labrador E
+ST2184,Albardón Y Jáchal
+ST2185,Escuela Crucero Ara Gral. Belgrano S
+ST2186,Laprida E Industria De Jugos Y Vinos S
+ST2187,N. Laprida Y Del Carril S
+ST2188,N. Laprida Y Proyectada S
+ST2189,Escuela Antonio Pulenta S
+ST2190,9 De Julio Y Segundino Navarro N -A
+ST2191,Urquiza Y Gral. Paz -A
+ST2192,Estación Córdoba - Santa Lucía - Caucete - 9 De Julio - 25 De Mayo
+ST2193,Av. Córdoba Y Tucumán -C
+ST2194,Estación Mitre - Caucete
+ST2195,Av. 9 De Julio Y Estados Unidos S -A
+ST2196,Ruta N. N°20 Y La Plata - S -B
+ST2197,Ruta N. N°20 Y Enfermera Medina S -A
+ST2198,Diagonal Sarmiento Y Paula A. De Sarmiento S -B
+ST2199,Plaza Manuel Belgrano - Caucete B
+ST2200,Seccional Novena S
+ST2201,Diagonal Sarmiento Y Laprida S -B
+ST2202,Diagonal Sarmiento Y Av. De Los Ríos S -A
+ST2203,Av. De Los Ríos Y Santa María De Oro N
+ST2204,Plazoleta Ahumada N
+ST2205,Plazoleta Virgen De Fátima N
+ST2206,Corrientes Y Calle 3
+ST2207,Jujuy Y Córdoba S
+ST2208,Galvarini Y Aberastain S
+ST2209,Galvarini Y Salvador María Del Carril
+ST2210,Galvarini Y Juan José Bustos
+ST2211,Juan José Bustos Y J. Correa O
+ST2212,Juan José Bustos Y Rioja O
+ST2213,Juan José Bustos Y San Luis O
+ST2214,Dr. Sabin Y 15 De Septiembre S
+ST2215,Avellaneda Y San Luis E
+ST2216,Rioja Y Capayán N
+ST2217,Rioja Y Catamarca
+ST2218,Catamarca Y J. Correa
+ST2219,J. Correa Y Tucumán
+ST2220,Plaza Bº Emilio Mendoza E
+ST2221,Tucumán Y Alba E
+ST2222,Gruta Santa Lucía S
+ST2223,Gruta Virgen Del Luján S
+ST2224,Proyectada Y Proyectada 9 S
+ST2225,Club Sportivo Juvenil Junior S
+ST2226,Proyectada 1 Y Proyectada 8 S
+ST2227,Proyectada 1 Y Proyectada 6 S
+ST2228,Proyectada 1 Y Proyectada 5 S
+ST2229,Zapata Y Ruta N. N°20
+ST2230,Ruta N. N°20 Y Las Chacritas N
+ST2231,Ruta N. Nº20 - Comisaría Nº31 N -B
+ST2232,V° Las Rosas N
+ST2233,Ruta N. N°20 - Escuela Dr. Luis Agote N -B
+ST2234,Ruta N. N°20 Y Coria N
+ST2235,Acceso Aeropuerto San Juan (Uaq) E
+ST2236,Ruta N. Nº20 Industria N
+ST2237,Ruta N. N°20 Y Km 573 N
+ST2238,Ruta N. N°20 Y Los Tamarindos N
+ST2239,Cementerio Parque El Palmar N
+ST2240,Ruta N. N°20 Km 575 N
+ST2241,Camping Don Bosco N
+ST2242,H. Yrigoyen Y Ruta N. N°20 N
+ST2243,H. Yrigoyen Antes De 12 De Octubre N
+ST2244,H. Yrigoyen Y 12 De Octubre N -B
+ST2245,H. Yrigoyen Y 12 De Octubre N
+ST2246,Bº Difunta Correa N
+ST2247,Camping Soiv N
+ST2248,Escuela Valle De Tulum
+ST2249,H. Yrigoyen Y Balcarce N -A
+ST2250,Cementerio De Santa Lucía E
+ST2251,Balcarce Y Pellegrini E
+ST2252,Pellegrini Y Buenos Aires N
+ST2253,Loteo Privado Casas Blancas N
+ST2254,Colegio Saint Paul N
+ST2255,Pellegrini Y Santa María De Oro N
+ST2256,Av. Sarmiento Y Santa María De Oro
+ST2257,Av. Sarmiento Y H. Yrigoyen N
+ST2258,Av. Sarmiento Y San Guillermo N
+ST2259,Acceso B° Trabajadores Viales
+ST2260,Plaza Acceso B° Santa Lucía N
+ST2261,Av. Sarmiento Y El Leoncito N
+ST2262,Av. Sarmiento Y Pelagio Luna N
+ST2263,Colon Y Av. Sarmiento O
+ST2264,Colón Y Gral. Paz O
+ST2265,Escuela Carlos Pellegrini N
+ST2266,Av. Rawson Y Av. Córdoba E -B
+ST2267,Av. Rawson Y Av. Ig. De La Roza E
+ST2268,Av. Libertador Y Aberastain N -C
+ST2269,Av. Libertador Y Mendoza N -C
+ST2270,Av. Libertador Y Av. Alem N -C
+ST2271,Instituto De Automática - Facultad De Ingeniería N
+ST2272,Urquiza Y F. De Miranda O
+ST2273,Escuela Provincia De Buenos Aires -A
+ST2274,Gral. Paz Y Las Heras S
+ST2275,Estación Córdoba - Caucete - 9 De Julio - Santa Lucía
+ST2276,Av. Córdoba Y Caseros S -D
+ST2277,Hospital Dr. Guillermo Rawson O -B
+ST2278,Av. 9 De Julio Y Estados Unidos S -B
+ST2279,Av. 9 De Julio Y Lateral Av. De Circunvalación
+ST2280,Av. H. Yrigoyen Y José María Del Carril S
+ST2281,Av. H. Yrigoyen Y Ramón Franco S
+ST2282,Escuela Carlos Pellegrini S
+ST2283,Colón Y Gral. Paz E
+ST2284,Av. Sarmiento Y Pelagio Luna S
+ST2285,Av. Sarmiento E Ischigualasto S
+ST2286,Bº Don Pedro S
+ST2287,B° Trabajadores Viales S
+ST2288,Av. H. Yrigoyen Y Av. Sarmiento
+ST2289,H. Yrigoyen Y Periodistas Sanjuaninos S
+ST2290,B° La Providencia S
+ST2291,Casa De La Cultura De Santa Lucía
+ST2292,H. Yrigoyen Y M. Belgrano S -A
+ST2293,H. Yrigoyen Y M. Belgrano S -B
+ST2294,H. Yrigoyen Y Balcarce S
+ST2295,H. Yrigoyen Y 21 De Febrero S
+ST2296,Camping Soiv S
+ST2297,H. Yrigoyen Y 12 De Octubre S
+ST2298,H. Yrigoyen Antes De 12 De Octubre S
+ST2299,Camping Don Bosco S
+ST2300,Ruta N. N°20 Km 575 S
+ST2301,Cementerio Parque El Palmar S
+ST2302,Ruta N. N°20 Y Los Tamarindos S
+ST2303,Ruta N. N°20 Y Km 573 S
+ST2304,Ruta N. Nº20 Industria S
+ST2305,Ruta N. N°20 - Acceso Aeropuerto San Juan (Uaq) O
+ST2306,Ruta N. N°20 Y Coria S
+ST2307,Ruta N. N°20 - Escuela Dr. Luis Agote S -B
+ST2308,V° Las Rosas S
+ST2309,Ruta N. Nº20 - Comisaría Nº31 S -B
+ST2310,Ruta N. N°20 Y Las Chacritas S
+ST2311,Ruta N. N°20 Y Zapata S -B
+ST2312,Eusebio Zapata Y Marta Muñoz
+ST2313,Proyectada 1 Y Proyectada 5 N
+ST2314,Proyectada 1 Y Proyectada 8 N
+ST2315,Club Sportivo Juvenil Junior N
+ST2316,Proyectada Y Proyectada 9 N
+ST2317,9 De Julio Y Segundino Navarro N -B
+ST2318,9 De Julio Y Urquiza
+ST2319,Urquiza Y Gral. Paz -B
+ST2320,Ruta N. N°20 Y El Jacarandá S
+ST2321,Ruta N. N°20 Y Gral. Roca S
+ST2322,Ruta N. N°20 Y Marmolería S
+ST2323,Ruta N. N°20 Y Lencinas S
+ST2324,Ruta N. Nº 20 Y Acceso Este S
+ST2325,Ruta N. N°20 Y 21 De Septiembre S
+ST2326,Ruta N. N°20 Y 12 De Octubre S
+ST2327,Ruta N. N°20 Y Callejón Herrera S
+ST2328,Ruta N. N°20 Y B° Privado La Laguna S
+ST2329,B° Las Chacritas O
+ST2330,Gilberto Sánchez Y Buenos Aires O
+ST2331,Gilberto Sánchez Y Echegaray O
+ST2332,Gilberto Sánchez Y Maurín O
+ST2333,B° Municipal 9 De Julio O
+ST2334,Gilberto Sánchez Y Calle 8 O
+ST2335,Diagonal Gral. San Martín Y Florida O
+ST2336,Diagonal Gral. San Martín Y Doncel O
+ST2337,Escuela De Educación Especial Juana Azurduy De Padilla O
+ST2338,La Plata Y Pastoriza
+ST2339,La Plata Y Diagonal Sarmiento
+ST2340,Plaza Independencia
+ST2341,Municipalidad De 9 De Julio O
+ST2342,Gimnasio Municipal O
+ST2343,Diag. Gral. San Martín Y Tomás Bates
+ST2344,Caps Arturo Cabral De La Colina O
+ST2345,Bilbao Y Paraguay S
+ST2346,Ingreso B° Bilbao S
+ST2347,B° Bilbao N
+ST2348,B° Bilbao E
+ST2349,Plaza B° Bilbao O
+ST2350,Aeropuerto De San Juan N
+ST2351,Carlos Pellegrini Y San Luis N
+ST2352,San Luis Y Gilberto Sánchez E
+ST2353,San Luis E Islas Malvinas
+ST2354,Islas Malvinas Y Córdoba N
+ST2355,Islas Malvinas Y Díaz De Solís
+ST2356,Islas Malvinas Y Juan Díaz De Solís
+ST2357,Juan Díaz De Solís Y Carlos Pellegrini
+ST2358,Juan Díaz De Solís Y Ruta N. Nº20
+ST2359,Ruta N. N°20 E H. Yrigoyen N
+ST2360,Ruta N. N°20 Y B° Privado La Laguna N
+ST2361,Ruta N. N°20 Y Callejón Herrera N
+ST2362,Loteo Callejón Herrera O
+ST2363,Callejón Herrera Y Belgrano
+ST2364,Belgrano Y Chaparro N
+ST2365,Loteo Callejón Herrera E
+ST2366,Belgrano Y Gúemes E
+ST2367,Ruta N. N°20 Y Acceso E
+ST2368,Gaucho Martín Güemes
+ST2369,H. Yrigoyen Y M. Belgrano N
+ST2370,Sum Municipal La Legua
+ST2371,B° La Providencia N
+ST2372,Escuela Juan Dolores Godoy N -B
+ST2373,Av. H. Yrigoyen Y Av. Colón N
+ST2374,Comisaría 5° Santa Lucía
+ST2375,Av. 9 De Julio Y República Argentina N
+ST2376,Escuela Normal Superior San Martín
+ST2377,Terminal De Ómnibus San Juan Acceso A
+ST2378,Santa Fe Y Av. Rioja -D
+ST2379,Santa Fe Y Gral. Acha -B
+ST2380,Registro Civil Capital -C
+ST2381,Santa Fe Y Av. Alem -A
+ST2382,Santa Fe Y Av. España
+ST2383,Av. España Y Av. Córdoba -B
+ST2384,Av. España Y Gral. Paz
+ST2385,9 De Julio Y Las Heras -B
+ST2386,Estación Córdoba - Caucete - Aeropuerto
+ST2387,Caseros Y Laprida
+ST2388,Laprida Y Av. Rawson
+ST2389,Laprida Y Pueyrredón
+ST2390,Pueyrredón Y Bernardino Rivadavia -C
+ST2391,Avellaneda Y Mitre D
+ST2392,Callejón Herrera Y Belgrano O
+ST2393,Belgrano Y 21 De Septiembre O
+ST2394,Belgrano Y Callejón Herrera
+ST2395,Callejón Herrera Y Ruta N. Nº20
+ST2396,Islas Malvinas Y Córdoba S
+ST2397,Plaza Colonia Fiorito
+ST2398,San Luis Y Carlos Pellegrini
+ST2399,Aeropuerto De San Juan S
+ST2400,Escuela Granaderos De San Martín O
+ST2401,Ruta P. N°182 Y Oratorio N
+ST2402,Ruta P. N°241 Y Paraguay O
+ST2403,B° Las Cañitas O
+ST2404,B° De La Estación O
+ST2405,Ruta P. N°241 Y Maestro Yacante O
+ST2406,Escuela Eusebio Segundo Zapata S
+ST2407,Dr. Amable Jones Y Ruta P. N°241 O
+ST2408,Dr. Amable Jones Y Ruta P. N°241 E
+ST2409,Escuela Eusebio Segundo Zapata N
+ST2410,Ruta P. N°241 Y Maestro Yacante E
+ST2411,B° De La Estación E
+ST2412,C.D.I La Majadita E
+ST2413,B° Las Cañitas E
+ST2414,Ruta P. N°241 Y Paraguay E
+ST2415,Ruta P. N°182 Y Oratorio E
+ST2416,Caps Arturo Cabral De La Colina E
+ST2417,Diag. Gral. San Martín E Ing. Quiroga
+ST2418,Gimnasio Municipal E
+ST2419,Municipalidad De 9 De Julio E
+ST2420,Escuela Granaderos De San Martín E
+ST2421,Diagonal Gral. San Martín Y Doncel E
+ST2422,Diagonal Gral. San Martín Y Florida E
+ST2423,Gilberto Sánchez Y Calle 8 E
+ST2424,Gilberto Sánchez Y Maurín E
+ST2425,Gilberto Sánchez Y Echegaray E
+ST2426,Gilberto Sánchez Y Buenos Aires E
+ST2427,B° Las Chacritas E
+ST2428,Gilberto Sánchez Y Ruta N. Nº20 E
+ST2429,Ruta N. N°20 Y 12 De Octubre N
+ST2430,Ruta N. Nº20 Y Acceso Este N
+ST2431,Ruta N. N°20 Y Lencinas N
+ST2432,Ruta N. N°20 Y Marmolería N
+ST2433,Ruta N. N°20 Y B° Privado La Lucía N
+ST2434,Ruta N. N°20 Y Gral. Roca N
+ST2435,Ruta N. Nº20 Y Teniente Quiroga
+ST2436,Ruta N. Nº20 Y Corvalán N
+ST2437,Av. 9 De Julio Y Nueva España
+ST2438,Juan José Bustos Y Fray Mamerto Esquiú
+ST2439,Jhon F. Kennedy Y Maipu O
+ST2440,Gral. José San Martín Y Juan José Bustos
+ST2441,Paula A. De Sarmiento Y Juan José Bustos S
+ST2442,Padre M. Ianelli Y Paula A. De Sarmiento O
+ST2443,Padre M. Ianelli Y 25 De Mayo O
+ST2444,Plaza Bº Justo Castro 3 N
+ST2445,Cmte. Cabot Y Juan José Bustos
+ST2446,Salvador María Del Carril Y Mons. Rodríguez O
+ST2447,Juan José Bustos Y Urquiza O
+ST2448,Juan José Bustos Y G. Rawson
+ST2449,Plaza 11 De Septiembre O
+ST2450,Plaza Del Bicentenario
+ST2451,Diagonal Sarmiento Y Laprida N
+ST2452,Diagonal Sarmiento Y G. Rawson N
+ST2453,Seccional Novena N
+ST2454,Diagonal Sarmiento Y Godoy Cruz N
+ST2455,Plazoleta Cristo Rey -B
+ST2456,Diagonal Sarmiento Y Cmte. Cabot N
+ST2457,Diagonal Sarmiento Y Paula A. De Sarmiento N -B
+ST2458,Ruta N. N°20 Y Enfermera Medina N -B
+ST2459,Ruta N. N°20 Y Enfermera Medina N -C
+ST2460,Ruta N. Nº20 -Bº Las Moritas N
+ST2461,Ruta N. N°20 Y La Plata N -B
+ST2462,Ruta N. Nº20 Y San Isidro
+ST2463,Ruta N. Nº20 Y Calle 16
+ST2464,Ruta N. Nº20 Puente De Caucete
+ST2465,Ruta N. N°20 Y Balmaceda N
+ST2466,Escuela Procesa Sarmiento De Lenoir N
+ST2467,Ruta N. Nº20 Y Videla
+ST2468,Ruta N. N°20 Y Zapata N -B
+ST2469,Ruta N. N°20 Y 21 De Septiembre
+ST2470,Av. España Y Mitre
+ST2471,Terminal De Ómnibus De Caucete
+ST2472,Acceso Plataforma Terminal De Caucete S
+ST2473,Escuela Leonor Sánchez De Arancibia O
+ST2474,L. Alem Y Av. De Los Ríos O
+ST2475,Av. De Los Ríos Y Ruta P. Nº270 S
+ST2476,Plazoleta Virgen De Fátima S
+ST2477,Av. De Los Ríos E Ig. De La Roza S
+ST2478,Av. De Los Ríos Y Santa María De Oro S
+ST2479,Av. De Los Ríos Y Diagonal Sarmiento S -B
+ST2480,Plaza Del Bicentenario -A
+ST2481,Diagonal Sarmiento Y Paula A. De Sarmiento N -A
+ST2482,Escuela Horacio Mann
+ST2483,Divisoria Y Godoy Cruz
+ST2484,Divisoria Y Canal Norte
+ST2485,Divisoria Y San Isidro S
+ST2486,Divisoria Y La Plata S
+ST2487,Enfermera Medina Y Divisoria O
+ST2488,Enfermera Medina Y Juan Lavalle
+ST2489,Juan Lavalle Y San Martín - Cementerio Municipal O
+ST2490,San Martín Y Río Negro O
+ST2491,San Martín Y Rastreador Calivar O
+ST2492,San Martín Y Patricias Sanjuaninas O
+ST2493,San Martín Y Mendoza O
+ST2494,San Martín Y Central O
+ST2495,L. Alem Y A. Rawson O
+ST2496,Acceso Terminal De Ómnibus De Caucete O
+ST2497,Acceso Plataforma Terminal De Caucete N
+ST2498,Acceso Terminal De Ómnibus De Caucete E -B
+ST2499,L. Alem Y A. Rawson E
+ST2500,Diagonal Sarmiento Y Paula A. De Sarmiento S -C
+ST2501,Diagonal Sarmiento Y Juan Jufré -B
+ST2502,Plaza Manuel Belgrano - Caucete C
+ST2503,Diagonal Sarmiento Y San Martín S -B
+ST2504,Escuela Manuel Pacífico Antequeda E
+ST2505,Juan José Bustos Y 9 De Julio E
+ST2506,Hospital Dr. César Aguilar E
+ST2507,Juan José Bustos Y Cmte. Cabot
+ST2508,Paula A. De Sarmiento Y Salta S
+ST2509,Paula A. De Sarmiento Y Caseros S
+ST2510,Paula A. De Sarmiento Y Sáenz Peña N
+ST2511,Roque Sáenz Peña Y Patricias Sanjuaninas
+ST2512,Escuela José María De Los Ríos
+ST2513,Patricias Sanjuaninas Y Caseros
+ST2514,Rastreador Calivar Y Canal
+ST2515,Caseros Y Rastreador Calivar
+ST2516,Rastreador Calivar Y Salta
+ST2517,Salta Y Patricias Sanjuanina
+ST2518,Juan José Bustos Y Patricias Sanjuaninas
+ST2519,Escuela Hipólito Vieytes
+ST2520,Juan José Bustos Y Rastreador Calivar
+ST2521,Juan José Bustos Y Río Negro
+ST2522,Los Médanos
+ST2523,Costa Canal Y Juan Lavalle
+ST2524,Costa Canal O
+ST2525,Cementerio Municipal Caucete
+ST2526,Av. De Los Ríos Y Salvador M. Del Carril N
+ST2527,Aberastain Y Plaza Bº Felipe Cobas O
+ST2528,Aberastain Y Jujuy
+ST2529,Salvador María Del Carril Y Aberastain
+ST2530,Aberastain Y Proyectada 2
+ST2531,Aberastain Y Rioja O
+ST2532,Aberastain Y Cristóbal Colón
+ST2533,Cristóbal Colón Y Leandro Alem
+ST2534,Cristóbal Colón Y Belgrano N
+ST2535,Cristóbal Colón Y Sarmiento N
+ST2536,Cristóbal Colón Y Enfermera Medina N
+ST2537,Cristóbal Colón Y Proyectada N
+ST2538,Manuel Belgrano - B° 9 De Julio N
+ST2539,Escuela Dr. Saturnino Salas N
+ST2540,Manuel Belgrano Y La Plata
+ST2541,La Plata Y Cristóbal Colón E
+ST2542,La Plata Y San Isidro S
+ST2543,La Plata Y Justo P. Castro E
+ST2544,La Plata Y Patricias Sanjuaninas E
+ST2545,Escuela Pedro Echagüe
+ST2546,Libertad Y Pedro Echagüe
+ST2547,Patricias Sanjuaninas Y La Plata
+ST2548,La Plata Y Justo P. Castro O
+ST2549,Cooperativa Pie De Palo O
+ST2550,La Plata Y San Isidro O
+ST2551,La Plata Y Cristobal Colón O
+ST2552,La Plata Y Manuel Belgrano O
+ST2553,Escuela Dr. Saturnino Salas S
+ST2554,Manuel Belgrano - B° 9 De Julio S
+ST2555,Proyectada Y Cristóbal Colón E
+ST2556,Cristóbal Colón Y Enfermera Medina S
+ST2557,Cristobal Colón Y Sarmiento S
+ST2558,Cristobal Colón Y Belgrano S
+ST2559,Escuela Andina
+ST2560,Cristóbal Colón Y Aberastain
+ST2561,Aberastain Y Rioja E
+ST2562,Aberastain Y Proyectada 3
+ST2563,Aberastain Y Proyectada 1
+ST2564,Aberastain Y Plaza Bº Felipe Cobas E
+ST2565,L. Alem Y Don Bosco
+ST2566,Escuela Provincia De Buenos Aires -B
+ST2567,Gral. Paz Y Las Heras -B
+ST2568,Av. Libertador Y Lateral Este Av. Circunvalación S -A
+ST2569,Escuela Hogar De Niños S
+ST2570,Av. Libertador - Barrio Enriqueta S
+ST2571,Av. Libertador Y 12 De Octubre S
+ST2572,G. Rawson Y J. Lund O
+ST2573,G. Rawson Y Dr. G. Cerdera O
+ST2574,Escuela Autonomía Ciudad De Bailén O
+ST2575,G. Rawson Y Huarpes O
+ST2576,Capilla Ntra. Sra. De La Merced O
+ST2577,Camping Municipal De San Martín O
+ST2578,Edificio Ministerio De Gobierno O
+ST2579,G. Rawson Y Proyectada 1 O
+ST2580,G. Rawson Y San José 3 O
+ST2581,G. Rawson Y Proyectada 5 O
+ST2582,G. Rawson Y Proyectada 7 O
+ST2583,G. Rawson Y Proyectada 9 O
+ST2584,G. Rawson Y Mitre S
+ST2585,G. Rawson Y 17 De Agosto S
+ST2586,G. Rawson Y Felipe Andino S
+ST2587,G. Rawson Y Ávila S
+ST2588,Godoy Cruz Y 20 De Junio E
+ST2589,20 De Junio Y Padre Garbini S
+ST2590,20 De Junio Y Domingo Savio S
+ST2591,20 De Junio Y República S
+ST2592,20 De Junio Y Florida S
+ST2593,Escuela Ernestina Echegaray De Andino
+ST2594,G. Rawson Y Colón N
+ST2595,Escuela Dominguito E
+ST2596,Las Promesas Y Ceferino Namuncurá O
+ST2597,G. Rawson Y Favaloro
+ST2598,Independencia Y Divisoria O
+ST2599,Escuela Estanislao Del Campo O
+ST2600,Enfermera Medina Y Río Negro O
+ST2601,Enfermera Medina Y Rastreador Calivar O
+ST2602,Enfermera Medina Y Bº Justo Castro IV O
+ST2603,Diagonal Sarmiento Y Juan Jufré -A
+ST2604,Diagonal Sarmiento Y Laprida S -A
+ST2605,Diagonal Sarmiento Y San Martín S -A
+ST2606,Diagonal Sarmiento Y Av. De Los Ríos S -B
+ST2607,L. Alem Y Av. De Los Ríos E
+ST2608,San Martín Y Sgto. Cabral
+ST2609,Bº Pie De Palo - Calle De Acceso Y Proyectada 1
+ST2610,Bº Pie De Palo - Calle De Acceso Y Proyectada 2
+ST2611,Mariano Moreno Y Mendoza N
+ST2612,Bº Pie De Palo - Calle Central
+ST2613,P. A. De Sarmiento Y Mariano Moreno
+ST2614,Paula A. De Sarmiento Y Salvador María Del Carril S
+ST2615,Escuela De Educación Especial María Montessori N
+ST2616,Hospital Dr. César Aguilar O
+ST2617,Escuela Domingo De Oro S
+ST2618,Malvinas Argentinas Y Santa Fe
+ST2619,Calle 12 Y 30 De Octubre N
+ST2620,Calle 12 Y La Plata E
+ST2621,La Plata Y Calle 11 E
+ST2622,La Plata Y Calle 10 E
+ST2623,Escuela Juana De Ibarbourou E
+ST2624,La Plata Y Calle 8 E
+ST2625,La Plata Y Calle 7 E
+ST2626,Escuela Comandante Tomás Espora E
+ST2627,La Plata Y Calle 5 E
+ST2628,La Plata Y M. Belgrano E
+ST2629,Escuela De Educación Especial 25 De Mayo S
+ST2630,B° 27 De Diciembre S
+ST2631,Hospital Santa Rosa S
+ST2632,M. Belgrano Y Mendoza Spada S
+ST2633,Escuela Provincia De San Juan S
+ST2634,M. Belgrano Y Av. Gral. San Martín S
+ST2635,Av. Gral. San Martín Y Mitre
+ST2636,Av. Ramón Barrera Y Aberastain N
+ST2637,Plaza Villa Santa Rosa N
+ST2638,Av. Ramón Barrera Y Mendoza Spada N
+ST2639,Mendoza Spada Y Sarmiento E
+ST2640,Mendoza Spada Y Antonio Torres E
+ST2641,Antonio Torres Y Salvador María Del Carril S
+ST2642,Escuela Segundino J. Navarro S
+ST2643,Antonio Torres Y Aberastain S
+ST2644,Antonio Torres Y Av. Gral. San Martín S
+ST2645,Av. Gral. San Martín Y Sarmiento O
+ST2646,Av. Gral. San Martín Y M. Belgrano E
+ST2647,Escuela Provincia De San Juan N
+ST2648,M. Belgrano Y Spada N
+ST2649,Hospital Santa Rosa N
+ST2650,M. Belgrano Y Enfermera Medina N
+ST2651,B° 27 De Diciembre N
+ST2652,Juzgado De Paz De 25 De Mayo N
+ST2653,Escuela De Educación Especial 25 De Mayo N
+ST2654,M. Belgrano Y La Plata
+ST2655,La Plata Y Calle 3 E
+ST2656,La Plata Y Ruta P. N°241 E
+ST2657,La Plata Y Calle 2 E
+ST2658,La Plata Y Calle 1 E
+ST2659,La Plata Y Divisoria E
+ST2660,La Plata Y Oviedo E
+ST2661,La Plata Y Paso De Los Andes E
+ST2662,Enfermera Medina Y Antonio Torres E
+ST2663,Antonio Torres Y Manzur S
+ST2664,B° Santa Rosa II
+ST2665,Club Sportivo 25 De Mayo
+ST2666,B° Los Algarrobos Y Proyectada 1 E
+ST2667,B° Los Algarrobos Y Proyectada 2 E
+ST2668,B° Los Algarrobos Y Proyectada 3 E
+ST2669,Av. Gral. San Martín Y Calle 2 E
+ST2670,B° Divisoria E
+ST2671,B° Conjunto 5 VII E
+ST2672,Av. Gral. San Martín Y Calle 1 E
+ST2673,Escuela Agrotécnica Doblas S
+ST2674,Centro Educativo Ullum E
+ST2675,Juan José Bustos Y Oviedo E
+ST2676,Juan José Bustos Y Paso De Los Andes E
+ST2677,Juan José Bustos Y Cristóbal Colón E
+ST2678,Juan José Bustos Y San Luis E
+ST2679,Juan José Bustos Y Rioja E
+ST2680,Juan José Bustos Y J. Correa E
+ST2681,Juan José Bustos Y Galvarini E
+ST2682,Juan José Bustos Y Galvarini O
+ST2683,Juan José Bustos Y Cristóbal Colón O
+ST2684,Juan José Bustos Y Paso De Los Andes O
+ST2685,Juan José Bustos Y Oviedo O
+ST2686,Centro Educativo Ullum O
+ST2687,Juan José Bustos Y Divisoria O
+ST2688,Divisoria Y Calle 21 S
+ST2689,Calle 21 Y Calle 2 O
+ST2690,Escuela Pascual Chena S
+ST2691,Calle 2 Y Calle 23 S
+ST2692,Calle 23 Y Calle 3 O
+ST2693,Calle 3 Y Calle 24 S
+ST2694,Calle 3 Y Calle 25 S
+ST2695,Calle 25 Y Manuel Belgrano O
+ST2696,Escuela Martín Yanzón N
+ST2697,Manuel Belgrano Y Calle 23 N
+ST2698,Manuel Belgrano Y Calle 21 N
+ST2699,M. Belgrano Y Av. Gral. San Martín N
+ST2700,Spada Y M. Belgrano O
+ST2701,Escuela Albergue Dr. Navarro N
+ST2702,Acceso Encón N
+ST2703,Ruta N. N°20 Y Ruta N. N°142 N
+ST2704,Cristo Peregrino N
+ST2705,Parador N
+ST2706,Ruta N. N°20 Km 499 N
+ST2707,Ruta N. N°20 Km 507 N
+ST2708,Ruta N. N° 20 Km 511 N
+ST2709,Ruta N. N°20 Km 514 N
+ST2710,Ruta N. N°20 Km 516 N
+ST2711,Ruta N. N°20 Km 525 N
+ST2712,Ruta N. N°20 Y Calle 10
+ST2713,Calle 10 Y Calle 11 N
+ST2714,Blvd. Albornoz Y Ruperto Martínez E
+ST2715,Escuela Secundaria Florencia Nightingale E
+ST2716,Blvd. Albornoz Y Ruperto Martínez O
+ST2717,Blvd. Albornoz Y Calle 10 O
+ST2718,Calle 10 -E
+ST2719,Calle 10 Y Calle 24 N
+ST2720,Calle 10 Entre 23 Y 24 N
+ST2721,Calle 10 Y Calle 23 N
+ST2722,Calle 10 -C
+ST2723,Calle 10 Y Calle 22 N
+ST2724,Escuela Bartolomé Del Bono N
+ST2725,Calle 10 -B
+ST2726,Calle 10 Y Calle 21 N
+ST2727,Calle 10 N -B
+ST2728,Calle 10 -A
+ST2729,Calle 10 Y Calle 20 N
+ST2730,Escuela Prilidiano Pueyrredón N
+ST2731,Calle 10 Y Av. Gral. San Martín N
+ST2732,Ig. De La Roza Y Calle 10 E
+ST2733,Ig. De La Roza Y Juan José Paso
+ST2734,Plaza Narciso Laprida E
+ST2735,Ig. De La Roza Y Sarmiento E
+ST2736,Ig. De La Roza Y Manuel Núñez E
+ST2737,Calle 9 Y Av. San Martín S
+ST2738,Av. Gral. San Martín Y Calle 8 E
+ST2739,Av. Gral. San Martín Y Calle 7 E
+ST2740,B° Conjunto 5 I E
+ST2741,B° Conjunto 5 II E
+ST2742,B° Conjunto 5 III E
+ST2743,B° Conjunto 5 IV E
+ST2744,Acceso Norte B° Conjunto 5
+ST2745,B° Conjunto 5 V E
+ST2746,B° Conjunto 5 VI E
+ST2747,Av. Gral. San Martín Y M. Belgrano O
+ST2748,L. Alem Y Divisoria E -A
+ST2749,L. Alem Y Divisoria E -B
+ST2750,L. Alem Y Oviedo E
+ST2751,L. Alem Y Paso De Los Andes E
+ST2752,L. Alem Y Cristóbal Colón
+ST2753,L. Alem Y Obrero Argentino E
+ST2754,L. Alem Y Sargento Cabral E
+ST2755,Av. Uruguay Y B° Covisar S
+ST2756,Camping San Antonio S
+ST2757,Av. Uruguay Y Proyectada 1 S
+ST2758,Av. Uruguay Y Proyectada 2
+ST2759,Av. Uruguay Y Neuquén S
+ST2760,Av. Uruguay E Islas Malvinas S
+ST2761,Av. Uruguay Y José Ares S
+ST2762,José Ares Y Belgrano
+ST2763,Escuela Ing. Félix Aguilar
+ST2764,Av. 25 De Mayo Y Rivadavia
+ST2765,Vargas Y José Elasche E
+ST2766,Vargas Y Guell E
+ST2767,Vargas Y Chávez E
+ST2768,Vargas Y Olivera E
+ST2769,Vargas Y M. Maurín E
+ST2770,Vargas E
+ST2771,B° Punta Del Médano
+ST2772,Escuela Enrique Larreta S
+ST2773,Club Punta Del Médano S
+ST2774,Yanzón E Independencia S
+ST2775,Cochagual E
+ST2776,Escuela Dr. Anacleto Gil E
+ST2777,La Plata Y Calle 13 E
+ST2778,Proyectada Y Constitución
+ST2779,Calle 10 Y Enfermera Medina S
+ST2780,Calle 10- Bº Nuevo S
+ST2781,Ig. De La Roza Y Manuel Núñez O
+ST2782,Ruta P. Nº 241 Y La Plata N
+ST2783,Ruta P. Nº 241 Y Canal Quiroga N
+ST2784,Ruta P. Nº241 Y Callejón Gonzalez N
+ST2785,Dr. Amable Jones Y Bº La Majadita E
+ST2786,B° Municipal 9 De Julio E
+ST2787,Escuela Industrial D. F. Sarmiento -A
+ST2788,Terminal De Ómnibus De San Juan S
+ST2789,Circuito San Juan Villicum E
+ST2790,Talacasto E
+ST2791,Ruta P. N°436 Empalme Ruta N. N°149
+ST2792,Ruta N. N°149 Y Ruta P. N°12 N
+ST2793,Ruta N. N°149 - Km. 155 O
+ST2794,Escuela Luis Pasteur O
+ST2795,Control Fitosanitario Calingasta O
+ST2796,Ruta N. N°149 - Km. 151 O
+ST2797,Información Turística Calingasta N
+ST2798,Rotonda Virgen Medalla Milagrosa N
+ST2799,Av. Argentina Y Rawson
+ST2800,Av. Argentina Y Aberastain N
+ST2801,Plaza Patricias Sanjuaninas O
+ST2802,Av. Argentina Y Amancay O
+ST2803,Río Calingasta O
+ST2804,Valle De Calingasta N
+ST2805,Ruta Pnº 406 - Alto Calingasta N
+ST2806,Escuela Jorge Newbery N
+ST2807,Ruta P. N°406 Y Flores N
+ST2808,Club Centro Calingasta N
+ST2809,Ruta P. N°406 Y Colonia O
+ST2810,Colonia Y José Díaz
+ST2811,Escuela Batalla De Maipú
+ST2812,Plaza Principal De Tamberías O
+ST2813,José Díaz Y Maipú
+ST2814,José Díaz Y Barrio Nuevo O
+ST2815,Escuela Remedios Escalada De San Martín N - Tamberías
+ST2816,Florida Y Ruta P. N°406
+ST2817,Río Los Patos O
+ST2818,Escuela Francisco Javier Muñíz - Sorocayense
+ST2819,Puesto Sanitario Sorocayense O
+ST2820,B° El Carrizal Y Ruta N. N°149 O
+ST2821,Ruta N. N°149 - Km. 122 O
+ST2822,Ruta N. N°149 Y Villa Rural O
+ST2823,Ruta N. N°149 Y Antigua Bodega O
+ST2824,Ruta N. N°149 Y Finca Rural O
+ST2825,Av. Presidente Roca E Industria O
+ST2826,Escuela Martín Gil O
+ST2827,Av. Presidente Roca Y Echeverría O
+ST2828,Av. Presidente Roca Y Independencia O
+ST2829,Plaza Gral. San Martín O
+ST2830,Colegio Ntra. Sra. De Las Nieves O
+ST2831,Av. Presidente Roca Y Cerro Colorado O
+ST2832,Av. Presidente Roca Y Corrales Araya O
+ST2833,Av. Presidente Roca Y Cordillera De Ansilta O
+ST2834,Av. Presidente Roca (Plazoleta Almte. Brown)
+ST2835,Escuela Juan Pedro Esnaola S
+ST2836,Gendarmería Nacional S
+ST2837,San Martín Y Gral. Belgrano
+ST2838,B° Pellegrini O
+ST2839,Camping Municipal De Barreal O
+ST2840,Gral. Belgrano Y Presidente Roca
+ST2841,Templo Jesús De La Buena Esperanza N
+ST2842,Escuela Saturnino Aráoz N
+ST2843,Acuña Y Moreno
+ST2844,B° Centinela IV O
+ST2845,Patricias Mendocinas Y Mariano Moreno
+ST2846,Barrio Pituil - Los Alamedos S
+ST2847,Mariano Moreno Y Patricias Mendocinas
+ST2848,B° Centinela IV E
+ST2849,Escuela Saturnino Aráoz S
+ST2850,Av. Presidente Roca Y Huarpes E
+ST2851,Colegio Secundario De Barreal E
+ST2852,Av. Presidente Roca Y Cordillera De Ansilta E
+ST2853,Av. Presidente Roca Y Cerro Colorado E
+ST2854,Colegio Ntra. Sra. De Las Nieves E
+ST2855,Plaza Gral. San Martín E
+ST2856,Las Heras Y Libertad
+ST2857,Libertad Y Echevarría
+ST2858,Av. Presidente Roca Y Echeverría E
+ST2859,Escuela Martín Gil E
+ST2860,Av. Presidente Roca E Industria E
+ST2861,Ruta N. N°149 Y Finca Rural E
+ST2862,Ruta N. N°149 Y Antigua Bodega E
+ST2863,Ruta N. N°149 Y Villa Rural E
+ST2864,Ruta N. N°149 - Km. 122 E
+ST2865,B° El Carrizal Y Ruta N. N°149 E
+ST2866,Puesto Sanitario Sorocayense E
+ST2867,Escuela Francisco Javier Muñiz N - Sorocayense
+ST2868,Río Los Patos E
+ST2869,Planta Potabilizadora E
+ST2870,Ruta P. N°406 Y Florida
+ST2871,Escuela Remedios Escalada De San Martín S - Tamberías
+ST2872,José Díaz Y Barrio Nuevo E
+ST2873,Plaza Principal De Tamberías E
+ST2874,José Díaz Y Colonia E
+ST2875,Ruta P. N°406 Y Colonia
+ST2876,Club Centro Sportivo Calingasta S
+ST2877,Ruta P. N°406 Y Flores S
+ST2878,Escuela Jorge Newbery S
+ST2879,Ruta Pnº 406 - Alto Calingasta S
+ST2880,Valle De Calingasta S
+ST2881,Río Calingasta E
+ST2882,Río Calingasta Y Av. Argentina
+ST2883,Ruta P. N°406 N
+ST2884,Ingreso Camping Municipal De Calingasta N
+ST2885,B° Alto Verde
+ST2886,Plaza Principal - B° Alto Verde
+ST2887,Ingreso Camping Municipal De Calingasta S
+ST2888,Ruta P. N°406 S
+ST2889,Av. Argentina Y Amancay E
+ST2890,Plaza Patricias Sanjuaninas E
+ST2891,Escuela Técnica General Manuel Savio
+ST2892,La Junta E
+ST2893,Escuela Saturnino María De Laspiur
+ST2894,Bella Vista E
+ST2895,Escuela Benito Juárez - Puchuzún E
+ST2896,Industria Agrícola E
+ST2897,Empalme Ruta P. N°431 E
+ST2898,Escuela Albergue Tte. Coronel Álvarez Condarco
+ST2899,Gendarmería Villa Nueva
+ST2900,Templo Jesús De La Buena Esperanza S
+ST2901,Presidente Roca Y Gral. Belgrano
+ST2902,Camping Municipal De Barreal E
+ST2903,B° Pellegrini E
+ST2904,Gral. Belgrano Y San Martín
+ST2905,Gendarmería Nacional N
+ST2906,Escuela Juan Pedro Esnaola N
+ST2907,Ruta N. N°149 Y Puesto Sanitario Sorocayense E
+ST2908,Escuela Batalla De Chacabuco E - Hilario
+ST2909,Escuela 12 De Octubre - Colón E
+ST2910,Escuela Clotilde Guillén De Rezzano E - La Isla
+ST2911,Club La Isla E
+ST2912,Ruta N. N°149 - Km. 148 E
+ST2913,Información Turística Calingasta S
+ST2914,Ruta N. N°149 - Km. 151 E
+ST2915,Control Fitosanitario Calingasta E
+ST2916,Escuela Luis Pasteur E
+ST2917,Planta Potabilizadora O
+ST2918,Echevarría Y Libertad
+ST2919,Libertad Y Las Heras
+ST2920,Tucumán Y Porres O
+ST2921,Tucumán Y Rio Negro O
+ST2922,Tucumán Y Correa O
+ST2923,Escuela Dr. Guillermo Rawson O
+ST2924,Plaza De Concepción
+ST2925,Av. Rioja Y Chile O
+ST2926,Av. Rioja Y 25 De Mayo O
+ST2927,Av. Rioja Y Rivadavia O
+ST2928,Estación Mitre- Plaza Centenario. Villa Krause
+ST2929,Av. Córdoba Y Mendoza N -A
+ST2930,Estación Córdoba - Plaza Centenario. Villa Krause
+ST2931,Conector Sur Y Pedro De Valdivia O
+ST2932,Conector Sur Y Cmte. Cabot O
+ST2933,Conector Sur Y Castaño O
+ST2934,Conector Sur Y República Del Líbano O
+ST2935,Conector Sur Y Guayaquil O
+ST2936,Conector Sur Y Dr. Ortega O
+ST2937,Lemos Y Devoto
+ST2938,Blvd. Sarmiento Y Elizondo S
+ST2939,Pasaje Patria Y Devoto
+ST2940,Plaza Centenario. Villa Krause -A
+ST2941,Furque Y Picón
+ST2942,Plaza Libertad - Pocito N
+ST2943,Ing. Zalazar Y Chávez S -A
+ST2944,Ing. Marcos Zalazar E Independencia S
+ST2945,Ing. Marcos Zalazar Y San José S -A
+ST2946,Hospital Dr. Federico Cantoni E -B
+ST2947,Av. Int. Joaquín Uñac Y Calle 10 E
+ST2948,Av. Int. Joaquín Uñac Y Calle 9 E
+ST2949,Escuela Carlos Saavedra Lamas E
+ST2950,Av. Int. Joaquín Uñac Y Calle 7 E
+ST2951,Av. Int. Joaquín Uñac E Independencia E -A
+ST2952,Mendoza Y Agustín Gómez E
+ST2953,Mendoza Y Quiróz
+ST2954,Mendoza Y Quiroga E
+ST2955,Blvd. Sarmiento Y San Roque N
+ST2956,Blvd. Sarmiento Y Gobernador Rojas N
+ST2957,Blvd. Sarmiento Y Pasaje Argentino N
+ST2958,España Y Torino E
+ST2959,Av. España Y Devoto E
+ST2960,Av. España Y Mitre E
+ST2961,Dr. Ortega Y Las Vicentinas
+ST2962,Dr. Ortega Y Lemos N
+ST2963,Conector Sur Y Dr. Ortega E
+ST2964,Conector Sur Y República Del Líbano E
+ST2965,Las Heras Y Gral. Paz
+ST2966,Av. Libertador Y Güemes S
+ST2967,Estación Mitre - V° Krause - V° Aberastain
+ST2968,Estación Córdoba - Plaza Libertad. Pocito
+ST2969,Dr. Ortega Y Lemos S
+ST2970,Dr. Ortega Y Gral. Godoy
+ST2971,Dr. Ortega Y Av. España S
+ST2972,Av. España Y Calvento O
+ST2973,Av. España Y Devoto O
+ST2974,Av. España Y Torino O
+ST2975,Blvd. Sarmiento Y Pasaje Argentino S
+ST2976,Blvd. Sarmiento Y Gobernador Rojas S
+ST2977,Blvd. Sarmiento Y San Roque S
+ST2978,Blvd. Sarmiento Y Mendoza S
+ST2979,Mendoza Y Quiroga O
+ST2980,Mendoza Y Aguilar
+ST2981,Mendoza Y Agustín Gómez O
+ST2982,Av. Int. Joaquín Uñac E Independencia O -A
+ST2983,Av. Int. Joaquín Uñac Y Calle 7 O -A
+ST2984,Escuela Carlos Saavedra Lamas O
+ST2985,Av. Int. Joaquín Uñac Y Calle 9 O
+ST2986,Hospital Dr. Federico Cantoni O -B
+ST2987,Ing. Marcos Zalazar Y San José N
+ST2988,Ing. Marcos Zalazar Y David Chávez N -A
+ST2989,Aberastain Y Vidart O
+ST2990,Plaza Libertad - Pocito S
+ST2991,Colegio Secundario Profesor Frolián J. Ferrero
+ST2992,España Y Ezpeleta O
+ST2993,Av. España Y Blvd. Sarmiento
+ST2994,Blvd. Sarmiento Y Pasaje Patria N
+ST2995,Blvd. Sarmiento Y Elizondo N
+ST2996,Lemos Y Blvd. Sarmiento O
+ST2997,Agustín Gómez Y Lemos N
+ST2998,Agustín Gómez Y Juan De La Torre N -A
+ST2999,B° Cerro Grande Mz. J O
+ST3000,B° Cerro Grande Mz. K S
+ST3001,B° Cerro Grande Mz. U
+ST3002,B° Foecyt N
+ST3003,B° Foecyt Mz. I N
+ST3004,B° Foecyt Mz. L E
+ST3005,H. Yrigoyen Y Blvd. Sarmiento E
+ST3006,H. Yrigoyen Y Dr. Ortega E
+ST3007,H. Yrigoyen Y Aguilar E
+ST3008,H. Yrigoyen Y República Del Líbano E -A
+ST3009,Hipólito Yrigoyen Y Luis Pasteur
+ST3010,H. Yrigoyen Y Cmte. Cabot E
+ST3011,Meglioli Y Sancassani E
+ST3012,Av. Libertador Y Meglioli N -B
+ST3013,Meglioli Y Tulum O -A
+ST3014,H. Yrigoyen Y Cmte. Cabot O
+ST3015,Escuela Julian León O
+ST3016,H. Yrigoyen Y República Del Líbano O -A
+ST3017,H. Yrigoyen Y Aguilar O -A
+ST3018,H. Yrigoyen Y Dr. Ortega O
+ST3019,H. Yrigoyen Y Blvd. Sarmiento O
+ST3020,H. Yrigoyen Y Agustín Gómez O -A
+ST3021,B° Foecyt Mz. J
+ST3022,B° Cerro Grande Mz. V
+ST3023,B° Cerro Grande Mz. R S
+ST3024,B° El Carrerito Mz. E
+ST3025,B° Cerro Grande Mz. E
+ST3026,Agustín Gómez Y Juan De La Torre S -A
+ST3027,Agustín Gómez Y Lemos S
+ST3028,Lemos Y Blvd. Sarmiento E
+ST3029,Blvd. Sarmiento Y Santa Rosa
+ST3030,Santa Rosa Y Quiroz
+ST3031,Av. España Y Dr. Ortega E
+ST3032,Dr. Ortega Y Mendoza
+ST3033,Sivori Y Pedro Cobos
+ST3034,Pedro Cobos Y Progreso O
+ST3035,Pedro Cobos Y Blvd. Sarmiento O
+ST3036,Pedro Cobos Y Quiroz
+ST3037,Quiroz Y Trieste
+ST3038,Trieste Y Blvd. Sarmiento
+ST3039,Salvador M. Del Carril Y Chacabuco S
+ST3040,Progreso Y Gral. Acha S
+ST3041,Escuela Ejército De Los Andes E -A
+ST3042,Proyectada 2 Y Blamaceda
+ST3043,Cervantes Y Proyectada
+ST3044,Proyectada 5 Y Balmaceda
+ST3045,Balmaceda Y Altos Verdes E
+ST3046,Balmaceda Y Manuel Muñoz E
+ST3047,José Dolores Y La Estación S
+ST3048,La Estación Y Proyectada 2 - B° Don Rosendo
+ST3049,Abraham Tapia Y Elcano E -A
+ST3050,Unión Vecinal De Trinidad (U.V.T) E
+ST3051,Nicanor Larrain Y Av. Rioja N
+ST3052,Centro Polivalente De Arte E -A
+ST3053,Gral. Acha Y San Francisco Del Monte
+ST3054,Gral. Acha Y Saturnino Sarassa
+ST3055,Gral. Acha Y Fray Mamerto Esquiú -B
+ST3056,Gral. Acha Y Mariano Moreno -A
+ST3057,Gral. Mariano Acha Y Belgrano
+ST3058,Plaza Hipólito Yrigoyen E -A
+ST3059,Gral. Acha Y Av. Córdoba
+ST3060,Patricias Sanjuaninas Y Mariano Moreno
+ST3061,Patricias Sanjuaninas Y O'Higgins O
+ST3062,Patricias Sanjuaninas Y Pedro De Valdivia
+ST3063,Saturnino Sarassa Y Pueyrredón S
+ST3064,Pueyrredón Y Pedro De Valdivia
+ST3065,Pedro Alvarez Y Pueyrredón
+ST3066,Pueyrredón Y Bernardo O'Higgins
+ST3067,Pueyrredón Y Rem. De Escalada San Martín
+ST3068,Estados Unidos Y Brasil
+ST3069,Santa Fe Y Gral. Acha -A
+ST3070,Mendoza Y Av. Córdoba -B
+ST3071,Mendoza Y Gral. Paz -A
+ST3072,Plaza Hipólito Yrigoyen O -C
+ST3073,Mendoza Y Fray Mamerto Esquiú -A
+ST3074,Mendoza Y Pedro De Valdivia -C
+ST3075,Mendoza Y Av. Circunvalación S -A
+ST3076,Mendoza Y San Francisco Del Monte
+ST3077,Nicanor Larrain Y Gral. Acha S
+ST3078,Nicanor Larrain Y Av. Rioja S
+ST3079,Nicanor Larrain Y Abrham Tapia S
+ST3080,Abraham Tapia Y Elcano O
+ST3081,La Estación - Bº Don Rosendo O
+ST3082,La Estación Y José Dolores O
+ST3083,Balmaceda Y Francisco Fernández
+ST3084,Balmaceda Y Altos Verdes O
+ST3085,Balmaceda Y Proy. De Bº Chacras De Cuyo O
+ST3086,Proyectada Y Cervantes
+ST3087,Escuela Ejército De Los Andes O -A
+ST3088,Progreso Y Gral. Acha N
+ST3089,Salvador M. Del Carril Y Chacabuco N
+ST3090,Plaza Luis Grillo N
+ST3091,Trieste Y Quiroz
+ST3092,Quiroz Y Pedro Cobos
+ST3093,Pedro Cobos Y Blvd. Sarmiento E
+ST3094,Pedro Cobos Y Progreso E
+ST3095,Pedro Cobos Y Sivori
+ST3096,Dr. Ortega Y San Roque
+ST3097,Av. España Y Gobernador Quiroga
+ST3098,Blvd. Sarmiento Y Av. España S
+ST3099,España Y Ezpaleta E
+ST3100,España Y Agustín Gómez O
+ST3101,Agustín Gómez Y España S
+ST3102,Agustín Gómez Y Marcelo T. De Alvear
+ST3103,Agustín Gómez Y Av. Int. Joaquín Uñac
+ST3104,Agustín Gómez Y Calingasta S
+ST3105,Agustín Gómez Y Proyectada S
+ST3106,Agustín Gómez Y Constitución
+ST3107,Agustín Gómez Y Loteo Privado Sur
+ST3108,Agustín Gómez Y Bº Privado Las Lomas S
+ST3109,Agustín Gómez Y Gral. Acha S
+ST3110,Agustín Gómez Y Loteo Privado S
+ST3111,Agustín Gómez Y Bº Textil S
+ST3112,Agustín Gómez Y Abraham Tapia S
+ST3113,Agustín Gómez Y Ramón Franco S
+ST3114,Agustín Gómez Y Calle Vieja S
+ST3115,Agustín Gómez Y América
+ST3116,América Y Callejón -O
+ST3117,América Y Nacional N
+ST3118,América Y Calle 5 O
+ST3119,Escuela Cristóbal Colón S
+ST3120,Calle 5 Y Punta Del Monte
+ST3121,Escuela Cristóbal Colón N
+ST3122,Calle 5 Y América N
+ST3123,Calle 5 Y Ramón Franco N
+ST3124,Ramón Franco Y B° Médano De Oro O
+ST3125,Ramón Franco Y Calle 6 O
+ST3126,Barrio Médano De Oro S
+ST3127,Calle 6 Y América
+ST3128,América Y Calle 7 O
+ST3129,América Y Calle 8
+ST3130,Calle 8 Y Punta Del Monte
+ST3131,Punta Del Monte Y Calle 9
+ST3132,Calle 9 Y América
+ST3133,América Y Calle 10 O
+ST3134,Escuela Rosario Vera Peñaloza
+ST3135,Calle 11 Y Ramón Franco
+ST3136,Calle 11 Y Vicente López Y Planes
+ST3137,Calle 11 Y Belgrano N
+ST3138,Alfonso XIII Y Calle 11 E
+ST3139,Alfonso XIII Y Calle 10 E -B
+ST3140,Alfonso XIII Y Calle 9 E
+ST3141,Calle 9 Y Belgrano S
+ST3142,Escuela Juana Cardoso Aberastain E
+ST3143,Belgrano Y Calle 8
+ST3144,Calle 8 Y Vicente López Y Planes S
+ST3145,Calle 8 Y Ramón Franco
+ST3146,Cic Médano De Oro
+ST3147,Escuela Héctor Conte Grand S
+ST3148,Calle 10 E Isla Grande S
+ST3149,Ramón Franco Y Calle 10 E
+ST3150,Ramón Franco Y Calle 9 E
+ST3151,Ramón Franco Y Calle 8 E -A
+ST3152,Ramón Franco Y Calle 8 E
+ST3153,Ramón Franco Y Calle 7 E
+ST3154,Ramón Franco Y Calle 6 E
+ST3155,B° Médano De Oro
+ST3156,Ramón Franco Y Calle 5 S
+ST3157,Ramón Franco E/ Gómez Y Nacional E
+ST3158,Calle Vieja Y Las Mendocinas E
+ST3159,Calle Vieja Y Florida E
+ST3160,Escuela Patricias Mendocinas N
+ST3161,Florida Y Cnel. Rivas N
+ST3162,Mir Y Manuel Muñoz O
+ST3163,Palma Y Bubica E
+ST3164,Tahona Y Callejón Coria S
+ST3165,Tahona Y Callejón Castro E
+ST3166,Tahona Y Servidumbre De Paso E
+ST3167,Rodas - B° Reina Mora N
+ST3168,Rodas - B° Sureño N
+ST3169,Rodas Y Estados Unidos N
+ST3170,Estados Unidos Y Rojo S
+ST3171,Estados Unidos Y Eugenio Dojorti S
+ST3172,Villagra Y Estados Unidos N
+ST3173,Villagra Y Patricias Sanjuaninas N
+ST3174,Lateral Acceso Sur Y Abraham Tapia
+ST3175,Abraham Tapia Y Villagra E
+ST3176,Abraham Tapia Y 12 De Octubre E
+ST3177,Abraham Tapia Y Saturnino Sarasa E
+ST3178,Av. Córdoba Y Tucumán -B
+ST3179,Av. Córdoba Y Av. Rawson -A
+ST3180,Av. Libertador Y Gral. Acha N -B
+ST3181,Av. Libertador Y Salta N
+ST3182,Mendoza Y Gral. Paz -B
+ST3183,Mendoza Y Mariano Moreno -A
+ST3184,Mendoza Y Fray Mamerto Esquiú -B
+ST3185,Mendoza Y Abraham Tapia
+ST3186,Escuela Luis Braille
+ST3187,Abraham Tapia Y 12 De Octubre O -B
+ST3188,Abraham Tapia Y Larraín
+ST3189,Lateral Acceso Sur Y Abraham Tapia S
+ST3190,Lateral Este Ruta N. N°40 Y Abraham Tapia
+ST3191,Villagra Y Estados Unidos S
+ST3192,Estados Unidos Y Rojo N
+ST3193,Rodas Y Estados Unidos S
+ST3194,Rodas - B° Sureño S
+ST3195,Rodas - B° Reina Mora S
+ST3196,Tahona Y Servidumbre De Paso O
+ST3197,Tahona Y Callejón Castro O
+ST3198,Tahona Y Callejón Coria N
+ST3199,Palma Y Búbica O
+ST3200,Mir Y Manuel Muñoz E
+ST3201,Florida Y Cnel. Rivas S
+ST3202,Escuela Patricias Mendocinas S
+ST3203,Florida Y Castilla O
+ST3204,Florida Y Calle Vieja O
+ST3205,Calle Vieja Y Las Mendocinas O
+ST3206,Calle Vieja Y Agustín Gómez
+ST3207,Ramón Franco Entre Gómez Y Nacional O
+ST3208,Ramón Franco Y Calle 5 N
+ST3209,Plaza Bolaños E
+ST3210,Ing. Marcos Zalazar E Independencia
+ST3211,Ing. Marcos Zalazar Y Florida N
+ST3212,Ing. Marcos Zalazar Y David Chávez N -B
+ST3213,Ing. Marcos Zalazar Y Aberastain N
+ST3214,Uriburu Y Rawson
+ST3215,Aberastain Y Juan Maurín O
+ST3216,Aberastain Y Furque O
+ST3217,Aberastain Y Santa Cruz O
+ST3218,Aberastain Y B° Santa Bárbara O
+ST3219,B° Joaquín Uñac O
+ST3220,Aberastain Y Calle 12 O
+ST3221,Aberastain Y San Martín O
+ST3222,Aberastain Y Rivadavia O
+ST3223,Aberastain Y 10 De Marzo O
+ST3224,Aberastain Y Langlois
+ST3225,Aberastain Y Malvinas Argentinas
+ST3226,Aberastain Y Calle 13 O
+ST3227,Aberastain Y Flores
+ST3228,Aberastain Y Remedios De Escalada O
+ST3229,Aberastain Y Blvd. San Martín
+ST3230,Sagrado Corazón De Jesús O
+ST3231,Aberastain Y Calle 14 O
+ST3232,Calle 14 Y Aberastain S
+ST3233,Calle 14 Y Av. Int. Joaquín Uñac S
+ST3234,Calle 14 Y Hernández S
+ST3235,Calle 14 Y Ortiz S
+ST3236,Alfonso XIII Y Calle 14 E
+ST3237,Alfonso XIII Y Proyectada E
+ST3238,Alfonso XIII Y Calle 13 E
+ST3239,Alfonso XIII Y Calle 12 E
+ST3240,Alfonso XIII Y Roger Balet E
+ST3241,Ramón Franco Y Nacional
+ST3242,Patricia Sanjuaninas Y Villagra
+ST3243,Plaza Almirante Brown - Trinidad E -B
+ST3244,Escuela Antonio Torres
+ST3245,Plaza Hipólito Yrigoyen O -B
+ST3246,Mendoza Y Mariano Moreno -B
+ST3247,Mendoza Y Pedro De Valdivia -D
+ST3248,Mendoza Y Nicanor Larraín O
+ST3249,Cmte. Cabot Y Gral. Acha
+ST3250,Gral. Acha Y Elcano O
+ST3251,Gral. Acha Y República Del Líbano
+ST3252,Gral. Acha Y José Dolores O
+ST3253,Gral. Acha - Escuela Fray Luis Beltrán O
+ST3254,Gral. Acha Y Progreso O
+ST3255,Gral. Acha Y Rodeo O
+ST3256,Gral. Acha Y Mogna O
+ST3257,B° Amecom III O
+ST3258,Gral. Acha Y Manuel Quiroga O
+ST3259,Gral. Acha - Club Sec O
+ST3260,Gral. Acha Y Agustín Gómez O
+ST3261,Agustín Gómez Y Bº Privado Las Lomas N
+ST3262,Agustín Gómez Y Ruta N. N°40 N
+ST3263,Agustín Gómez Y Proyectada N
+ST3264,Proyectada Y Rodriguez Y Ólmos E
+ST3265,Proyectada E Independencia E
+ST3266,B° Los Girasoles N
+ST3267,Independencia Y Laprida N
+ST3268,Independencia Y Av. Int. Joaquín Uñac N
+ST3269,Independencia Y Alvear N
+ST3270,Independencia Y Pasaje Argentino N
+ST3271,España Y Granaderos E
+ST3272,España Y Agustín Gómez E
+ST3273,España Y Aguilar
+ST3274,B° Río Blanco O
+ST3275,Devoto Y Juncal
+ST3276,Devoto Y S. Sombra
+ST3277,José María Paz Y Portugal
+ST3278,J. M. Paz Y H. Yrigoyen
+ST3279,H. Yrigoyen Y Calvento E
+ST3280,H. Yrigoyen Y Juan José Paso E
+ST3281,Dr. Ortega Y Acceso B° Victorino Ortega S
+ST3282,Dr. Ortega Y El Tambolar
+ST3283,Bº Viñedos Del Sur O
+ST3284,B° Viñedos Del Sur S -A
+ST3285,B° Viñedos Del Sur S -B
+ST3286,Jorge Newbery Y Fray Luis Beltrán
+ST3287,Escuela Dr. Pablo A. Ramella
+ST3288,Dr. Ortega Y Río De La Plata S
+ST3289,Colegio Carlos María Moyano
+ST3290,Dr. Ortega Y Vidart S
+ST3291,Dr. Ortega Y Neuquén S
+ST3292,Dr. Ortega Y Magallanes S
+ST3293,Magallanes Y Colón
+ST3294,Escuela Alvear
+ST3295,Magallanes Y Blvd. Sarmiento N
+ST3296,Blvd. Sarmiento Y Fournier N
+ST3297,Blvd. Sarmiento Y Neuquén
+ST3298,Vidart Y Quiroga O
+ST3299,Vidart Y Félix Aguilar O
+ST3300,Félix Aguilar Y Neuquén
+ST3301,Capilla Stella Maris
+ST3302,Félix Aguilar Y Rivadavia
+ST3303,Camping Uom E
+ST3304,Rivadavia Y Quiroga E
+ST3305,Rivadavia Y Blvd. Sarmiento S
+ST3306,Blvd. Sarmiento Y Manuel Frías S
+ST3307,Colegio Secundario Antonio De La Torre S
+ST3308,Cic Villa Krause
+ST3309,Blvd. Sarmiento Y Pasaje Patria S
+ST3310,Mendoza Y Progreso
+ST3311,Mendoza Y Calvento E
+ST3312,Mendoza Y Sivori
+ST3313,Mendoza Y Gdor. Castro E
+ST3314,Mendoza Y Perona
+ST3315,Mendoza Y Laprida E
+ST3316,Mendoza Y Fermín Rodríguez E
+ST3317,Escuela Albergue José Manuel Estrada
+ST3318,Mendoza Y República Del Líbano E
+ST3319,República Del Líbano Y Entre Ríos
+ST3320,República Del Líbano Y Libertad
+ST3321,República Del Líbano Y Gral. Acha
+ST3322,Gral. Acha Y Cisneros E
+ST3323,Gral. Acha Y Elcano E
+ST3324,Gral. Acha Y Río Bamba
+ST3325,Gral. Acha Y Cmte. Cabot E
+ST3326,Gral. Acha Y Los Cuyanos
+ST3327,Centro Polivalente De Arte E -B
+ST3328,Manuel Quiroga Y Maurin
+ST3329,B° 7 De Septiembre S
+ST3330,Plaza B° Amecom I Y II S
+ST3331,Manuel Quiroga Y Gral. Acha S
+ST3332,Manuel Quiroga Y Pérez Esquivel S
+ST3333,Plaza B° Amecom III N
+ST3334,B° Amecom III
+ST3335,Gral. Acha Y Montevideo
+ST3336,Gral. Acha Y Rodeo E
+ST3337,Gral. Acha Y Progreso E
+ST3338,Progreso - B° Conjunto VI S
+ST3339,Pregreso - B° Conjunto V S
+ST3340,Progreso Y 22 De Noviembre S
+ST3341,Progreso Y Blamaceda S
+ST3342,Balmaceda Y Proyectada 5
+ST3343,Balmaceda Y Proy. De B° Chacras De Cuyo E
+ST3344,Balmaceda Y B° Conjunto IX
+ST3345,Balmaceda Y El Sauce E
+ST3346,Balmaceda Y José Dolores
+ST3347,José Dolores Y José López S
+ST3348,La Estación Y Cabildo E
+ST3349,La Estación Y Proyectada 1 - B° Don Rosendo E
+ST3350,Proyectada 2 B° Don Rosendo Y Abraham Tapia
+ST3351,Abraham Tapia Y Remedios Escalada N
+ST3352,Abraham Tapia Y Maestro De América E
+ST3353,Abraham Tapia Y Las Cañitas E
+ST3354,Abraham Tapia Y Elcano E -B
+ST3355,Abraham Tapia Y Lateral Acceso Sur E
+ST3356,Saturnino Sarassa Y Güemes
+ST3357,Patricias Sanjuaninas Y Pedro Valdivia
+ST3358,Patricias Sanjuaninas Y O'Higgins E
+ST3359,Estados Unidos Y Tierra Del Fuego
+ST3360,Estados Unidos Y Mariano Moreno
+ST3361,Estados Unidos Y Nadia Aubone
+ST3362,Hospital De Niños Dr. Juan Carlos Navarro -A
+ST3363,Santa Fe Y Caseros -A
+ST3364,Santa Fe Y Av. Rioja -B
+ST3365,Registro Civil Capital -D
+ST3366,Santa Fe Y Av. Alem -C
+ST3367,Santa Fe Y Salta -A
+ST3368,Salta Y Av. Ig. De La Roza -A
+ST3369,Salta Y Laprida -A
+ST3370,Salta Y 25 De Mayo
+ST3371,25 De Mayo Y Av. Alem S -B
+ST3372,25 De Mayo Y Mendoza -A
+ST3373,Saturnino Sarassa Y Av. Rawson N
+ST3374,Huaco Y Lavalle
+ST3375,Abraham Tapia Y Lateral Acceso Sur O
+ST3376,Unión Vecinal De Trinidad (U.V.T) O
+ST3377,Abraham Tapia Y Las Cañitas O
+ST3378,Abraham Tapia Y Maestro De América O
+ST3379,Abraham Tapia Y Proyectada 2 - B° Don Rosendo
+ST3380,Proyectada 2 Y Proyectada 3 - B° Don Rosendo
+ST3381,La Estación Y Proyectada 1 - B° Don Rosendo O
+ST3382,José Dolores Y José López N
+ST3383,Balmaceda Y Manuel Muñoz O
+ST3384,Balmaceda Y El Sauce O
+ST3385,Balmaceda Y Los Cerezos O
+ST3386,Balmaceda Y Proyectada 2
+ST3387,Progreso Y Balmaceda N
+ST3388,Progreso Y 22 De Noviembre N
+ST3389,Progreso - B° Conjunto V N
+ST3390,Progreso - B° Conjunto I N
+ST3391,Gral. Acha Y Tamberías
+ST3392,Plaza B° Amecom III S
+ST3393,Manuel Quiroga Y Pérez Esquivel N
+ST3394,Manuel Quiroga Y Gral. Acha N
+ST3395,Plaza B° Amecom I Y II N
+ST3396,B° 7 De Septiembre N
+ST3397,B° Lagares Mz. E
+ST3398,B° Lagares Mz. D
+ST3399,B° Lagares Mz. C
+ST3400,B° Lagares Mz. B
+ST3401,B° Los Teros Mz. D
+ST3402,B° Los Teros Mz. C
+ST3403,Gral. Acha Y Agustín Gómez E
+ST3404,Ingreso B° Textil Y Agustín Gómez
+ST3405,B° Obreros Textiles - Plaza Central E
+ST3406,Ingreso B° Textil Y Borcosque E
+ST3407,Plaza Padre Juan Fanzolato N
+ST3408,Virgen De Lourdes Y Quiroga E
+ST3409,B° Amecom 3 - Plaza Cura Brochero E
+ST3410,Proy.3 Bº Amecom 4 Y Proy.2 Bº Amecom 4
+ST3411,Proy.2 Bº Amecom 4 Y Proy.1 Bº Amecom 4
+ST3412,Montevideo Y Pérez Esquivel N
+ST3413,Montevideo E Ing. Loyola
+ST3414,Montevideo Y René Favaloro N
+ST3415,Montevideo Y Gral. Acha
+ST3416,Progreso Y Mogna N
+ST3417,Progreso Y Patricias Sanjuaninas
+ST3418,Progreso Y Ateneas N
+ST3419,Progreso Y Salvador M. Del Carril N
+ST3420,Charcas Y Costa Rica E
+ST3421,Charcas Y Calvento E
+ST3422,Charcas Y Gdor. Castro N
+ST3423,Gdor. Castro Y Kirchner S
+ST3424,Gdor. Castro Y Salvador María Del Carril S
+ST3425,Salvador María Del Carril Y Laprida E
+ST3426,Salvador María Del Carril Y Jujuy E
+ST3427,Salvador María Del Carril Y Río Negro E
+ST3428,Salvador María Del Carril Y José Dolores E
+ST3429,Catamarca Y El Baqueano S
+ST3430,Catamarca Y República Del Líbano S
+ST3431,Catamarca Y Gral. Roca S
+ST3432,Catamarca Y Lavalle S
+ST3433,Elcano Y José Sarmiento
+ST3434,Elcano Y Pergamino
+ST3435,Elcano Y Av. Rioja
+ST3436,Av. Rioja Y Sabatini S
+ST3437,Av. Rioja Y Cmte. Cabot S
+ST3438,Plaza Echegaray N
+ST3439,Av. Rioja Y Francisco Villagra E
+ST3440,Av. Rioja Y 12 De Octubre N
+ST3441,Av. Rioja Y San Francisco Del Monte
+ST3442,San Francisco Del Monto Y Gral. Acha
+ST3443,Abraham Tapia Y Entre Ríos
+ST3444,Av. Alem Y Fray Mamerto Esquiú E
+ST3445,Av. Alem Y Mariano Moreno E
+ST3446,Av. Alem Y Belgrano S
+ST3447,Av. Alem Y Brasil
+ST3448,Av. Alem Y 9 De Julio E
+ST3449,Colegio La Inmaculada
+ST3450,Av. Libertador Y Gral. Acha S -C
+ST3451,Av. Libertador Y Av. Rioja S -B
+ST3452,Av. Rawson Y Mitre O -A
+ST3453,Av. Alem Y Belgrano N
+ST3454,Av. Alem Y Pedro De Valdivia O
+ST3455,Mendoza Y Agustín Gómez
+ST3456,Lateral Sur Y Gral. Acha
+ST3457,Av. Rioja Y Lateral S
+ST3458,Av. Rioja Y 12 De Octubre S
+ST3459,Av. Rioja Y Francisco Villagra O
+ST3460,Av. Rioja Y Nicanor Larraín N
+ST3461,Plaza Echegaray S
+ST3462,Av. Rioja Y Cmte. Cabot N
+ST3463,Av. Rioja Y Sabatini N
+ST3464,Av. Rioja Y Elcano N
+ST3465,Elcano Y Gral. Acha N
+ST3466,Elcano Y Catamarca N
+ST3467,Catamarca Y Lavalle N
+ST3468,Catamarca Y Gral. Roca N
+ST3469,Catamarca Y República Del Líbano N
+ST3470,Catamarca Y El Baqueano N
+ST3471,José Dolores Y Salvador María Del Carril
+ST3472,Salvador María Del Carril Y Río Negro O
+ST3473,Salvador María Del Carril Y Jujuy O
+ST3474,Salvador María Del Carril Y Laprida O
+ST3475,Salvador María Del Carril Y Perona
+ST3476,Salvador María Del Carril Y Gdor. Castro O
+ST3477,Gdor. Castro Y Kirchner N
+ST3478,Charcas Y Gdor. Castro O
+ST3479,Charcas Y Calvento O
+ST3480,Charcas Y Costa Rica O
+ST3481,Progreso Y Salvador M. Del Carril S
+ST3482,Progreso Y Lateral Oeste Ruta N. N°40 S
+ST3483,Progreso Y Maurín
+ST3484,Progreso Y Mogna S
+ST3485,Montevideo Y René Favaloro S
+ST3486,Montevideo Y Pérez Esquivel S
+ST3487,Proy.2 Bº Amecom 4 Y Proy.3 Bº Amecom 4
+ST3488,Bº Amecom 3 - Plaza Cura Brochero O
+ST3489,Virgen De Lourdes Y Manuel Quiroga O O
+ST3490,Virgen De Lourdes Y Juan Fanzolato N
+ST3491,Ingreso B° Textil Y Borcosque O
+ST3492,Bº Obreros Textiles - Plaza Central O
+ST3493,Proyectada Y Agustín Gómez
+ST3494,Agustín Gómez Y Loteo Privado N
+ST3495,Agustín Gómez Y Gral. Acha N
+ST3496,Gral. Acha - B° Los Teros
+ST3497,Gral. Acha E Independencia O
+ST3498,B° Lagares Mz. G
+ST3499,Proyectada - B° Valle Grande S
+ST3500,Plaza Bº Valle Grande O
+ST3501,Escuela B° Valle Grande Nivel Inicial
+ST3502,Comisaría 35 O
+ST3503,Proyectada Bº Valle Grande O
+ST3504,Proyectada Centro De Salud Valle Grande Y Agustín Gómez O
+ST3505,Agustín Gómez S
+ST3506,Universitario Rugby Club S
+ST3507,Agustín Gómez Y Meglioli S
+ST3508,Agustín Gómez E/Meglioli E H. Yrigoyen S
+ST3509,Agustín Gómez E H. Yrigoyen S
+ST3510,B° Foecyt Mz. I O
+ST3511,Vidart Y Agustín Gómez E
+ST3512,Vidart Y Félix Aguilar E
+ST3513,Rivadavia Y Fray Luis Beltrán E
+ST3514,Rivadavia Y Dr. Ortega E
+ST3515,Camping Cesap
+ST3516,Club Cultural Y Deportivo La Superiora S
+ST3517,Doctor Ortega Y Marcelo T. De Alvear
+ST3518,Mendoza Y Devoto
+ST3519,Mendoza Y Blvd. Sarmiento O
+ST3520,Madre Teresa Y Pedro Alvares
+ST3521,Tahona Y René Favaloro
+ST3522,Tahona Y Alfonsina Storni
+ST3523,Tahona Y Saturnino Sarassa
+ST3524,Saturnino Sarassa Y Juan Manuel Fangio
+ST3525,Saturnino Sarassa Y Madre Teresa
+ST3526,Saturnino Sarassa Y Margarita De Escudero
+ST3527,Saturnino Sarassa Y Lateral Este Av. Circunvalación
+ST3528,Lateral De Av. Circunvalación Y René Favaloro
+ST3529,René Favaloro Y Pérez Esquivel
+ST3530,Margarita Mugnos Y Antonio De La Torre
+ST3531,De La Torre Y Vieyra O
+ST3532,Santiago Paredes Y Pablo Ramella
+ST3533,Escuela De Educación Especial Dr. Ramón Peñafort N
+ST3534,Estados Unidos Y 12 De Octubre
+ST3535,12 De Octubre Y Patricias Sanjuaninas Sur
+ST3536,Av. Rioja Y Pedro De Valdivia
+ST3537,Pedro De Valdivia Y Lavalle
+ST3538,Lavalle Y Facultad
+ST3539,Lavalle Y Fray Mamerto Esquiú
+ST3540,Lavalle Y O'Higgins
+ST3541,Lavalle Y Mariano Moreno
+ST3542,Mariano Moreno Y Aberastain
+ST3543,Mariano Moreno Y Güemes
+ST3544,Mariano Moreno Y Av. Rawson
+ST3545,Av. Rawson Y Belgrano E
+ST3546,Av. Rawson Y Brasil
+ST3547,Colegio Don Bosco
+ST3548,Diagonal Don Bosco Y Brasil
+ST3549,Belgrano Y Aberastain
+ST3550,Belgrano Y Av. Rioja
+ST3551,Av. Rioja Y Fray Mamerto Esquiú
+ST3552,Av. Rioja Y Abraham Tapia N
+ST3553,Abraham Tapia Y Saturnino Sarasa O
+ST3554,Vicente López Y Patricia Sanjuanina
+ST3555,Patricias Sanjuaninas Y 12 De Octubre
+ST3556,12 De Octubre Y Estados Unidos
+ST3557,Estados Unidos Y Villagra
+ST3558,Villagra Y Rufino Martínez
+ST3559,Escuela De Educación Especial Dr. Ramón Peñafort S
+ST3560,De La Torre Y Vieyra E
+ST3561,Margarita De Escudero Y Saturnino Sarassa
+ST3562,René Favaloro Y Madre Teresa
+ST3563,Pedro Alvarez Y Madre Teresa
+ST3564,Dr. Ortega - Barrio Conjunto VIII
+ST3565,Dr. Ortega Y Segundo Sombra S
+ST3566,Dr. Ortega Y Ansilta S
+ST3567,Ansilta Y Juan José Paso O
+ST3568,Ansilta Y Beltrán O
+ST3569,Beltrán Y Pedro Echague S
+ST3570,Beltrán Y Paula Carrillo S
+ST3571,J. Newbery Y Recabarren
+ST3572,J. Newbery Y Lima
+ST3573,J. Newbery Y Aguilar
+ST3574,Bahía Blanca Y Liniers
+ST3575,Bahía Blanca Y Florida E
+ST3576,Bahía Blanca Y Vélez Sarfield E
+ST3577,Bahía Blanca Y República Del Líbano
+ST3578,República Del Líbano Y J. Newbery N
+ST3579,República Del Líbano Y Sargento Acosta
+ST3580,República Del Líbano E H. Yrigoyen N -A
+ST3581,Esteban Echeverría Y América
+ST3582,B° Foeva
+ST3583,Esteban Echeverría Y Arenales
+ST3584,Santa Fe Y Juan B. Justo S
+ST3585,Santa Fe Y Esteban Echeverría S
+ST3586,Santa Fe Y Victoria
+ST3587,Santa Fe Y Hermógenes Ruiz
+ST3588,Paseo Comercial - Alto Del Bono Shopping S -B
+ST3589,Av. Ig. De La Roza Y Alvear -B
+ST3590,Av. Ig. De La Roza Y Ameghino S -B
+ST3591,Urquiza Y Mitre E
+ST3592,Av. Ig. De La Roza Y Paula A. De Sarmiento - N
+ST3593,Colegio Fray Mamerto Esquiú
+ST3594,Nuche Y Hermógenes Ruíz S
+ST3595,Santa Fe Y Victoria N
+ST3596,Santa Fe Y Esteban Echeverría N
+ST3597,Santa Fe Y Juan B. Justo N
+ST3598,Santa Fe Y Gral. Soler N
+ST3599,Santa Fe E H. Yrigoyen S
+ST3600,Arenales Y Esteban Echeverría S
+ST3601,Esteban Echeverría - B° Foeva
+ST3602,Esteban Echeverría Y Tulum
+ST3603,Unión Vecinal B° Foeva O
+ST3604,Esteban Echeverría Y Pasaje Echeverría O
+ST3605,República Del Líbano Y Esmeralda
+ST3606,República Del Líbano Y J. Newbery S
+ST3607,Bahía Blanca Y Vélez Sarsfield O
+ST3608,Bahía Blanca Y Constitución O
+ST3609,Aguilar Y J. Newbery S
+ST3610,J. Newbery Y O'Higgins
+ST3611,J. Newbery Y Tumbes
+ST3612,J. Newbery Y Alfredo Rizo O
+ST3613,H. Yrigoyen Y Juan José Paso O
+ST3614,Beltrán Y Pedro Echague N
+ST3615,Beltrán Y Ansilta N
+ST3616,Ansilta Y Juan José Paso E
+ST3617,Dr. Ortega Y Segundo Sombra N
+ST3618,Dr. Ortega Y Meglioli
+ST3619,Dr. Ortega - Barrio Conjunto XI
+ST3620,Escuela Tierra Del Fuego
+ST3621,Calle 14 Y Ramón Mestanza S
+ST3622,Calle 14 Y Aberastain
+ST3623,Sagrado Corazón De Jesús E
+ST3624,Aberastain Y Blvd. San Martín E
+ST3625,Aberastain Y Remedios De Escalada E
+ST3626,Plaza B° Don José
+ST3627,Aberastain Y Calle 13 E
+ST3628,Aberastain Y Langlois E
+ST3629,Aberastain Y 10 De Marzo E
+ST3630,Aberastain Y Rivadavia E
+ST3631,Aberastain Y San Martín E
+ST3632,Aberastain Y Calle 12 E
+ST3633,B° Joaquín Uñac E
+ST3634,Aberastain Y B° Santa Bárbara E
+ST3635,Aberastain Y Furque E
+ST3636,Aberastain Y Juan Maurín E
+ST3637,Aberastain Y Vidart E
+ST3638,Aberastain E Ing. Marcos Zalazar
+ST3639,Ing. Marcos Zalazar Y David Chávez S- B
+ST3640,Ing. Marcos Zalazar Y 23 De Julio S
+ST3641,Ing. Marcos Zalazar Y San José S -B
+ST3642,Ing. Marcos Zalazar Y Av. Int. Joaquín Uñac
+ST3643,Av. Int. Joaquín Uñac E Ing. Marcos Zalazar E -B
+ST3644,Av. Int. Joaquín Uñac Y 7 De Agosto
+ST3645,Av. Int. Joaquín Uñac Y Santa Bárbara E
+ST3646,Escuela España E
+ST3647,Av. Int. Joaquín Uñac Y Calle 9 E -A
+ST3648,Aeroclub De Pocito E
+ST3649,Av. Int. Joaquín Uñac Y B° Ceramista II
+ST3650,Av. Int. Joaquín Uñac Y Moreno E
+ST3651,Av. Int. Joaquín Uñac E Independencia E -B
+ST3652,Av. Int. Joaquín Uñac Y Granaderos
+ST3653,Av. Int. Joaquín Uñac Y Salvador M. Del Carril E
+ST3654,Mendoza Y Cúneo
+ST3655,Mendoza Y Blvd. Sarmiento E -B
+ST3656,Mendoza Y Torino E
+ST3657,José Dolores Y Entre Ríos
+ST3658,José Dolores Y Santiago Del Estero
+ST3659,José Dolores Y Tulum
+ST3660,José Dolores Y Gral. Acha
+ST3661,Gral. Acha Y El Baqueano
+ST3662,Gral. Acha Y Gral. Roca
+ST3663,Gral. Acha Y Lavalle
+ST3664,Escuela Industrial D. F. Sarmiento -C
+ST3665,Mendoza Y Cmte. Cabot O -B
+ST3666,Mendoza Y Sabattini
+ST3667,Club Atlético Trinidad O
+ST3668,Mendoza Y 12 De Octubre -B
+ST3669,Mendoza Y Luna
+ST3670,Escuela Albergue José Manuel Estrada - Ingreso
+ST3671,Escuela De Educación Especial Dra. Carolina Tobar García
+ST3672,Mendoza Y Laprida O
+ST3673,Mendoza Y Gdor. Castro O
+ST3674,Mendoza Y Dr. Ortega
+ST3675,Mendoza Y Calvento O
+ST3676,Mendoza Y Torino O
+ST3677,Av. Int. Joaquín Uñac Y Salvador M. Del Carril O
+ST3678,Av. Int. Joaquín Uñac E Independencia O -B
+ST3679,Av. Int. Joaquín Uñac Y B° Ceramistas II O
+ST3680,Aeroclub De Pocito O
+ST3681,Av. Int. Joaquín Uñac Y Calle 9 O -A
+ST3682,Calle 10 Y Av. Int. Joaquín Uñac
+ST3683,Escuela España Ingreso
+ST3684,Av. Int. Joaquín Uñac Y Santa Bárbara O
+ST3685,Miguel Atencio Y Av. Int. Joaquín Uñac
+ST3686,Av. Int. Joaquín Uñac E Ing. Marcos Zalazar O
+ST3687,Calle 14 Y Ramón Mestanza N
+ST3688,Proyectada Y Chacabuco
+ST3689,B° Altos De Meglioli E
+ST3690,Escuela Marcelino Guardiola E
+ST3691,B° Conjunto 7 E
+ST3692,B° Caracoles E
+ST3693,B° Río Blanco E
+ST3694,Cementerio San Miguel E -B
+ST3695,Cementerio San Miguel E -A
+ST3696,Dr. Ortega Y Pedro Echagüe S
+ST3697,Ex Camping Foecyt
+ST3698,Dr. Ortega Y Jorge Newbery S
+ST3699,J. Newbery Y Rizo
+ST3700,Aguilar Y Bahía Blanca S
+ST3701,Aguilar Y Capdevilla
+ST3702,Capdevila Y Maipú
+ST3703,Capdevila Y Guayaquil
+ST3704,Guayaquil Y Río De La Plata
+ST3705,Guayaquil Y José Ingenieros
+ST3706,Guayaquil Y Andrade
+ST3707,Vidart Y Recabarren O
+ST3708,Vidart Y Gdor. Castro O
+ST3709,Vidart Y Dr. Ortega O
+ST3710,Dr. Ortega Y Rivadavia S
+ST3711,B° La Superiora
+ST3712,Paula A. De Sarmiento Y Guayaquil E
+ST3713,Guayaquil Y Conector Sur
+ST3714,Lemos Y Cenobia Bustos E
+ST3715,Cenobia Bustos Y Las Vicentinas
+ST3716,Cenobia Bustos Y Triunvirato
+ST3717,Cenobia Bustos Y Av. España
+ST3718,Cenobia Bustos Y Alvear
+ST3719,Fermín Rodríguez Y A. Rawson
+ST3720,Mendoza Y Cisneros
+ST3721,Mendoza Y Elcano E
+ST3722,Mendoza Y Cmte. Cabot E
+ST3723,Mendoza Y Nicanor Larraín E
+ST3724,Av. España Y Gdor. Castro E
+ST3725,Escuela De Educación Técnica III
+ST3726,Cenobia Bustos Y San Roque
+ST3727,Cenobia Bustos Y Misiones
+ST3728,Cenobia Bustos Y Juramento
+ST3729,Cenobia Bustos Y Lemos N
+ST3730,Lemos Y Monseñor Orzali O
+ST3731,Lemos Y Perona
+ST3732,Dr. Ortega Y Conector Sur N
+ST3733,Club Cultural Y Deportivo La Superiora N
+ST3734,Dr. Ortega Y Rivadavia N
+ST3735,Dr. Ortega Y Magallanes N
+ST3736,Dr. Ortega Y Neuquén N
+ST3737,Dr. Ortega Y Vidart N
+ST3738,Vidart Y Gdor. Castro E
+ST3739,Vidart Y Recabarren E
+ST3740,Vidart Y Guayaquil E
+ST3741,Vidart Y Monseñor Caggiano
+ST3742,Liniers Y Andrade
+ST3743,Liniers Y José Ingenieros N
+ST3744,Liniers Y Bahía Blanca
+ST3745,República Del Líbano Y Echagüe N
+ST3746,República Del Líbano Y Meglioli N
+ST3747,Meglioli Y Güemes E
+ST3748,Meglioli Y Güemes O
+ST3749,Meglioli Y República Del Líbano O
+ST3750,República Del Líbano Y Pedro Echagüe S
+ST3751,H. Yrigoyen Y República Del Líbano O
+ST3752,Liniers Y Río De La Plata
+ST3753,Liniers Y José Ingenieros S
+ST3754,Liniers Y Vidart
+ST3755,Lemos Y Monseñor Orzali E
+ST3756,Av. España Y V. López Y Planes
+ST3757,Av. España Y Monseñor Orzali
+ST3758,Escuela Antonio De La Torre O
+ST3759,Av. España Y Gdor. Castro O
+ST3760,Av. España Y Dr. Ortega O
+ST3761,Plaza Barrio Pocito Norte Y San Martin
+ST3762,Gral. San Martín Y Proyectada N
+ST3763,B° Colanguil Mz. H
+ST3764,Gral. San Martín Y 3 De Septiembre N
+ST3765,Gral. San Martín Y Vidart N
+ST3766,B° El Carrerito Mz. C
+ST3767,B° Cerro Grande Mz. R
+ST3768,Rivadavia Y Perona S
+ST3769,Rivadavia Y 11 De Septiembre
+ST3770,11 De Septiembre Y Paula A. De Sarmiento
+ST3771,Paula A. De Sarmiento Y 27 De Febrero E
+ST3772,Paula A. De Sarmiento Y Nazca
+ST3773,Nazca Y Conector Sur
+ST3774,Cenobia Bustos Y Lemos S
+ST3775,Cenobia Bustos Y Almirante Brown
+ST3776,Lemos Y San Martín
+ST3777,San Martín Y Misiones
+ST3778,Misiones Y República Del Líbano
+ST3779,República Del Líbano Y Yapeyú N
+ST3780,Juramento Y Almafuerte
+ST3781,Juramento Y Castaño E
+ST3782,Juramento Y Virgen De Loreto E
+ST3783,Juramento Y Brasil N
+ST3784,Cmte. Cabot Y Anacleto Gil S
+ST3785,Cmte. Cabot Y Triunvirato
+ST3786,Cmte. Cabot Y Salta S
+ST3787,Cmte. Cabot Y Lucero S
+ST3788,Sarmiento Y Yanzon S
+ST3789,Sarmiento Y San Francisco Del Monte
+ST3790,San Francisco Del Monte Y Mendoza
+ST3791,San Francisco Del Monte Y Gral. Acha
+ST3792,Plaza H. Yrigoyen E -C
+ST3793,Polideportivo Escuela Normal Sarmiento
+ST3794,San Francisco Del Monte Y Sarmiento
+ST3795,Sarmiento Y Formosa
+ST3796,Sarmiento Y Cmte. Cabot N
+ST3797,Cmte. Cabot Y Lucero N
+ST3798,Cmte. Cabot Y Salta N
+ST3799,Cmte. Cabot Y Av. España N
+ST3800,Cmte. Cabot Y Anacleto Gil N
+ST3801,Juramento Y Brasil S
+ST3802,Juramento Y Virgen De Loreto O
+ST3803,Juramento Y Castaño
+ST3804,Juramento Y República Del Líbano
+ST3805,República Del Líbano Y Misiones S
+ST3806,Misiones Y San Martín
+ST3807,San Martín Y Lemos
+ST3808,Lemos Y Cenobia Bustos O
+ST3809,Nazca Y Franklin Rawson N
+ST3810,Nazca Y Paula A. De Sarmiento
+ST3811,Paula A. De Sarmiento Y 27 De Febrero O
+ST3812,Paula A. De Sarmiento Y Guayaquil O
+ST3813,Paula A. De Sarmiento Y Bariloche
+ST3814,Paula A. De Sarmiento Y 11 De Septiembre N
+ST3815,11 De Septiembre Y Rivadavia
+ST3816,Rivadavia Y Perona
+ST3817,Rivadavia Y Dr. Ortega O
+ST3818,Rivadavia Y Fray Luis Beltrán O
+ST3819,Rivadavia Y Quiroga O
+ST3820,Camping Uom O
+ST3821,Rivadavia Y Félix Aguilar
+ST3822,Félix Aguilar Y Almamira
+ST3823,Félix Aguilar Y Carlos Gardel
+ST3824,Vidart Y Agustín Gómez O
+ST3825,B° Cerro Grande Mz. K N
+ST3826,B° Cerro Grande Mz. M
+ST3827,Vidart Y Gral. San Martín O -A
+ST3828,Gral. San Martín Y 3 De Septiembre S
+ST3829,Gral. San Martín Y Proyectada S
+ST3830,Plaza Barrio Pocito Norte
+ST3831,H. Yrigoyen Y Fraternidad América
+ST3832,H. Yrigoyen Y Viña Del Mar
+ST3833,H. Yrigoyen Y Aguilar O -B
+ST3834,Aguilar Y Esmeralda S
+ST3835,Aguilar Y 25 De Mayo
+ST3836,25 De Mayo Y Celman
+ST3837,25 De Mayo Sur Y Confraternidad E
+ST3838,25 De Mayo Sur Y Vélez Sársfield E
+ST3839,25 De Mayo Y República Del Líbano S
+ST3840,Sgto. Acosta Y Marchesi E
+ST3841,Luis Pasteur Y Esteban Echeverría S
+ST3842,Luis Pasteur Y Primero De Mayo S
+ST3843,Plaza Villa Del Carmen E
+ST3844,Bolivia Y Río Bamba
+ST3845,Riobamba Y América E
+ST3846,Riobamba Y Tulum E
+ST3847,Riobamba Y Pedro De Valdivia
+ST3848,Riobamba Y Rodríguez Pinto
+ST3849,Riobamba Y Guillermo Morales
+ST3850,Av. España Y Estrada
+ST3851,Av. España Y Arenales E
+ST3852,Av. España Y Belgrano E
+ST3853,Salta Y 9 De Julio
+ST3854,Salta Y Santa Fe
+ST3855,9 De Julio Y Salta
+ST3856,Riobamba Y Bahía Blanca
+ST3857,Riobamba Y Luis Raimundo
+ST3858,Riobamba Y Tulum O
+ST3859,Riobamba Y América O
+ST3860,Riobamba Y Cmte. Cabot
+ST3861,Riobamba Y Bolivia N
+ST3862,Plaza Villa Del Carmen O
+ST3863,Luis Pasteur Y Primero De Mayo N
+ST3864,Luis Pasteur Y Esteban Echeverría N
+ST3865,Luis Pasteur Y Fray Justo S. M. De Oro
+ST3866,Sgto. Acosta Y Marchesi O
+ST3867,25 De Mayo Sur Y Vélez Sársfield O
+ST3868,25 De Mayo Sur Y Confraternidad O
+ST3869,Plaza Villa Arce
+ST3870,25 De Mayo Y Caggiano
+ST3871,Aguilar Y Esmeralda N
+ST3872,Aguilar E H. Yrigoyen
+ST3873,H. Yrigoyen Y Juárez Celman E
+ST3874,Escuela Nueva Juan Fanzolato Ingreso
+ST3875,H. Yrigoyen Y República Del Líbano S
+ST3876,Calle 11 Y Picón
+ST3877,Calle 11 Y Alfonsina Storni N
+ST3878,Calle 11 Y Páez Oro N
+ST3879,Inta Pocito N
+ST3880,Calle 11 Y Vidart N
+ST3881,Calle 11 Y Callejón N
+ST3882,Calle 11 Y El Bosque N
+ST3883,Escuela 12 De Agosto N
+ST3884,Calle 11 Y Chacabuco
+ST3885,Chacabuco Y Calle 11 E
+ST3886,Chacabuco Y Callejón Tiviani E
+ST3887,Chacabuco Y Callejón Ruiz E
+ST3888,Chacabuco Y Calle 10 E
+ST3889,Chacabuco Y Callejón E
+ST3890,Chacabuco Y Las Piedritas E
+ST3891,Chacabuco Y San Martín E
+ST3892,Chacabuco Y Calle 9
+ST3893,Chacabuco Y José Hernández E
+ST3894,Chacabuco Y Estanislao López
+ST3895,Escuela Manuel Martín De Güemes E
+ST3896,Chacabuco Y Callejón Echegaray E
+ST3897,Chacabuco Y Calle 7 E
+ST3898,Chacabuco Entre Calle 6 Y 7 E
+ST3899,Chacabuco Y Calle 6 E
+ST3900,Chacabuco Entre Calle 5 Y 6 O
+ST3901,Meglioli Y Dr. Ortega E
+ST3902,Meglioli Y Callejón Australia E
+ST3903,Meglioli E
+ST3904,Meglioli Y República Del Líbano E
+ST3905,Bellas Artes Y Hugo César De León
+ST3906,Gral. Paz Y Paula A. De Sarmiento O
+ST3907,Paula A. De Sarmiento Y Av. Córdoba E
+ST3908,Av. Córdoba Y Gral. Acha -B
+ST3909,Estación Córdoba - Pocito
+ST3910,Av. Córdoba Y Lugones N
+ST3911,Av. Córdoba Y José Martí N
+ST3912,Paula A. De Sarmiento Y Nuche
+ST3913,Santa Fe Y Hermógenes Ruíz N
+ST3914,Bellas Artes Y Domingo Di Próspero O
+ST3915,Bellas Artes Y Agrimensor M. Garcia O
+ST3916,Bellas Artes Y Av. Coratina N
+ST3917,Meglioli Y Av. Coratina N
+ST3918,Meglioli O
+ST3919,Meglioli Y Callejón Australia O
+ST3920,Meglioli Y Dr. Ortega O -A
+ST3921,Meglioli Y Dr. Ortega O
+ST3922,Cementerio San Miguel O -A
+ST3923,Cementerio San Miguel O -B
+ST3924,B° Caracoles O
+ST3925,Meglioli - Bº Conjunto 4
+ST3926,Escuela Marcelino Guardiola O
+ST3927,B° Altos De Meglioli O
+ST3928,Meglioli Y Agustín Gómez N
+ST3929,Universitario Rugby Club N
+ST3930,Agustín Gómez N
+ST3931,Proyectada Y Agustín Gómez E
+ST3932,Chacabuco Y Agustín Gómez O -B
+ST3933,Chacabuco Y Calle 6 O -A
+ST3934,Chacabuco Y Calle 6 O -B
+ST3935,Chacabuco Y Calle 7 O
+ST3936,Chacabuco Y Callejón Echegaray O -A
+ST3937,Chacabuco Y Callejón Echegaray O -B
+ST3938,Escuela Manuel Martín De Güemes O
+ST3939,Chacabuco Y José Hernández O
+ST3940,Chacabuco Y San Martín O
+ST3941,Chacabuco Y Las Piedritas O
+ST3942,Chacabuco Y Callejón O
+ST3943,Chacabuco Y Calle 10 O
+ST3944,Chacabuco Y Callejón Ruiz O
+ST3945,Chacabuco Y Callejón Tiviani O
+ST3946,Chacabuco Y Calle 11 O -A
+ST3947,Chacabuco Y Calle 11 O -B
+ST3948,Escuela 12 De Agosto S
+ST3949,Calle 11 Y El Bosque S
+ST3950,Calle 11 Y Callejón S
+ST3951,Calle 11 Y Vidart S
+ST3952,Inta Pocito S
+ST3953,Calle 11 Y Páez Oro S
+ST3954,Calle 11 Y Alfonsina Storni S
+ST3955,Ing. Marcos Zalazar Y Aberastain S
+ST3956,Paula A. De Sarmiento Y República Del Líbano O
+ST3957,Jockey Club San Juan
+ST3958,República Del Líbano Y Zapiola - Jockey Club N
+ST3959,República Del Líbano Y Soldado Argentino N
+ST3960,República Del Líbano Y Vidart
+ST3961,Vidart Y Vélez Sarsfield O
+ST3962,Vidart Y Florida O
+ST3963,Vidart Y Guayaquil O
+ST3964,Vidart Y B° La Deolinda
+ST3965,Vidart Y Colón O
+ST3966,Vidart Y Blvd. Sarmiento O
+ST3967,B° Cerro Grande S
+ST3968,Vidart Y Gral. San Martín O -B
+ST3969,Vidart Y Calle 6 O -A
+ST3970,Vidart Y Calle 6 O -B
+ST3971,B° Upcn O
+ST3972,Vidart Y Callejón Catani O
+ST3973,Vidart Y Calle 7 O -A
+ST3974,Vidart Y Calle 7 O -B
+ST3975,Escuela Gral. Mariano Acha O
+ST3976,Vidart Y Calle 8 O -A
+ST3977,Vidart Y Calle 8 O -B
+ST3978,Vidart Y Calle 8 O -C
+ST3979,Vidart Y Calle 9 O -A
+ST3980,Vidart Antes De Calle 10 O
+ST3981,Vidart Y Calle 10
+ST3982,Calle 10 Y Vidart S
+ST3983,Calle 10 Y Villavicencio
+ST3984,Villavicencio Y Ruiz O
+ST3985,Villavicencio Y Flores O
+ST3986,Escuela De Educación Especial India Mariana S
+ST3987,Club Aberastain O
+ST3988,Lemos Y 27 De Febrero O
+ST3989,B° Luz Y Fuerza IV Mz. E Ida
+ST3990,B° Luz Y Fuerza IV Mz. A E
+ST3991,Calle 6 Y San Antonio N
+ST3992,Calle 6 Y Sierras Del Valle N
+ST3993,B° Olivares Del Sur N
+ST3994,Calle 6 Y San Miguel
+ST3995,B° Olivares Del Sur E
+ST3996,San Miguel Y San Martín O
+ST3997,San Miguel Y B° Foecyt Mz. G E
+ST3998,B° Foecyt Mz. H
+ST3999,Proyectada Y Proyectada Bº Uda
+ST4000,B° Uda 1
+ST4001,Agustín Gómez E H. Yrigoyen N
+ST4002,H. Yrigoyen Y Alfredo Fortabat E
+ST4003,H. Yrigoyen Y Gral. Paz E
+ST4004,H. Yrigoyen Y Recarraben E
+ST4005,H. Yrigoyen Y Felix Aguilar E
+ST4006,Caggiano Y J. Ingenieros
+ST4007,José Ingenieros Y Derqui
+ST4008,República Del Líbano Y José Hernández S
+ST4009,República Del Líbano Y Andrade
+ST4010,República Del Líbano Y Soldado Argentino S
+ST4011,República Del Líbano Y Cnel. Zapiola S
+ST4012,República Del Líbano Y Dominguito
+ST4013,República Del Líbano Y Paula A. De Sarmiento S
+ST4014,República Del Líbano Y Urquiza
+ST4015,Urquiza Y Almafuerte E
+ST4016,Urquiza Y San Lorenzo E
+ST4017,Urquiza Y Roma
+ST4018,Urquiza Y Cmte. Cabot E
+ST4019,Urquiza Y Laspiur E
+ST4020,Urquiza Y Nuche S
+ST4021,Urquiza Y Av. Córdoba E
+ST4022,Escuela Gobernador Castro
+ST4023,Pedro A. Castro Y Hugo Dardo Ahumada
+ST4024,B° Upcn E
+ST4025,Vidart Entre Calle 5 Y 6 E
+ST4026,Vidart Y Calle 6 E
+ST4027,Calle 6 Y Celani S
+ST4028,Calle 6 Y Frías
+ST4029,Escuela Jorge Washington E
+ST4030,Lemos Y Juan Jufré E
+ST4031,Lemos Y Pablo Picasso
+ST4032,Lemos Y Los Naranjos E
+ST4033,Lemos Y Agustín Gómez
+ST4034,Agustín Gómez Y Eva Perón N
+ST4035,Quiroga Y Magallanes
+ST4036,Magallanes Y Blvd. Sarmiento S
+ST4037,Blvd. Sarmiento Y Rivadavia S
+ST4038,Escuela Antonio De La Torre E
+ST4039,Av. España Y Cenobia Bustos E
+ST4040,Av. España Y San Martín E
+ST4041,Av. España Y República Del Líbano E
+ST4042,Av. España Y Luis Pasteur
+ST4043,Av. España Y Castaño E
+ST4044,Av. España Y Loreto E
+ST4045,Av. España Y Roma E
+ST4046,Av. España Y Cmte. Cabot E
+ST4047,Av. España Y Formosa E
+ST4048,Av. España - Policía Minera
+ST4049,Escuela Provincia De Santa Fe Ingreso
+ST4050,Salta Y Av. Córdoba E
+ST4051,Dr. Ortega Y Alvear
+ST4052,Dr. Ortega Y Av. España N
+ST4053,Plaza Centenario - Villa Krause N
+ST4054,Lemos Y Chino Saldaño
+ST4055,Lemos Y Félix Aguilar
+ST4056,Lemos Y Constitución
+ST4057,Lemos Y Los Naranjos
+ST4058,Lemos E Independencia
+ST4059,Lemos Y Juan Jufré O
+ST4060,Escuela Jorge Washington O
+ST4061,Lemos Entre Calle 6 Y Calle 7 O
+ST4062,Lemos Y Calle 7 N
+ST4063,Lemos Y Calle 8 O
+ST4064,Lemos Y Calle 9 O
+ST4065,Lemos Y Calle 10
+ST4066,Atencio Y Lemos S
+ST4067,Atencio Y David Chávez
+ST4068,David Chávez Y Proyectada E
+ST4069,David Chávez Y Calle 10 E
+ST4070,Calle 10 E Independencia S -A
+ST4071,Calle 10 E Independencia S -B
+ST4072,B° Aberastain II S
+ST4073,Calle 10 Y Sarmiento S
+ST4074,Callejón Cantoni Y Ruta N. N°40 S
+ST4075,Int. Horacio Quiroga Y Ruta N. N°40
+ST4076,Proyectada Principal Y Ruta N. N°40 N
+ST4077,Ruta N. N°40 Y Genest E
+ST4078,Ruta N. N°40 Y Santa Clara E
+ST4079,Ruta N. N°40 Y Salvador M. Del Carril E
+ST4080,Ruta N. N°40 Y Florencio Basañes
+ST4081,Anacleto Gil Y Monseñor Sansierra N
+ST4082,Anacleto Gil Y Mendoza N
+ST4083,Escuela De Carlos Vergara N
+ST4084,Anacleto Gil Y 21 De Febrero
+ST4085,Aberastain Y Los Sauces E
+ST4086,Aberastain Y Zajón Bóveda E
+ST4087,Aberastain Y Bodega E
+ST4088,Aberastain Y Pedro Gil E
+ST4089,Aberastain Y Calle 18 E
+ST4090,Aberastain Y Calle 17 E
+ST4091,Aberastain Entre Calle 16 Y 17 E
+ST4092,Aberastain Entre Calle 16 Y 17
+ST4093,Aberastain Antes De Calle 16 E
+ST4094,Aberastain Y Calle 16 E
+ST4095,Aberastain Y Calle 15 E
+ST4096,Aberastain Entre Calle 15 Y Calle Nueva E
+ST4097,Aberastain Y Calle Nueva E
+ST4098,Escuela José Rudecindo E
+ST4099,Aberastain Y Calle 14 S
+ST4100,Aberastain Y Santa Cruz E
+ST4101,B° Cruce De Los Andes E
+ST4102,7 De Agosto Y San José
+ST4103,San José Y Miguel Atencio
+ST4104,Nacional Y Tascheret
+ST4105,Gral. Acha E Independencia E
+ST4106,Progreso Y Charcas N
+ST4107,Progreso Y Pedro Cobos N
+ST4108,Unión Vecinal B° San Ricardo N
+ST4109,Progreso Y Mendoza E
+ST4110,Escuela Domingo F. Sarmiento
+ST4111,B° Cruce De Los Andes O
+ST4112,Ing. Marcos Zalazar Y Lemos E
+ST4113,Vidart Antes De Calle 10 E
+ST4114,Vidart Y Calle 9 E
+ST4115,Calle 9 Y Chacabuco N
+ST4116,José Hernández Y Leopoldo Lugones O
+ST4117,José Hernández Y Leopoldo Lugones E
+ST4118,José Hernández Y Estanislao López E
+ST4119,Gabriela Mistral Y Chacabuco N
+ST4120,Chacabuco Y Calle 9 O
+ST4121,San Miguel Y Calle 9 E
+ST4122,San Miguel Y Niquizanga E
+ST4123,Yrigoyen Y Calle 7
+ST4124,H. Yrigoyen E
+ST4125,B° Olivares Del Sur S
+ST4126,Calle 6 Y Sierras Del Valle S
+ST4127,Calle 6 Y San Antonio S
+ST4128,B° Luz Y Fuerza IV Mz. A S
+ST4129,Vidart Entre Calle 6 Y San Martín
+ST4130,Vidart Y Gral. San Martín E
+ST4131,B° Agustín Gómez
+ST4132,B° Manzanares
+ST4133,Agustín Gómez Y Eva Perón S
+ST4134,Escuela Las Hornillas O
+ST4135,General Acha Y Agustín Gómez
+ST4136,Mendoza Y Fray Mamerto Esquiú -C
+ST4137,Mendoza Y Lateral Av. De Circunvalación S -B
+ST4138,Agustín Gómez Y Juan De La Torre N -B
+ST4139,Calle 8 Y San Miguel
+ST4140,San Miguel Y Niquizanga O
+ST4141,San Miguel Y Calle 9 O
+ST4142,Gabriela Mistral Y Chacabuco S
+ST4143,José Hernández Y Estanislao López O
+ST4144,Alfonsina Storni Y Leopoldo Lugones O
+ST4145,Escuela José María Torres
+ST4146,Ing. Zalazar Y Uriburu
+ST4147,Mendoza Y Proyectada N
+ST4148,V° Pons S
+ST4149,Mendoza Antes Escuela Dr. Albert Schweitzer E
+ST4150,Escuela Dr. Albert Schweitzer E
+ST4151,Calle 18 Y Ruta N. N°40
+ST4152,Ruta N. N°40 Pasando De Calle 18 E
+ST4153,Av. Int. Joaquín Uñac Y Pasera
+ST4154,Escuela Batalla De Tucumán E
+ST4155,Cementerio Municipal De Pocito
+ST4156,Av. Int. Joaquín Uñac Y Monseñor Distéfano E
+ST4157,Bº Cruce De Los Andes 7
+ST4158,Av. Int. Joaquín Uñac Y Calle 13 E
+ST4159,Av. Int. Joaquín Uñac Entre Calle 12 Y 13 E
+ST4160,Av. Int. Joaquín Uñac Y Calle 12 E
+ST4161,Av. Int. Joaquín Uñac Y Roger Balet E
+ST4162,Av. Int. Joaquín Uñac E Ing. Marcos Zalazar E -A
+ST4163,Av. Int. Joaquín Uñac Y Roger Balet O -A
+ST4164,Av. Int. Joaquín Uñac Y Roger Balet O -B
+ST4165,Av. Int. Joaquín Uñac Y Calle 12 O -A
+ST4166,Av. Int. Joaquín Uñac Y Calle 12 O -B
+ST4167,Av. Int. Joaquín Uñac Y Calle 12 O -C
+ST4168,Av. Int. Joaquín Uñac Y Calle 13 O
+ST4169,Av. Int. Joaquín Uñac Y B° Cruce De Los Andes O
+ST4170,Bº Cruce De Los Andes 2
+ST4171,Av. Int. Joaquín Uñac Y Monseñor Distéfano O
+ST4172,Av. Int. Joaquín Uñac Y Calle 14 O
+ST4173,Calle 14 Y Aberastain N -A
+ST4174,Calle 14 Y Aberastain N -B
+ST4175,Aberastain Y Calle Nueva O -B
+ST4176,Aberastain Y Calle 15 O
+ST4177,Aberastain Y Calle 16 O -A
+ST4178,Aberastain Y Calle 16 O -B
+ST4179,Aberastain Y Calle 16 O -C
+ST4180,Aberastain Y Calle 17 O
+ST4181,Escuela Batalla De Tucumán O
+ST4182,Int. Joaquín Uñac Y Las Moras
+ST4183,Ruta N. N°40 Y Calle 18 O -A
+ST4184,Ruta N. N°40 Y Calle 18 O -B
+ST4185,Caps Bº Municipal O
+ST4186,Escuela Dr. Albert Schweitzer O -A
+ST4187,Escuela Dr. Albert Schweitzer O -B
+ST4188,V° Pons N
+ST4189,Rastreador Calívar Y República Del Líbano E
+ST4190,República Del Líbano Y Piquen - Escuela Cruce De Los Andes S
+ST4191,República Del Líbano - Natania 65 S
+ST4192,República Del Líbano Y Meglioli S
+ST4193,República Del Líbano Y Vidart S
+ST4194,República Del Líbano Y Conector Sur S
+ST4195,República Del Líbano Y Santa Rosa
+ST4196,República Del Líbano Y Gral. Alvear S
+ST4197,República Del Líbano Y Juan Jufré S
+ST4198,República Del Líbano Y Mendoza S
+ST4199,República Del Líbano Y Catamarca S
+ST4200,Gral. Acha Y Cisneros E -A
+ST4201,Estación Córdoba - Barrio Valle Grande. La Bebida
+ST4202,Mendoza Y Cmte. Cabot O -A
+ST4203,Mendoza Y 12 De Octubre -A
+ST4204,Mendoza Y República Del Líbano O
+ST4205,República Del Líbano Y Gral. Alvear N
+ST4206,República Del Líbano Y Av. España N
+ST4207,República Del Líbano Y Conector Sur N
+ST4208,República Del Líbano Y Paula A. De Sarmiento N
+ST4209,República Del Líbano Y José Hernández N
+ST4210,República Del Líbano Y Portugal N
+ST4211,República Del Líbano - Natania 65 N
+ST4212,República Del Líbano Y Piquen - Escuela Cruce De Los Andes N
+ST4213,Malvinas Argentinas Y Ara San Juan
+ST4214,Rastreador Calívar Y República Del Líbano O-B
+ST4215,Escuela Ernesto Bavio O -A
+ST4216,Mendoza Y Neuquén O
+ST4217,Parque De Chimbas S
+ST4218,Av. Benavidez Y San Juan S
+ST4219,Necochea Y Av. Benavídez O
+ST4220,Necochea Y Urquiza O -A
+ST4221,Urquiza Y Chacabuco
+ST4222,Av. Benavídez - B° Los Troperos
+ST4223,Av. Benavídez Y Villa Del Salvador S
+ST4224,Av. Benavídez Y Derqui S
+ST4225,Colón Y Burgos O
+ST4226,Plaza Héroes De Malvinas O -A
+ST4227,Thomas Edison Y Libertad N -A
+ST4228,Thomas Edison Y Chacabuco N -A
+ST4229,Chacabuco - B° Los Olivos O
+ST4230,Chacabuco Y Lima O -A
+ST4231,Lima Y Cabildo O
+ST4232,Lima Y Colón -A
+ST4233,Colón Y San Lorenzo O
+ST4234,Colón Y Pedro Echagüe
+ST4235,Colón Y Roque Sáenz Peña O -A
+ST4236,Colón Y Av. Libertador O
+ST4237,Plaza De Santa Lucía N -A
+ST4238,Gral. Paz Y Colón
+ST4239,Colón Y Av. Sarmiento E
+ST4240,Colón Y Av. Libertador E
+ST4241,Colón Y Roque Sáenz Peña
+ST4242,Colón Y San Lorenzo E
+ST4243,Colón Y Lima E
+ST4244,Lima Y Cabildo N
+ST4245,Lima Y Chacabuco N
+ST4246,Chacabuco - B° Los Olivos E
+ST4247,Chacabuco Y Thomas Edison
+ST4248,Thomas Edison Y Libertad S -A
+ST4249,Plaza Héroes De Malvinas E
+ST4250,Colón Y Burgos E
+ST4251,Av. Benavídez Y Derqui N
+ST4252,Av. Benavídez Y Villa Del Salvador N
+ST4253,Av. Benavídez Y 21 De Junio
+ST4254,Av. Benavídez Y Chacabuco N
+ST4255,Chacabuco Y Burgos
+ST4256,Urquiza Y Necochea
+ST4257,Escuela Ernesto Bavio E -A
+ST4258,Santiago Del Estero Y Malvinas
+ST4259,Santiago Del Estero Y Sánchez
+ST4260,Gilberto Sánchez Y San Luis
+ST4261,Córdoba Y Gilberto Sánchez
+ST4262,Maipú Y Juan Díaz De Solís
+ST4263,Maipú Y San Luis
+ST4264,Escuela Francisco De Villagra
+ST4265,Hernán Cortés Y Eusebio Zapata (Ex Bs.As.)
+ST4266,Hernán Cortés Y Rodríguez Bustos
+ST4267,S.U.M 9 De Julio - Ingreso
+ST4268,Ruta P. N°182 Y Talcahuano N
+ST4269,Ruta P. N°182 Y Lavalle N
+ST4270,Azcuénaga Y Saavedra N -B
+ST4271,Azcuénaga Y Albarracín N
+ST4272,Dr. Gutiérrez Y Talacasto N
+ST4273,Dr. Gutiérrez - Ingreso Loteo SP N
+ST4274,Dr. Gutiérrez - B° San Judas Tadeo E
+ST4275,B° Bustelo - Módulos Habitacionales E
+ST4276,Club Amancay N
+ST4277,Roque Sáenz Peña Y Buenaventura Luna N
+ST4278,Roque Sáenz Peña Y Urquiza N
+ST4279,Escuela Miguel De Cervantes N
+ST4280,Roque Sáenz Peña Y 12 De Octubre N
+ST4281,Roque Sáenz Peña Y Huazimul N
+ST4282,Roque Sáenz Peña Y Callejón N
+ST4283,Roque Sáenz Peña Y Balcarce N
+ST4284,Acceso B° Aoma N
+ST4285,Roque Sáenz Peña - Acceso Loteo Privado N
+ST4286,Roque Sáenz Peña Y Sta. María De Oro N
+ST4287,B° Ayres Del Este - Ingreso
+ST4288,B° Campo La Rosa - Ingreso
+ST4289,Ingreso Instituto De Educación Física Isef N
+ST4290,Centro Educación Física - La Granja N
+ST4291,Roque Sáenz Peña Y Colón N
+ST4292,Colón Y Blanco O
+ST4293,Av. Colón Y Mariano Moreno O
+ST4294,Av. Sarmiento E Int. Andino
+ST4295,Av. Sarmiento Y Ramón Franco N
+ST4296,Av. Sarmiento Y Aberastain - Rotonda N
+ST4297,Av. Sarmiento Y Balaguer N
+ST4298,Av. Sarmiento Y Lateral Av. De Circunvalación N
+ST4299,Av. Sarmiento Y República Argentina N
+ST4300,República Argentina Y Santa Fe
+ST4301,Santa Fe Y Estados Unidos N -A
+ST4302,Las Heras Y Cereceto E
+ST4303,Las Heras Y Juan Jufré E
+ST4304,Balcarce Y Cabo R. Cuello
+ST4305,Balcarce Y Sgto. Riveros E
+ST4306,Balcarce Y Roque Sáenz Peña
+ST4307,Balcarce Y Proyectada E
+ST4308,Balcarce Y Aconcagua E
+ST4309,Caps Dr. Emilio Galdeano E
+ST4310,Escuela Educación Popular - Balcarce
+ST4311,Argentina Y Gral. Alvear
+ST4312,Gral. Alvear Y Gutiérrez E
+ST4313,Gral. Alvear Y Cordillera De Los Andes E
+ST4314,Marcelo De Alvear Y Cordillera De Los Andes E
+ST4315,Alvear Y Av. Benavídez
+ST4316,Puesto Sanitario Dr. Francisco González N
+ST4317,Av. Benavídez Y Club San Pedro N
+ST4318,Av. Benavídez - Acceso Loteo Privado N
+ST4319,Club Richet Zapata N
+ST4320,Av. Benavídez Y Pineda N
+ST4321,Av. Benavídez Bº Comuna San Miguel N
+ST4322,Necochea - Bodega O
+ST4323,Necochea Y Lucero O
+ST4324,Necochea Y Corrientes
+ST4325,Necochea Y Sgto. Cabral O
+ST4326,Colombia Y Av. Argentina
+ST4327,Av. Argentina Y Falucho
+ST4328,Av. Argentina Y Cereceto
+ST4329,Av. Argentina Y Paraguay O
+ST4330,Av. Argentina Y Santo Domingo O
+ST4331,Av. Argentina Y Ecuador
+ST4332,Maipú Y Pueyrredón
+ST4333,Pueyrredón Y Boulogne Sur Mer O
+ST4334,Pueyrredón Y Roque Sáenz Peña O
+ST4335,Pueyrredón Y San Luis O
+ST4336,Escuela De Educación Especial Graciela Cibeira De Cantoni
+ST4337,Lencinas Y Barranca Colorada S
+ST4338,Lencinas Y Manantiales S
+ST4339,Lencinas Y Gorriti S
+ST4340,Gorriti Y Loteo Los Solares E
+ST4341,Gorriti Y Los Nogales E
+ST4342,Los Nogales Y La Vid S
+ST4343,Los Nogales Y El Jacarandá
+ST4344,El Jacarandá Y Ruta N.N°20 E
+ST4345,Corvalán Y Av. H. Yrigoyen E
+ST4346,San Guillermo E Iguazú E
+ST4347,San Guillermo Y Sierra De Las Quijadas E
+ST4348,Plaza Maestro Sánchez S
+ST4349,Ischigualasto Y Avenida Sarmiento
+ST4350,Aristobulo Del Valle Y Santa Fe O
+ST4351,Av. Sarmiento Y Lateral Av. De Circunvalación S
+ST4352,Av. Sarmiento Y Balaguer S
+ST4353,Av. Sarmiento Y Aberastain - Rotonda S
+ST4354,Ramón Franco Y Av. Sarmiento
+ST4355,Av. Sarmiento Y Amarfil
+ST4356,Av. Sarmiento Y Av. Colón S
+ST4357,Ischigualasto Y Lago Puelo
+ST4358,Lago Puelo Y Perito Moreno
+ST4359,San Guillermo Y Sierra De Las Quijadas O
+ST4360,San Guillermo E Iguazú O
+ST4361,San Guillermo Y Av. Sarmiento
+ST4362,Corvalán Y Ruta N. Nº20
+ST4363,El Jacarandá Y Los Almendros
+ST4364,El Jacarandá Y Los Nogales
+ST4365,Los Nogales Y La Vid N
+ST4366,Los Nogales Y Gorriti
+ST4367,Gorriti Y Loteo Los Solares O
+ST4368,Lencinas Y Gorritti N
+ST4369,Lencinas Y Barranca Colorada N
+ST4370,Lencinas Y Héroes De Malvinas N
+ST4371,Plaza Del Milagro O
+ST4372,Plaza Del Milagro E
+ST4373,Bº Rural E
+ST4374,San Juan Y Aconcagua E
+ST4375,B° El Remanso E
+ST4376,San Juan Y Chile E
+ST4377,San Juan Y Cordillera De Los Andes
+ST4378,Camping De Los Plásticos
+ST4379,Cordillera De Los Andes - Acceso Loteo Privado N
+ST4380,Cordillera De Los Andes Y Berón
+ST4381,Cordillera De Los Andes Y Angualasto
+ST4382,Angualasto Y Chile O
+ST4383,Bº Los Nogales O
+ST4384,Angualasto Y Callejón O
+ST4385,Angualasto Y Cayetano Vargas O
+ST4386,Angualasto Y Albarracín De Godoy O
+ST4387,Angualasto Y San Lorenzo
+ST4388,San Lorenzo Y Quintana
+ST4389,Quintana Y Godoy E
+ST4390,M. Quintana Y Richet
+ST4391,Procesa De Leloir Y Godoy
+ST4392,Procesa De Lenoir Y Paula A. De Sarmiento O
+ST4393,Estrada Y Roger Balet
+ST4394,Colón Y San Nicolás O
+ST4395,Colón Y Curie
+ST4396,Plaza La Amistad
+ST4397,Colegio Provincial De Santa Lucia
+ST4398,Av. Libertador Y Miguel Ridao N
+ST4399,Av. Libertador Y Pasaje Argentino
+ST4400,Plaza Héroes De Malvinas
+ST4401,Santiago Derqui Y Callejón Comunitario
+ST4402,Santiago Derqui Y Burgos
+ST4403,Burgos Y Julio César Cuello N
+ST4404,Burgos Y Chacabuco N
+ST4405,Burgos Y Berisso
+ST4406,Berisso Y Urquiza
+ST4407,B° Noroeste III Chacabuco O
+ST4408,Chacabuco Y Sgto. Méndez O
+ST4409,Escuela Antonia Villascusa E
+ST4410,Chacabuco Y Gral. José Valle O
+ST4411,Chacabuco Y Lima O -B
+ST4412,Libertad Y Buenos Aires O
+ST4413,Libertad Y Unión O
+ST4414,San Lorenzo Y Lateral Av. De Circunvalación E
+ST4415,San Lorenzo Y Chacabuco
+ST4416,San Lorenzo Y Las Heras N
+ST4417,San Lorenzo Y Pueyrredón
+ST4418,Estados Unidos Y Colombia
+ST4419,Colombia Y Av. Rawson
+ST4420,Av. Rawson Y San Luis O
+ST4421,Thomas Edison Y Federico Cantoni N
+ST4422,Thomas Edison Y Libertad S -B
+ST4423,Thomas Edison Y 11 De Junio S
+ST4424,Thomas Edison Y Colón
+ST4425,Colón Y San José O
+ST4426,Colón Y Lima O
+ST4427,Pueyrredón Y Guatemala
+ST4428,Pueyrredón Y Haití
+ST4429,Rivadavia Y Alberti
+ST4430,Plaza Luis Federico Leloir
+ST4431,Dorrego Y Aguilar O
+ST4432,Dorrego Y Roque Saenz Peña
+ST4433,Roque Sáenz Peña Y Pueyrredón N
+ST4434,25 De Mayo Y Patricias Sanjuaninas N
+ST4435,San Luis Y Av. Rawson
+ST4436,B° Bustelo
+ST4437,Dr. Gutiérrez S
+ST4438,Azcuénaga Y Talacasto S
+ST4439,Azcuénaga Y Saavedra S
+ST4440,Bahía Blanca Y Huarpes - Alto De Sierra
+ST4441,Av. Libertador Y Talacasto N
+ST4442,Av. Libertador Y Callejón Gnecco N
+ST4443,Av. Libertador Y 12 De Octubre N
+ST4444,Av. Libertador Y Quiroga N
+ST4445,Av. Libertador - Barrio Enriqueta N
+ST4446,Av. Libertador E Hilario Cuadros N
+ST4447,Av. Libertador Y Sarmiento N
+ST4448,Av. Libertador Y Angel D. Rojas N
+ST4449,Av. Libertador Y Juan Jufré N
+ST4450,Escuela Hogar De Niños N
+ST4451,Av. Libertador Y De Oro N
+ST4452,Av. Libertador Y Hugo Wast N
+ST4453,Av. Libertador Y San Juan N
+ST4454,Av. Libertador - Barrio San Carlos N
+ST4455,Av. Libertador Y Paolini N
+ST4456,Av. Libertador Y Lateral Este Av. Circunvalación N
+ST4457,Av. Libertador Y Av. Rawson N
+ST4458,Rivadavia Y Laprida
+ST4459,Rivadavia Y Joaquín Torrent
+ST4460,Rivadavia Y San Martín
+ST4461,Banco Nación Media Agua
+ST4462,Municipalidad De Sarmiento
+ST4463,Plaza Dominguito
+ST4464,Escuela Victorina L. De Navarro
+ST4465,Hospital Dr. Ventura Lloveras O
+ST4466,9 De Julio Y Santa Cruz O
+ST4467,9 De Julio Y Ángel Rojas O
+ST4468,9 De Julio Y Juan XXIII
+ST4469,José Ares Y Juan XXIII E
+ST4470,José Ares Y Malvinas Argentinas E
+ST4471,Cic Media Agua E
+ST4472,José Ares Y Neuquén
+ST4473,José Ares Y Av. Uruguay E
+ST4474,Av. Uruguay E Islas Malvinas N
+ST4475,Av. Uruguay Y Chubut N
+ST4476,Av. Uruguay Y Proyectada N
+ST4477,Camping San Antonio N
+ST4478,Av. Uruguay Y Belgrano
+ST4479,Av. Uruguay Y B° Covisar N
+ST4480,Av. Uruguay Y Ruta N. N°40
+ST4481,Paseo Cultural
+ST4482,Ruta N. N°40 Y San Luis
+ST4483,Ruta N. N°40 Y Gdor. García E
+ST4484,Ruta N. N°40 Y Gral. Maurín E
+ST4485,Ruta N. N°40 Y Santa María De Oro E
+ST4486,Ruta N. N°40 E Ignacio De La Roza E
+ST4487,Ruta N. N°40 Y Benavídez E
+ST4488,Ruta N. N°40 Y Camino A Los Berros E
+ST4489,Ruta N. N°40 Y Yanzón E
+ST4490,B° Ruta N. N°40 E
+ST4491,B° Pocito Conjunto III
+ST4492,Ruta N. N°40 Y B° Las Marías E
+ST4493,Ruta N. N°40 Y Los Sauces E
+ST4494,Ruta N. N°40 Y Hugo Wast E
+ST4495,Ruta N. N°40 Y Zavalla E
+ST4496,Ruta N. N°40 Y B° Castro Padín E
+ST4497,Ruta N.N°40 Y Treinta E
+ST4498,Ruta N. N°40 Km 3437 E
+ST4499,Escuela Dr. Albert Schweitzer O
+ST4500,Ruta N. N°40 Y Calle 18 E
+ST4501,Ruta N. N°40 Y 9 De Mayo E
+ST4502,Ruta N. N°40 Y Calle 17 E
+ST4503,Ruta N. N° 40 Y Calle 16 E
+ST4504,Ruta N. N° 40 Y Calle 15 E
+ST4505,Ruta N. N°40 Y Calle 14 E
+ST4506,Ruta N. N°40 Y Calle 13 E
+ST4507,Ruta N. N°40 Y Calle 12 E
+ST4508,Ruta N. N°40 E Ing. Marcos Zalazar E
+ST4509,Ruta N. N°40 Y Calle 10 E
+ST4510,Ruta N. N°40 Y Calle 9 E
+ST4511,Av. Rawson Y Saturnino Sarassa
+ST4512,Av. Rawson Y O'Higgins E
+ST4513,Av. Rawson Y Mariano Moreno E
+ST4514,Terminal De Ómnibus De San Juan N
+ST4515,Ruta N. N°40 Y Ruta N. N°153 E
+ST4516,Yanzón Y Ruta N. N°40
+ST4517,Mendoza Y A. De La Torre E
+ST4518,Mendoza Y Lugones E
+ST4519,Lugones Y Del Campo
+ST4520,Del Campo Y Mendoza
+ST4521,Mendoza Y Lugones O
+ST4522,Mendoza Y A. De La Torre O
+ST4523,Mendoza Y Gil
+ST4524,Anacleto Gil Y Monseñor Sansierra S
+ST4525,Anacleto Gil Y Ruta N. N°40 S
+ST4526,Calle 18 Y Mendoza
+ST4527,Santa Cruz Y San Martín S
+ST4528,Santa Cruz Y Laprida
+ST4529,Laprida Y Ángel D. Rojas O
+ST4530,Juan XXIII Y Joaquín Torrent
+ST4531,Juan XXIII Y San Martín
+ST4532,Juan XXIII Y López N
+ST4533,Juan XXIII Y 9 De Julio N
+ST4534,Escuela Luis María Vernet
+ST4535,Mendoza Entre Calle 14 Y 15 E
+ST4536,Av. Int. Joaquín Uñac Y Calle 14 E
+ST4537,Av. Int. Joaquín Uñac Y Los Sauces E
+ST4538,Av. Int. Joaquín Uñac Y B° Cruce De Los Andes E
+ST4539,Av. Int. Joaquín Uñac Pasando Calle 12 O
+ST4540,Av. Int. Joaquín Uñac Entre Calle 12 Y Roger Balet E
+ST4541,Av. Int. Joaquín Uñac Entre Calle 11 Y Roger Balet E
+ST4542,Ruta N. N°153 Y Ruta N. N°40
+ST4543,Cementerio Municipal De Sarmiento N
+ST4544,Ruta N. N°153 Y Ruta N. N°116 N
+ST4545,Parque Solar Cañada Honda II N
+ST4546,Escuela Albert Einstein N
+ST4547,Ruta N. N°153 Y Cañada Honda O
+ST4548,Olivícola Pedernal N
+ST4549,Francisco García N -A
+ST4550,Francisco García N -B
+ST4551,Francisco García N -C
+ST4552,Subcomisaria Soria N
+ST4553,25 De Mayo Y Chile N
+ST4554,B° Municipalidad De Sarmiento N
+ST4555,Escuela Profesor Alejandro Mathus N
+ST4556,Ntra. Sra. De La Candelaria N
+ST4557,Bº Cieneguita E
+ST4558,Gruta Virgen De Lourdes De Cienaguita E
+ST4559,Calera E
+ST4560,Ruta P. N°351 E
+ST4561,Capilla De Andacollo E
+ST4562,Club Divisadero E
+ST4563,Posada N
+ST4564,Escuela José Lombardo Radice E
+ST4565,Camino A Pedernal Y Ruta N. N°153 E
+ST4566,Camping Municipal De Pedernal N
+ST4567,Pedernal N
+ST4568,Unión Vecinal Pedernal N
+ST4569,Camping Pedernal N
+ST4570,Escuela Albergue Josefa Ramírez De García N
+ST4571,Caps Pedernal N
+ST4572,Vuelta Recorrido Pedernal N
+ST4573,Caps Pedernal S
+ST4574,Escuela Josefa Ramírez De García S
+ST4575,Camping De Pedernal S
+ST4576,Unión Vecinal Pedernal S
+ST4577,Pedernal S
+ST4578,Camping Municipal De Pedernal S
+ST4579,Ruta N. N°153 Y Camino A Pedernal S
+ST4580,Cantera Los Berros E
+ST4581,Ruta N. N°153 Y Calle Del Sur
+ST4582,Calle Del Medio Y Ruta N. N°153 S
+ST4583,Calle Del Medio Y Proyectada S
+ST4584,Escuela Los Berros S
+ST4585,Calle Del Medio Y Calle 5 E
+ST4586,Chile Y Calle 4 S
+ST4587,Hospital Los Berros E
+ST4588,Plaza Minero E
+ST4589,Chile Y Ruta N. N°153 E
+ST4590,25 De Mayo Y Chile S
+ST4591,Subcomisaria Soria S
+ST4592,25 De Mayo Y Pública O
+ST4593,Escuela Falucho O
+ST4594,Pública Y Calle 3 O
+ST4595,Ruta N. N°153 Y Callejón Elizondo S
+ST4596,Ruta N. N°153 Y Virgen De Lourdes S
+ST4597,Ruta N. N°153 Y Callejón Ozan S
+ST4598,Olivícola Pedernal S
+ST4599,Ruta N. N°153 Y Cañada Honda E
+ST4600,Escuela Albert Einstein S
+ST4601,Parque Solar Cañada Honda II S
+ST4602,Ruta N. N°153 Y Ruta N. N°116 S
+ST4603,Cementerio Municipal De Sarmiento S
+ST4604,Ruta N. N°40 Y Rivadavia O
+ST4605,Av. Uruguay Y 9 De Julio S
+ST4606,Av. Uruguay Y A. López S
+ST4607,Av. Uruguay Y San Martín S
+ST4608,Av. Uruguay Y Joaquín Torrent S
+ST4609,Av. Uruguay Y Laprida S
+ST4610,Av. Uruguay Y Av. 25 De Mayo S
+ST4611,Sala Velatoria Municipal E
+ST4612,Ruta N. N°40 Y B° Celeste Y Blanco O
+ST4613,Aduana Afip O
+ST4614,Ruta N. N°40 Antes De Quiroga
+ST4615,Ruta N. N°40 Y Quiroga O
+ST4616,Ruta N. N°40 Y Canal Magdalena O
+ST4617,Ruta N. N°40 Y Magdalena E
+ST4618,Ruta N. N°40 Antes De Magdalena O
+ST4619,Ruta N. N°40 Km 3402 O
+ST4620,Ruta N. N°40 Y Aranda
+ST4621,Ruta N. N°40 Km3401 O
+ST4622,Ruta N. N°40 Entre Aranda Y Carpino O
+ST4623,Ruta N. N°40 Y Carpino
+ST4624,Ruta N. N°40 Y Km3398 O
+ST4625,Capilla San Carlos O
+ST4626,Ruta N. N°40 Km3397 O
+ST4627,Ruta N. N°40 Antes De Curva O
+ST4628,Escuela Juan José Larrea O
+ST4629,San Carlos O
+ST4630,San Carlos E
+ST4631,Escuela Juan José Larrea E
+ST4632,Ruta N. N°40 Pasando Curva E
+ST4633,Ruta N. N°40 Km 3397 E
+ST4634,Capilla San Carlos E
+ST4635,Ruta N. N°40 Km 3398 E
+ST4636,Ruta N. N°40 Y Carpino E
+ST4637,Ruta N. N°40 Entre Carpino Y Aranda E
+ST4638,Ruta N. N°40 Km3401 E
+ST4639,Aranda Y Putelli S
+ST4640,Aranda Y Bodega S
+ST4641,Club Juventud Unida S
+ST4642,Aranda S
+ST4643,Escuela José María Del Carril S
+ST4644,Aranda Y 25 De Mayo
+ST4645,25 De Mayo Y B° Tres Esquinas
+ST4646,B° Tres Esquinas N
+ST4647,B° Tres Esquinas NE
+ST4648,B° Tres Esquinas E
+ST4649,Caps Tres Esquinas
+ST4650,B° Tres Esquinas Y 25 De Mayo
+ST4651,25 De Mayo Y Aranda
+ST4652,Aranda Y Valencia
+ST4653,Valencia Y Rio Magdalena E
+ST4654,Valencia Y Callejón E
+ST4655,Búfano Y Lloveras
+ST4656,Lloveras Y Aubone
+ST4657,Escuela Domingo French
+ST4658,Vara Y Proyectada
+ST4659,B° Las Lagunas
+ST4660,Vara Y Aubone
+ST4661,Plaza Martina Chapanay
+ST4662,Jardín Nucleado Zonal 11
+ST4663,Lloveras
+ST4664,Lloveras Y Valencia E
+ST4665,Búfano Y Doncel
+ST4666,Escuela Cmte. Luis Piedrabuena N
+ST4667,Puente Río San Carlos N
+ST4668,Doncel Y Av. 25 De Mayo
+ST4669,Av. 25 De Mayo Y A. Quiroga O
+ST4670,25 De Mayo Pasando Quiroga
+ST4671,B° Lagunas Del Rosario
+ST4672,Av. 25 De Mayo Y Dr. Rawson E
+ST4673,Av. 25 De Mayo Y Juan XXIII
+ST4674,Polideportivo Municipal
+ST4675,Av. 25 De Mayo Y Santa Cruz E
+ST4676,Av. 25 De Mayo Y Oviedo E
+ST4677,Sala Velatoria Municipal O
+ST4678,Av. 25 De Mayo Y Libertad
+ST4679,Ruta P. N°295 Y Ruta P. N°162 N
+ST4680,R.P.Nº295 Y América
+ST4681,Ruta P. N°295 Y Ruta P. N°162 S
+ST4682,Independencia Y Valencia O
+ST4683,Carmona Y Manuel Zavalla S
+ST4684,B° Cochagüal S
+ST4685,Escuela Paulo VI S
+ST4686,Valencia Y Carmona O
+ST4687,Del Cementerio Y Valencia O
+ST4688,Bufano Y Del Cementerio O
+ST4689,Avellaneda Y Bufano S
+ST4690,Avellaneda Y Corrientes S
+ST4691,Avellaneda Entre Corrientes Y Garibaldi S
+ST4692,Avellaneda Y Garibaldi S
+ST4693,Club Luján S
+ST4694,Escuela Constancio Vigil S
+ST4695,Avellaneda Y Calle 5 S
+ST4696,Escuela Constancio Vigil N
+ST4697,Club Luján N
+ST4698,Avellaneda Y Garibaldi N
+ST4699,Avellaneda Entre Corrientes Y Garibaldi N
+ST4700,Avellaneda Y Corrientes N
+ST4701,Avellaneda Y Bufano N
+ST4702,Bufano Y Avellaneda
+ST4703,Escuela Guido Spano O
+ST4704,Bufano Y Entre Ríos O
+ST4705,Libertad Y Bufano N
+ST4706,Libertad Y Manuel Zavalla N
+ST4707,Libertad Y Dominguito N
+ST4708,Libertad Y José Elasche N
+ST4709,Libertad Y Dr. Oviedo
+ST4710,25 De Mayo Y Las Heras
+ST4711,Av. Libertador E H. Yrigoyen N -B
+ST4712,Av. Libertador E Hipólito Vieytes N -B
+ST4713,Av. Libertador Y Manuel Zavalla N -B
+ST4714,Hospital Dr. Marcial Quiroga N -C
+ST4715,Camping Las Palmeras N
+ST4716,Rotondas De Ingreso A Marquesado N -A
+ST4717,Pellegrini Y Av. Libertador O
+ST4718,Pellegrini O
+ST4719,Pellegrini Y Gruta San Roque O
+ST4720,Av. Ig. De La Roza Y Calle 5 N
+ST4721,Av. Ig. De La Roza Y Acceso A Htal. Mental N
+ST4722,Hospital General Dra. Julieta Lanteri
+ST4723,Cementera N
+ST4724,Av. Ig. De La Roza Y Bodega N
+ST4725,Av. Ignacio De La Roza Y Jardín De Los Poetas N
+ST4726,Jardín De Los Poetas O
+ST4727,Autódromo Eduardo Copello O
+ST4728,Monumento Al Ciclista O
+ST4729,Hostería De Zonda La Pericana N
+ST4730,Camping Municipal De Rivadavia O
+ST4731,Museo Geográfico Einstein N
+ST4732,Monumento Histórico Paso D.F. Sarmiento N
+ST4733,25 De Mayo Y Las Moras
+ST4734,Las Moras Y Av. Sarmiento
+ST4735,Av. Sarmiento Y Callejón Aurora N
+ST4736,Av. Sarmiento Y Callejón Álvarez N
+ST4737,Av. Sarmiento Y Libertad
+ST4738,Libertad Y Callejón E
+ST4739,Centro De Salud Zonda E
+ST4740,Av. Ig. De La Roza Y Leaniz E
+ST4741,Municipalidad De Zonda E
+ST4742,Plazoleta Villa Basilio Nievas E
+ST4743,Plaza Filomeno Atámpiz
+ST4744,Av. Argentina Y 21 De Septiembre E
+ST4745,Av. Argentina Y 12 De Octubre E
+ST4746,Av. Argentina Y San Martín S
+ST4747,San Martín Y Bianchi N
+ST4748,San Martín Y Av. Ig. De La Roza N
+ST4749,Bº Conjunto II N
+ST4750,Proyectada 2 Y Luis Héctor López O
+ST4751,Proyectada 1 Y Plaza Barrio Conjunto 1 E
+ST4752,Bº Conjunto I N
+ST4753,Bº Ricardo Colombo II N
+ST4754,Bº Ricardo Colombo N
+ST4755,San Martín Y Juan Perón N
+ST4756,San Martín Y M. Sánchez N
+ST4757,Escuela Mercedes Nievas De Castro O
+ST4758,M.Sánchez Y Av. Sarmiento O
+ST4759,Recabarren Y 9 De Julio O
+ST4760,Recabarren - Bº Sierras Azules II
+ST4761,Cementerio De Zonda E
+ST4762,San Martín Y Monseñor Gallardo S
+ST4763,San Martín Y Libertad S
+ST4764,San Martín Y Las Moras S
+ST4765,Escuela Agrotécnica De Zonda E
+ST4766,Instituto Nazario Benavidez E
+ST4767,Las Moras Y Los Álamos E
+ST4768,Villa Tacú S
+ST4769,Los Álamos Y Los Jilgueros S
+ST4770,Los Álamos Y Los Horneros S
+ST4771,Camping Municipal Cerro Blanco E
+ST4772,Complejo Tres Lagos S
+ST4773,Finca La Paz S
+ST4774,Museo Enzo Manzini O
+ST4775,M. Sánchez Y Proyectada 2 O
+ST4776,M. Sánchez Y Proyectada 1 O
+ST4777,Bº Obrero Municipal O
+ST4778,M. Sánchez Y Juan Rodríguez O
+ST4779,M. Sánchez Y Segundo Monla O
+ST4780,M. Sánchez S Y San Martín O
+ST4781,San Martín Y Juan Perón S
+ST4782,Bº Ricardo Colombo S
+ST4783,Bº Ricardo Colombo II S
+ST4784,Bº Conjunto I S
+ST4785,Proyectada 1 Y Plaza Barrio Conjunto 1 O
+ST4786,Proyectada 2 Y Luis Héctor López E
+ST4787,Bº Conjunto II E
+ST4788,San Martín Y Av. Ig. De La Roza S
+ST4789,San Martín Y Bianchi S
+ST4790,San Martín Y Av. Argentina S
+ST4791,Av. Argentina Y 12 De Octubre O
+ST4792,Av. Argentina Y 21 De Septiembre O
+ST4793,Av. Argentina Y Güemes O
+ST4794,Plazoleta Villa Basilio Nievas O
+ST4795,Municipalidad De Zonda O
+ST4796,Av. Ig. De La Roza Y Leaniz O
+ST4797,Centro De Salud Zonda O
+ST4798,Libertad Y Callejón O
+ST4799,Libertad Y Av. Sarmiento
+ST4800,Av. Sarmiento Y Callejón Álvarez S
+ST4801,Av. Sarmiento Y Callejón Aurora S
+ST4802,Av. Sarmiento Y Las Moras
+ST4803,Las Moras Y 25 De Mayo
+ST4804,Monumento Histórico Paso D.F. Sarmiento S
+ST4805,Museo Geográfico Einstein S
+ST4806,Camping Municipal De Rivadavia E
+ST4807,Jardines De La Hostería De Zonda S
+ST4808,Monumento Al Ciclista E
+ST4809,Autódromo Eduardo Copello E
+ST4810,Jardín De Los Poetas S
+ST4811,Av. Ignacio De La Roza Y Jardín De Los Poetas S
+ST4812,Av. Ig. De La Roza Y Bodega S
+ST4813,Cementera S
+ST4814,Av. Ig. De La Roza Y Acceso A Htal. Mental S
+ST4815,Av. Ig. De La Roza Y Calle 5 S
+ST4816,Av. Ig. De La Roza Y Santa Cruz S
+ST4817,Pellegrini Y Gruta San Roque E
+ST4818,Pellegrini E
+ST4819,Pellegrini Y Av. Libertador E
+ST4820,Rotondas De Ingreso A Marquesado S -A
+ST4821,Hospital Dr. Marcial Quiroga S -B
+ST4822,Av. Libertador Y Meglioli S
+ST4823,Plaza Madre Universal S -B
+ST4824,Av. Libertador Y Mariano Moreno S
+ST4825,Av. Libertador Y Juan B. Justo S
+ST4826,Plaza Desamparados S
+ST4827,I.N.P.R.E.S. S
+ST4828,Casa De Gobierno E
+ST4829,25 De Mayo Y Salta
+ST4830,Nuche Y Riobamba
+ST4831,Nuche Y Hermógenes Ruíz N
+ST4832,Nuche Y Santa María De Oro
+ST4833,Plaza B° Wilkinson N
+ST4834,Punta De Rieles Y Juan B. Justo
+ST4835,Punta De Rieles Y Mariano Moreno N
+ST4836,Punta De Rieles Y Curupayti N
+ST4837,Punta De Rieles Y Meglioli N
+ST4838,Punta De Rieles Y Gómez N
+ST4839,Punta De Rieles Y Ex Via N
+ST4840,Gendarmería Nacional Argentina
+ST4841,Galíndez Y Soldado Argentino
+ST4842,El Pinar N
+ST4843,Parque Faunístico E
+ST4844,Parque Del Sol E
+ST4845,Mirador Del Lago - Dique Ullúm E
+ST4846,Ruta P. Nº60 Y Náutico Ullúm E
+ST4847,Ruta P. Nº60 Y Del Bono Beach S
+ST4848,Ruta P. Nº60 Y Bahía De Las Tablas E
+ST4849,Ruta P. N°60 Y Embarcadero E
+ST4850,Ruta P. N°60 Y Palmar Del Lago E
+ST4851,Ruta P. N°60 Y Costa Del Lago E
+ST4852,Costa Magna N
+ST4853,Cementerio Municipal De Ullúm O
+ST4854,Escuela Benjamín Lenoir O
+ST4855,Valentín Ruiz Y Playa Hermosa
+ST4856,Armando Gaviorno Y Valentín Ruiz N
+ST4857,Club Villa Ibáñez N
+ST4858,Unión Vecinal Villa Ibáñez N
+ST4859,Armando Gaviorno N
+ST4860,Armando Gaviorno Y Pasaje Obrero
+ST4861,Vidart Y Cabañas O
+ST4862,Ruta P. N°60 Y Valentín Ruíz N -A
+ST4863,Ruta P. N°60 Y Valentín Ruíz N -B
+ST4864,Ruta P. N°60 Y Valentín Ruíz N -C
+ST4865,Ruta P. Nº60 Y Serrano N
+ST4866,Ruta P. Nº60 Y Alberto Graffigna N
+ST4867,Escuela Pedro De Márquez O
+ST4868,Graffigna Y Jujuy O
+ST4869,Graffigna Y Salta O
+ST4870,Graffigna - Plaza Bº Dique De Ullúm I O
+ST4871,Graffigna Curva O
+ST4872,Graffigna Y Río Negro O
+ST4873,Graffigna Y Hermógenes Ruíz
+ST4874,Hermógenes Ruíz Y Las Moras N
+ST4875,Hermógenes Ruíz Y Malvinas Argentinas N
+ST4876,Plaza B° Conjunto II - Margarita Ferra Del Bartol
+ST4877,Club Sportivo Juventud Ullunera
+ST4878,Ruta P. N°60 Y Pedro Giménez N
+ST4879,Ruta P. N°60 Y Callejón N
+ST4880,Ruta P. N°60 Y B° Ullúm Conjunto II N
+ST4881,Ruta P. N°60 Y Hermógenes Ruiz N
+ST4882,H. Ruiz Y Aguilera S
+ST4883,Hermógenes Ruíz Y Ullumpa S
+ST4884,Plaza Secretaría Gral. De La Unasur
+ST4885,Ullumpa Y Florida
+ST4886,Proyectada Lago Ullúm - Escuela Lenoir O
+ST4887,Proyectada Y Buenaventura Luna O
+ST4888,Ing. Vittorio Letarza Y Rosario Quiroga N
+ST4889,Buenaventura Luna Y Aguilera O
+ST4890,Buenaventura Luna - B° Las Higueritas I N
+ST4891,Buenaventura Luna Y Plaza Las Higueritas I N
+ST4892,Buenaventura Luna Y Nemecio Reverendo
+ST4893,Reverendo Y Laterza
+ST4894,Ing. Vittorio Laterza Y Marcelo Montaña
+ST4895,Ruta P. N°60 Y Bº Higueritas I N
+ST4896,Ruta P. N°60 Y Loteo Privado N
+ST4897,Ruta P. N° 60 Y Camping S
+ST4898,Ruta P. N°60 Y Zanjón Creciente S
+ST4899,Ruta P. Nº60 Y Grupo De Casas S
+ST4900,Ruta P. N°60 Y Loteo Privado S
+ST4901,Ruta P. Nº60 Y Bº Higueritas I S
+ST4902,Ruta P. N°60 Y Curva S
+ST4903,Ruta P. Nº60 Y Hermógenes Ruiz S
+ST4904,Ramón Pocho Ormeño Y Proyectada S
+ST4905,Hermógenes Ruíz Y Malvinas Argentinas S
+ST4906,H. Ruiz Y 25 De Mayo S
+ST4907,Hermógenes Ruíz Y Las Moras S
+ST4908,Las Moras - Río San Juan O
+ST4909,Las Moras Y Ruta Interlagos O
+ST4910,Las Moras Y Sancassani O
+ST4911,Escuela Agrotécnica De Zonda O
+ST4912,Las Moras Y San Martín N
+ST4913,San Martín Y Libertad N
+ST4914,San Martín Y Monseñor Gallardo N
+ST4915,San Martín Y Av. Argentina N
+ST4916,M. Sánchez Y Segundo Monla E
+ST4917,Bº Conjunto II S
+ST4918,Córdoba Y M. Gallardo
+ST4919,Córdoba Y Libertad
+ST4920,Libertad Y Rawson O
+ST4921,Libertad Y San Martín
+ST4922,Las Moras Y Sancassani E
+ST4923,Las Moras Y Ruta Interlagos E
+ST4924,Las Moras - Río San Juan E
+ST4925,Las Moras Y Hermógenes Ruiz
+ST4926,H. Ruiz Y 25 De Mayo N
+ST4927,Ramón Pocho Ormeño Y Proyectada N
+ST4928,Hermógenes Ruíz Y Ullumpa N
+ST4929,Buenaventura Luna Y Aguilera E
+ST4930,José Aguilera Y Florida E
+ST4931,H. Ruiz Y Aguilera N
+ST4932,Hermógenes Ruiz Y Ruta P. Nº60
+ST4933,Ruta P. N°60 Y Pedro Moreno S
+ST4934,Ruta P. Nº60 Y Alberto Graffigna S
+ST4935,Ruta P. N°60 Y Valentín Ruíz S -B
+ST4936,Ruta P. N°60 Y Valentín Ruíz S -C
+ST4937,Vidart Y Cabañas E
+ST4938,Pasaje Obrero Y Armando Gaviorno
+ST4939,Armando Gaviorno S
+ST4940,Unión Vecinal Villa Ibáñez S
+ST4941,Club Villa Ibáñez S
+ST4942,Armando Gaviorno Y Valentín Ruiz S
+ST4943,Valentín Ruiz Y Acceso Playa Hermosa
+ST4944,Escuela Benjamín Lenoir E
+ST4945,Cementerio Municipal De Ullúm E
+ST4946,Costa Magna S
+ST4947,Ruta P. N°60 Y Costa Del Lago O
+ST4948,Ruta P. N°60 Y Palmar Del Lago O
+ST4949,Ruta P. N°60 Y Embarcadero O
+ST4950,Ruta P. Nº60 Y Bahía De Las Tablas O
+ST4951,Ruta P. Nº60 Y Del Bono Beach N
+ST4952,Ruta P. Nº60 Y Náutico Ullúm O
+ST4953,Mirador Del Lago - Dique Ullúm O
+ST4954,Parque Del Sol O
+ST4955,Parque Faunístico O
+ST4956,El Pinar S
+ST4957,Paseo Punta De Rieles -B
+ST4958,Paseo Punta De Rieles -A
+ST4959,Punta De Rieles Y Ex Via S
+ST4960,Punta De Rieles Y Gómez S
+ST4961,Punta De Rieles Y Meglioli S
+ST4962,Punta De Rieles Y Reconquista S
+ST4963,Punta De Rieles Y Curupayti S
+ST4964,Punta De Rieles Y Mariano Moreno S
+ST4965,Punta De Rieles Y Villicum
+ST4966,Plaza B° Wilkinson S
+ST4967,Nuche Y José Martí S
+ST4968,Nuche Y Antequeda S
+ST4969,Nuche Y Ameghino S
+ST4970,Nuche Y Hudson
+ST4971,Nuche Y 9 De Julio
+ST4972,Nuche Y Segundino Navarro S
+ST4973,Av. Libertador Y Ameghino N -A
+ST4974,Valentín Ruiz Y Armando Gaviorno N
+ST4975,Valentín Ruiz Y Juan B. Ibáñez
+ST4976,Municipalidad De Ullúm N
+ST4977,Ruta P. N°60 Y Malvinas Argentinas N
+ST4978,Jose Aguilera Y Florida
+ST4979,Ing. Vittorio Letarza Y Rosario Quiroga S
+ST4980,Proyectada Y Buenaventura Luna E
+ST4981,Proyectada Lago Ullúm - Escuela Lenoir E
+ST4982,Proyectada Lago Ullúm Y Bifurcación
+ST4983,Florida Y Ullumpa
+ST4984,Ullumpa Y Los Tilos
+ST4985,Ullumpa Y Hermógenes Ruíz E
+ST4986,Ruta Interlagos - Cerro Blanco N
+ST4987,Dique Punta Negra N
+ST4988,Embarcadero Punta Negra N
+ST4989,Unión Vecinal B° Camus
+ST4990,Av. Libertador Y Gómez S -A
+ST4991,Termas De Talacasto E
+ST4992,La Ciénaga E
+ST4993,Mto. Al Gaucho Iglesiano - Bella Vista N
+ST4994,Principal Y La Laguna N - Bella Vista
+ST4995,Centro De Salud Bella Vista
+ST4996,Nemecio Reverendo Y Principal E
+ST4997,Mto. Al Gaucho Iglesiano - Bella Vista
+ST4998,Plazoleta Qhapac Ñan - Iglesia E
+ST4999,Plaza Gral. San Martín - Las Flores E
+ST5000,Ruta P. N°149 Y Ruta N. N°150 N
+ST5001,El Jarillal E
+ST5002,Camping Villa Los Perales E
+ST5003,Sala De Convenciones - Termas De Pismanta E
+ST5004,Aeródromo De Pismanta S
+ST5005,Cementerio De Rodeo S
+ST5006,Hospital Dr. Tomás Perón S
+ST5007,Av. Santo Domingo Y Tiro Federal S
+ST5008,Escuela Provincia De Santa Cruz S
+ST5009,Municipalidad De Iglesia S
+ST5010,Club Sportivo Colola S
+ST5011,Av. Santo Domingo Y Santa Lucía S
+ST5012,Santa Lucía Y Rn. Nº150
+ST5013,Ruta N. N°150 Y Enrique Paoli N
+ST5014,Ruta N. N°150 Y Tiro Federal N
+ST5015,Aeródromo De Pismanta N
+ST5016,Sala De Convenciones - Termas De Pismanta O
+ST5017,Nodo Turístico Pismanta E
+ST5018,Ruta P. N°418 Industria Minera E
+ST5019,Predio Minera E
+ST5020,Escuela Ricardo Güiraldes O
+ST5021,Plaza Tudcum
+ST5022,Escuela Juan José De Vertiz S
+ST5023,Ruta P. N°412 Y Asentamiento Rural S
+ST5024,Ruta P. N°412 Y Curva S
+ST5025,Capilla Ntra. Sra. De San Nicolás S
+ST5026,Ruta P. N°412 Y Bella Vista S
+ST5027,Ruta P. N°149 Y Ruta P. N°412 E
+ST5028,Escuela Yapeyú E
+ST5029,Puesto Policial Villa Iglesia
+ST5030,Puente Río Iglesia E
+ST5031,Puesto Policial Las Flores E
+ST5032,Ruta P. N°149 Y Arroyito N
+ST5033,Plaza Cmte. Cabot N
+ST5034,Ruta P. N°432 Y Olivares
+ST5035,Ruta P. N°432 Y Principal El Llano 1 N
+ST5036,Principal El Llano Y Ruta P. N°432 N
+ST5037,Ruta P. N°432 Y Principal - Las Flores E
+ST5038,Escuela Presidente Mitre N
+ST5039,Delegación Municipal De Las Flores N
+ST5040,Av. Santo Domingo Y Marcelo Flores S
+ST5041,Capilla Santo Domingo De Guzmán S
+ST5042,Escuela Albergue De Rodeo S
+ST5043,Av. Santo Domingo Y Callejón Silva S
+ST5044,Av. Santo Domingo Y Enrique Paoli S.
+ST5045,Av. Santo Domingo Y Florida S
+ST5046,Av. Santo Domingo Y Proyectada 1 S
+ST5047,Santa Lucía E
+ST5048,Escuela D. Vélez Sarsfield O
+ST5049,Plazoleta Aguada - Angualasto
+ST5050,Capilla Virgen De Andacollo O
+ST5051,Ruta P. N°430 E Iglesia O
+ST5052,Puesto Sanitario Angualasto O
+ST5053,Ruta P. N°430 Y Ruta P. N°420 O
+ST5054,Río Del Agua Negra S
+ST5055,Rotonda Ruta N. N°150 O
+ST5056,Ruta N. N°150 Y Santa Lucía O
+ST5057,Capilla De Santa Lucía - Rodeo
+ST5058,Av. Santo Domingo Y Santa Lucía N
+ST5059,Av. Santo Domingo Y Proyectada 1 N
+ST5060,Club Sportivo Colola N
+ST5061,Av. Santo Domingo Y Florida N.
+ST5062,Av. Santo Domingo Y Enrique Paoli N
+ST5063,Av. Santo Domingo Y Callejón Silva N
+ST5064,Municipalidad De Iglesia N
+ST5065,Escuela Provincia De Santa Cruz N
+ST5066,Escuela Albergue De Rodeo N
+ST5067,Av. Santo Domingo Y Tiro Federal N
+ST5068,Capilla Santo Domingo De Guzmán N
+ST5069,Hospital Dr. Tomás Perón N
+ST5070,Av. Santo Domingo Y Marcelo Flores N
+ST5071,Cementerio De Rodeo N
+ST5072,Camping Villa Los Perales O
+ST5073,Delegación Municipal De Las Flores S
+ST5074,Escuela Presidente Mitre S
+ST5075,Ruta P. N°432 Y Principal - Las Flores O
+ST5076,Ruta P. N°432 Y Principal El Llano S
+ST5077,Ruta P. N°432 Y Principal El Llano 2
+ST5078,Plaza Cmte. Cabot S
+ST5079,Ruta P. N°149 Y Arroyito S
+ST5080,Plaza Gral. San Martín - Las Flores
+ST5081,Cic Las Flores E
+ST5082,Escuela Ricardo Güiraldes E
+ST5083,San Roque Y Costanera E
+ST5084,Estación Terminal De Ómnibus San José De Jáchal
+ST5085,Ruta N. N°150 Y Proyectada 1 S
+ST5086,Ruta N. N°150 Y Progreso - Escuela Juan Echegaray O
+ST5087,Ruta N. N°150 - Cruz De Piedra O
+ST5088,Capilla San Roque O
+ST5089,Ruta N. N°40 - Escuela José Matías Zapiola O
+ST5090,Ruta N. N°40 - Caps Niquivil O
+ST5091,Ruta N. N°40 Y Puesto Policial - Niquivil O
+ST5092,Ruta N. N°40 Y Niquivil Viejo O
+ST5093,Ruta N. N°40 Y Escuela Agustín Gascón O
+ST5094,Talacasto O
+ST5095,Circuito San Juan Villicum O
+ST5096,Ruta N. N°40 Y Sarmiento O
+ST5097,Rivadavia Y Gral. Acha
+ST5098,Rivadavia Y Sarmiento N
+ST5099,Plaza San Martín
+ST5100,Escuela General San Martín
+ST5101,San Juan Y Caseros
+ST5102,Caseros Y Av. 25 De Mayo E
+ST5103,Hospital San Roque S
+ST5104,Escuela Provincia De La Pampa S
+ST5105,Av. 25 De Mayo Y Sarmiento
+ST5106,Av. 25 De Mayo Y Gral. Acha S
+ST5107,Santiago Funes Y Costanera E
+ST5108,Ruta P.N° 456 Casi Río Jáchal E
+ST5109,Club Deportivo Carancho E
+ST5110,Ruta P. N°456 Y El Topón E
+ST5111,López Del Campo Y Riveros S
+ST5112,López Del Campo Y Noriega S
+ST5113,Escuela Almirante Ramón González Fernández S
+ST5114,El Topón Y Proyectada S
+ST5115,La Falda - Localidad El Fiscal O
+ST5116,Escuela Antenor Flores Vidal - El Fiscal O
+ST5117,Escuela Antenor Flores Vidal - El Fiscal E
+ST5118,La Falda - Localidad El Fiscal E
+ST5119,El Topón Y Proyectada N
+ST5120,B° Pampa Vieja E
+ST5121,Escuela Albergue Joaquín V. González E
+ST5122,Club Deportivo Pampa Vieja E
+ST5123,Varas Y Ruta P. N491 - Pampa Vieja
+ST5124,Asentamiento Rural De Pampa Vieja
+ST5125,Escuela José Mármol
+ST5126,Varas Y Maturrago O - Pampas Del Chañar
+ST5127,Escuela Agustín Gómez E
+ST5128,Varas Y Rojas E
+ST5129,Escuela Dean Gregorio Funes - Boca De La Quebrada
+ST5130,La Quebrada Y Varas E
+ST5131,Varas Y Honda E
+ST5132,Escuela Rubén Darío - El Médano E
+ST5133,Escuela Doctor Daniel Segundo Aubone O
+ST5134,Noriega Y Chepes O
+ST5135,Noriega Y Heredia N
+ST5136,Noriega Y Callejón Público O
+ST5137,Ruta P. N° 491 Y Noriega O
+ST5138,Ruta P. N°149 Y Varas - B° Pampa Vieja
+ST5139,Club Deportivo Pampa Vieja O
+ST5140,Escuela Albergue Joaquín V. González O
+ST5141,B° Pampa Vieja O
+ST5142,Escuela Almirante Ramón González Fernández N
+ST5143,López Del Campo Y Noriega N
+ST5144,López Del Campo Y Riveros N
+ST5145,Ruta P. N°456 Y El Topón O
+ST5146,Club Deportivo Carancho O
+ST5147,Av. Santiago Funes Y Presidente Alvear O
+ST5148,Av. 25 De Mayo Y Gral. Acha N
+ST5149,Av. 25 De Mayo Y Sarmiento N
+ST5150,Escuela Provincia De La Pampa N
+ST5151,Hospital San Roque - Gral. Paz
+ST5152,Hospital San Roque - Presidente Alvear N
+ST5153,Ruta N. N°150 Y Presidente Frondizi N
+ST5154,Escuela Agrotécnica Dr. Manuel Belgrano
+ST5155,Ruta N. N°150 Y Presidente Frondizi S
+ST5156,Hospital San Roque - Presidente Alvear O
+ST5157,Aberastain Y Maradona
+ST5158,Av. 25 De Mayo Y Caseros O
+ST5159,Caseros Y Florida O
+ST5160,Caseros Y Don José De San Martín O
+ST5161,Don José De San Martín Y Gral. Paz
+ST5162,Municipalidad De Jáchal
+ST5163,San Martín Y Gral. Acha
+ST5164,San Martín Y Zapata
+ST5165,Capilla Ntra. Sra. De Andacollo - Entre Ríos
+ST5166,Escuela Gabriel Albarracín N
+ST5167,Eugenio Flores Y Juan Manrique O
+ST5168,Eugenio Flores Y Riveros O
+ST5169,Escuela 24 De Septiembre - Villa Mercedes O
+ST5170,Eugenio Flores Y Pte. Perón - Villa Mercedes O
+ST5171,Eugenio Flores Y Mar Del Plata O
+ST5172,Eugenio Flores Y Gran China O
+ST5173,Eugenio Flores Y Calle Nueva O
+ST5174,Ingreso B° Don Segundo
+ST5175,Eugenio Flores Y Calle Nueva E
+ST5176,Eugenio Flores Y Rojas O
+ST5177,Cementerio - Localidad San Isidro O
+ST5178,Eugenio Flores Y Chepes O
+ST5179,Eugenio Flores Y Andacollo O
+ST5180,Eugenio Flores Y Heredia O - Tambería
+ST5181,Eugenio Flores Y Lobos O
+ST5182,Escuela Pedro Bonifacio Palacios O
+ST5183,Eugenio Flores Y Maturrango O
+ST5184,Ruta P.N°456 Y Rotonda N
+ST5185,Ruta P.N°456 Y Baca O
+ST5186,Aeroclub De Jáchal O
+ST5187,Ruta P.N°456 Y Pampa Vieja O
+ST5188,Escuela De Capacitación Laboral G. Matorras De San Martín
+ST5189,Laprida Y Av. Funes S
+ST5190,Polideportivo Papa Francisco S
+ST5191,Jáchal Y Santa Bárbara N
+ST5192,San Juan Y El Sauce N
+ST5193,Ruta P. N°475 Y Valle Encantado N
+ST5194,Ruta N. N°40 Y Ruta P. N°475 E
+ST5195,Ruta N.N°40 Y Acceso Tucunuco E
+ST5196,Ruta N. N°40 Y Escuela Agustín Gascón E
+ST5197,Ruta N. N°40 Y Niquivil Viejo E
+ST5198,Ruta N. N°40 Y Niquivil E
+ST5199,Ruta N. N°40 Y Puesto Policial - Niquivil E
+ST5200,Ruta N. N°40 - Caps Niquivil E
+ST5201,Ruta N. N°40 - Escuela José Matías Zapiola E
+ST5202,Ruta N. N°150 Y Ruta N.N°40 E
+ST5203,Ruta N. N°150 - Cruz De Piedra E
+ST5204,Ruta N. N°150 Y Progreso - Escuela Juan Echegaray E
+ST5205,Ruta N. N°150 Y Proyectada 6 N
+ST5206,Ruta N. N°150 Y Proyectada 2 N
+ST5207,Ruta N. N°150 Y Proyectada 1 N
+ST5208,Ruta N. N°150 - B° Fronteras Argentinas N
+ST5209,Ruta N. N°150 Y Av. Perón N
+ST5210,Ruta N. N°150 - Ingreso Hospital San Roque N
+ST5211,Avenida España 969
+ST5212,Av. España Y Caseros
+ST5213,Caseros Y Florida S
+ST5214,Caseros Y Agustín Gómez S
+ST5215,Teatro Del Bicentenario
+ST5216,San Juan Y Proyectada 1 S
+ST5217,Escuela Juan Martín De Pueyrredón S
+ST5218,Ruta N. N°150 Y Ruta N.N°40 O
+ST5219,Cruz De Piedra Y Ruta N. N°40
+ST5220,Ingreso Localidad De Huaco S
+ST5221,Ruta N. N°40 Y Peñaloza
+ST5222,Escuela Alfredo Calcagno N
+ST5223,Ruta N. N°40y Ruta P. N°491 N
+ST5224,Ruta N. N°40y Ruta P. N°491 S
+ST5225,Escuela Alfredo Calcagno S
+ST5226,Peñaloza Y Ruta N. N°40 S
+ST5227,Peñaloza Y Sarmiento S
+ST5228,Perú Y Mariano Moreno N
+ST5229,Hospital Buenaventura Luna O
+ST5230,Escuela Federico Cantoni
+ST5231,Templo San José O
+ST5232,Puesto Policial De Huaco
+ST5233,Cementerio De Huaco
+ST5234,La Paz Y Florida
+ST5235,Florida Y San Martín
+ST5236,San Martín - Cementerio De Huaco
+ST5237,Templo San José E
+ST5238,Plaza La Bandera - Huaco
+ST5239,Hospital Buenaventura Luna E
+ST5240,Perú Y Mariano Moreno S
+ST5241,Capilla San Roque E
+ST5242,San Juan Y Proyectada 6 N
+ST5243,Escuela Juan Martín De Pueyrredón N
+ST5244,San Juan Y Proyectada - B° Orión II
+ST5245,Teatro Del Bicentenario N
+ST5246,San Juan Y Av. Santiago Funes
+ST5247,Plaza Hospital San Roque De Jáchal
+ST5248,Av. España Y Aberastain
+ST5249,General Paz Y Rivadavia
+ST5250,Cruz De Piedra - Escuela Agustín Gascón
+ST5251,Cruz De Piedra Y Pública O
+ST5252,San Martín Y Niquivil Viejo O
+ST5253,Cruz De Piedra - Puesto Policial O
+ST5254,San Martín Y Lote A Jáchal O
+ST5255,San Martín Y B° Huarpe O
+ST5256,Escuela José Matías Zapiola - Niquivil
+ST5257,San Martín Y Escuela De Niquivil O
+ST5258,B° Jáchal Conjunto 1 Niquivil O
+ST5259,San Roque - Escuela Juan De Echegaray
+ST5260,San Juan Y Proyectada 1 N
+ST5261,San Juan Y Rawson
+ST5262,Principal Y La Laguna S - Bella Vista
+ST5263,Escuela Manuel Alberti -E
+ST5264,Plaza Principal De Rodeo
+ST5265,Escuela Bienvenida Sarmiento -Pachimoco E
+ST5266,Ruta N. N°150 - Ingreso Hospital San Roque S
+ST5267,Ruta N. N°141 - Ingreso A Vallecito S
+ST5268,Paraje Difunta Correa - Escuela República Del Paraguay S
+ST5269,Plaza De Bermejo - San Expedito N
+ST5270,Escuela Anexo República Argentina S
+ST5271,Ruta P. N°510 - Localidad Los Papagayos S
+ST5272,Ruta P. N°510 Y La Planta - Marayes
+ST5273,Ruta P. N°510 E Ingreso A Baldes Del Sur E
+ST5274,Ruta P. N°510 E Ingreso A Baldes De Funes E
+ST5275,Plaza De Chucuma E
+ST5276,Ruta P. N°510 Y A° La Mesa
+ST5277,Terminal De Ómnibus Astica E
+ST5278,Escuela María Elena Vidart De Maurín E
+ST5279,Estación Terminal De Ómnibus Valle Fértil
+ST5280,Plaza San Agustín S
+ST5281,Rivadavia Y Mendoza
+ST5282,Rivadavia Y Sarmiento O
+ST5283,Camping Municipal Don Riverito
+ST5284,Rivadavia Y Santiago Del Estero
+ST5285,Camping Municipal De Valle Fértil O
+ST5286,Leandro N. Alem Y San Luis
+ST5287,Leandro N. Alem Y Marinero J. Cuello O
+ST5288,Leandro N. Alem Y Calera O
+ST5289,Ruta P. N°510 Y V° San Agustín S
+ST5290,Ruta P. N°510 - Club Hípico S
+ST5291,Ruta P. N°510 Y Sarmiento S
+ST5292,Instituto Superior Técnico De Valle Fértil S
+ST5293,Hospital Dr. Alejandro Albarracín S
+ST5294,Ruta P. N°510 Y San Luis
+ST5295,Tucumán Y San Martín N
+ST5296,Tucumán Y Rivadavia
+ST5297,Gral. Acha Y Santa Fé
+ST5298,Gral. Acha Y Mendoza O
+ST5299,Gral. Acha Y 9 De Julio O
+ST5300,Gral. Acha Y Ruta P N°510
+ST5301,Ruta P. N°510 Y Tristán Quiroga O
+ST5302,Plaza B° Margarita Ferrá De Bartol S
+ST5303,B° Margarita Ferrá De Bartol N
+ST5304,Aberastain Y Córdoba
+ST5305,Mitre Y Caseros
+ST5306,Colegio Superior 1° Fuerza Aérea Argentina S
+ST5307,Escuela Albergue Casa Del Niño
+ST5308,Ruta P.N°511 Y B° Evita S
+ST5309,Ruta P.N°511 Y B° Parque S
+ST5310,Ruta P.N°511 Acceso B° Parque S
+ST5311,Escuela República De Brasil S
+ST5312,Balde De Las Chilcas S
+ST5313,Capilla Sagrado Corazón De Jesús S
+ST5314,Ruta P. Nº511 Y Baldes Del Sur
+ST5315,Balde De Las Chilcas N
+ST5316,Escuela República De Brasil N
+ST5317,Ruta P.N°511 Y B° Parque N
+ST5318,Ruta P.N°511 Y B° Evita N
+ST5319,Ruta P.N°511 Y Estados Unidos N
+ST5320,Colegio Superior 1 Fuerza Aérea Argentina N
+ST5321,Mitre Y Aberastain
+ST5322,Aberastain Y Córdoba O
+ST5323,Cementerio Municipal - San Agustín O
+ST5324,B° Margarita Ferrá De Bartol O
+ST5325,Plaza B° Margarita Ferrá De Bartol N
+ST5326,S. Tristán Quiroga E Y Ruta P.N°510
+ST5327,Ruta P. N°510 Y Gral. Acha E
+ST5328,Gral. Acha Y 9 De Julio E
+ST5329,Gral. Acha Y Córdoba E
+ST5330,Escuela Provincia De Formosa E
+ST5331,Plaza San Agustín De Valle Fértil
+ST5332,Rivadavia Y Tucumán
+ST5333,Tucumán Y San Martín S
+ST5334,Ruta P N°510 Y 25 De Mayo E
+ST5335,Instituto Superior Técnico De Valle Fértil N
+ST5336,Ruta P. N°510 Y Sarmiento N
+ST5337,Ruta P. N°510 - Club Hípico N
+ST5338,Ruta P. N°510 - V° San Agustín N
+ST5339,Ruta P. N°510 - B° Usno E
+ST5340,Ruta P. N°510 - B° Usno N
+ST5341,Plaza De Usno
+ST5342,Escuela Presbítero Cayetano De Quiroga
+ST5343,Mendoza Y Santa Fé
+ST5344,Tucumán Y Mitre
+ST5345,Mitre Y Jujuy
+ST5346,Escuela Provincia De Formosa N
+ST5347,Plaza San Agustín N
+ST5348,Hospital Dr. Alejandro Albarracín N
+ST5349,Ruta P. N°510 Y Cabañas Ischigualasto E
+ST5350,Museo Piedras Del Mundo
+ST5351,Ruta P N°510 Y Camino A Usno S
+ST5352,Ruta P. N°510 - B° Usno O
+ST5353,Museo Piedras Del Mundo O
+ST5354,Ruta P. N°510 Y Cabañas Ischigualasto O
+ST5355,Mundo Triásico - Parque Temático
+ST5356,Ruta P. Nº510
+ST5357,Mendoza Y Mitre
+ST5358,Tucumán Y Córdoba O
+ST5359,Ruta P. N°510 Y Gral. Acha O
+ST5360,Quebrada Grande O
+ST5361,Escuela María Elena Vidart De Maurín O
+ST5362,Puente Tumana S
+ST5363,Plaza Astica O
+ST5364,Domingo Vargas Y Ruta P. Nº510 N
+ST5365,Ruta P. N°510 Y A° La Mesa S
+ST5366,Plaza De Chucuma O
+ST5367,Caps Chucuma S
+ST5368,Centro De Salud Baldes Del Rosario E
+ST5369,Puesto Policial Los Baldecitos
+ST5370,Ingreso Parque Ischigualasto N
+ST5371,Parque Provincial Ischigualasto

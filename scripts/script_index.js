@@ -25,6 +25,8 @@ let _correspondenciaParadas = null; // Cache de Datos/correspondencia_paradas.js
 let arrivalsAbortController = null; // Permite abortar/renovar consultas de arrivals
 let _lastParadasPorLineaError = ''; // Último error al cargar paradas_por_linea.json (para diagnóstico)
 let _lastUrlsPorLineaError = ''; // Último error al cargar urls_por_linea.json (para diagnóstico)
+let _horariosAproximadosPorLinea = null; // Cache: Map(lineaKey -> entrada de línea) de redtulum_lineas_horarios_aproximados.json
+let _horariosAproximadosPromise = null; // Promise en vuelo mientras se carga el JSON de horarios aproximados
 
 // ─── Planeo de ruta (opciones / trasbordos) ─────────────────────────────────
 let _routePlanTarget = null; // { feature, nombre, lat, lng, stopId }
@@ -46,6 +48,7 @@ const RED_TULUM_PARADAS_URL = encodeURI('Datos/red_tulum_paradas.json' + JSON_VE
 const PARADAS_POR_LINEA_URL = encodeURI('Datos/paradas_por_linea.json' + JSON_VERSION);
 const URLS_POR_LINEA_URL = encodeURI('Datos/urls_por_linea.json' + JSON_VERSION);
 const CORRESPONDENCIA_PARADAS_URL = encodeURI('Datos/correspondencia_paradas.json' + JSON_VERSION);
+const HORARIOS_APROXIMADOS_URL = encodeURI('Datos/redtulum_lineas_horarios_aproximados.json' + JSON_VERSION);
 const ARRIVALS_API_URL = '/api/arrivals';
 const ARRIVALS_TIMEOUT_MS = 30000;
 const ARRIVALS_MAX_INTENTOS_PARADA = 3; // cuando hay paradas duplicadas por sufijos, probar varias variantes
@@ -1157,32 +1160,317 @@ function asegurarVistaMenuEnEscritorio() {
   }
 }
 
-async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNombre = '') {
-  const ref = String(lineaRef || '').trim();
-  const name = String(lineaNombre || '').trim();
-  const paradaNombreBase = obtenerNombreParadaBase(paradaFeature || window._currentFeature);
-  const subtitulo = paradaNombreBase ? `Parada: ${paradaNombreBase}` : '';
+/**
+ * Carga (y cachea) Datos/redtulum_lineas_horarios_aproximados.json y lo indexa
+ * por línea (clave normalizada) para búsqueda rápida.
+ */
+async function cargarHorariosAproximados() {
+  if (_horariosAproximadosPorLinea) return _horariosAproximadosPorLinea;
+  if (_horariosAproximadosPromise) return _horariosAproximadosPromise;
 
-  const html = `
-    <ul class="bs-nav-rows">
-      <li>
-        <button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button>
-      </li>
-    </ul>
+  _horariosAproximadosPromise = (async () => {
+    const mapa = new Map();
+    try {
+      const resp = await fetch(HORARIOS_APROXIMADOS_URL, { cache: 'force-cache' });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const payload = await resp.json();
+      const lineas = Array.isArray(payload?.lines) ? payload.lines : [];
+      for (const linea of lineas) {
+        const key = normalizarLineaParaLookup(linea?.line);
+        if (key && !mapa.has(key)) mapa.set(key, linea);
+      }
+    } catch (err) {
+      console.warn('No se pudo cargar redtulum_lineas_horarios_aproximados.json:', err);
+    }
+    _horariosAproximadosPorLinea = mapa;
+    return mapa;
+  })();
+
+  return _horariosAproximadosPromise;
+}
+
+function buscarLineaEnHorariosAproximados(mapaLineas, lineaRef) {
+  if (!(mapaLineas instanceof Map)) return null;
+  for (const clave of obtenerClavesLineaLookup(lineaRef)) {
+    if (mapaLineas.has(clave)) return mapaLineas.get(clave);
+  }
+  return null;
+}
+
+/**
+ * Busca, dentro de la secuencia de paradas de una línea (dataset aproximado),
+ * la parada que mejor coincide con los nombres candidatos de la parada tocada
+ * en el mapa (misma lógica de tokens/Jaccard usada para matching de paradas).
+ */
+function buscarParadaEnLineaAproximada(lineaEntry, candidatosNombre) {
+  const stops = Array.isArray(lineaEntry?.stops) ? lineaEntry.stops : [];
+  if (!stops.length) return null;
+
+  const candidatos = (Array.isArray(candidatosNombre) ? candidatosNombre : [])
+    .filter((c) => typeof c === 'string' && c.trim());
+  if (!candidatos.length) return null;
+
+  const normSimple = (s) => String(s || '').trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  for (const cand of candidatos) {
+    const candNorm = normSimple(cand);
+    const stopExacto = stops.find((s) => normSimple(s?.name) === candNorm);
+    if (stopExacto) return stopExacto;
+  }
+
+  let mejor = null;
+  let mejorScore = 0;
+  for (const cand of candidatos) {
+    const tokensCand = tokenizarNombreParada(cand);
+    for (const stop of stops) {
+      const score = calcularSimilitudJaccard(tokensCand, tokenizarNombreParada(stop?.name));
+      if (score > mejorScore) {
+        mejorScore = score;
+        mejor = stop;
+      }
+    }
+  }
+
+  return mejorScore >= 0.3 ? mejor : null;
+}
+
+const DIAS_SEMANA_HORARIOS_APROX = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+
+function horaTextoAMinutos(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || '').trim());
+  if (!m) return null;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+function minutosATextoHora(mins) {
+  const total = Math.round(mins);
+  const h = Math.floor(total / 60) % 24;
+  const m = ((total % 60) + 60) % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Genera las próximas salidas estimadas de una línea en una parada puntual,
+ * a partir del horario semanal aproximado (ventana + frecuencia, o salida
+ * única, por día) y el offset en minutos de esa parada dentro del recorrido.
+ * Es una estimación sintética (interpolación lineal de duración), NO datos
+ * en tiempo real ni GPS de la unidad — ver Datos/redtulum_gtfs_aproximado_v2/README.txt.
+ */
+function generarProximasLlegadasAproximadas(lineaEntry, offsetMin, ahora = new Date(), maxResultados = MAX_HORARIOS_MOSTRAR) {
+  const resultados = [];
+  const offset = Number.isFinite(offsetMin) ? offsetMin : 0;
+  const medianocheHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const minutosDesdeMedianoche = (ahora.getTime() - medianocheHoy.getTime()) / 60000;
+
+  for (let dayOffset = 0; dayOffset < 8 && resultados.length < maxResultados; dayOffset++) {
+    const fecha = new Date(medianocheHoy.getTime() + dayOffset * 86400000);
+    const diaKey = DIAS_SEMANA_HORARIOS_APROX[fecha.getDay()];
+    const sched = lineaEntry?.weekly_schedule?.[diaKey];
+    if (!sched || typeof sched !== 'object') continue; // sin servicio ese día
+
+    const salidasBase = [];
+    if (sched.type === 'single') {
+      const t = horaTextoAMinutos(sched.time);
+      if (t != null) salidasBase.push(t);
+    } else if (sched.type === 'range') {
+      const s = horaTextoAMinutos(sched.start);
+      let e = horaTextoAMinutos(sched.end);
+      const freq = Number(sched.freq_min);
+      if (s != null && e != null && freq > 0) {
+        if (e < s) e += 1440; // el servicio cruza la medianoche
+        for (let t = s; t <= e + 0.001; t += freq) {
+          salidasBase.push(t);
+        }
+      }
+    }
+
+    for (const base of salidasBase) {
+      const arriboMin = base + offset; // minutos desde medianoche de "fecha", ya en la parada consultada
+      const arriboAbsoluto = dayOffset * 1440 + arriboMin; // minutos desde medianoche de HOY
+      if (arriboAbsoluto >= minutosDesdeMedianoche - 0.5) {
+        resultados.push({
+          minutosDesdeAhora: arriboAbsoluto - minutosDesdeMedianoche,
+          dayOffset,
+          horaTexto: minutosATextoHora(arriboMin),
+        });
+      }
+    }
+  }
+
+  resultados.sort((a, b) => a.minutosDesdeAhora - b.minutosDesdeAhora);
+  return resultados.slice(0, maxResultados);
+}
+
+function etiquetaDiaRelativoHorarios(dayOffset) {
+  if (dayOffset === 0) return '';
+  if (dayOffset === 1) return 'mañana ';
+  const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() + dayOffset);
+  return `${dias[fecha.getDay()]} `;
+}
+
+function renderArribosAproximadosHtml(items, lineaRef, paradaNombre, opts = {}) {
+  const titulo = lineaRef ? `Línea ${escapeHtml(lineaRef)}` : 'Línea';
+  const volverHtml = '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>';
+  const paradaInfoHtml = paradaNombre
+    ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted, #777);">Parada: ${escapeHtml(paradaNombre)}</p>`
+    : '';
+  const adsHtml = `<div class="tsj-ad-slot" data-tsj-ads-placeholder="${TSJ_ADS_TOKEN}"></div>`;
+  const avisoHtml = `
     <div style="
-      padding: 16px 14px;
-      border-radius: 14px;
-      background: var(--glass-bg-strong);
-      border: 1px solid var(--glass-border);
-      margin: 12px 0;
-      text-align: center;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(0, 123, 255, 0.08);
+      border: 1px solid rgba(0, 123, 255, 0.25);
+      margin: 0 0 14px 0;
     ">
-      <p style="margin: 0; font-size: 14px; color: var(--glass-fg); font-weight: 500;">
-        ⏱ Los tiempos de llegada en vivo se implementarán pronto.
+      <p style="margin: 0; font-size: 12px; color: var(--text-secondary, #666); line-height: 1.5;">
+        ⏱ Horario aproximado calculado a partir del horario semanal publicado de la línea (no es tiempo real ni GPS de la unidad).
       </p>
     </div>
   `;
-  abrirBottomSheet(`Línea ${ref}`, html, 'linea', subtitulo);
+
+  if (opts?.sinDatos) {
+    return `
+      ${volverHtml}
+      <p style="margin: 0 0 14px 0; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
+      ${paradaInfoHtml}
+      <p style="font-size: 14px; color: var(--text-muted, #999); text-align: center; padding: 14px 0;">${escapeHtml(opts.mensaje || 'No hay horario aproximado disponible para esta línea.')}</p>
+    `;
+  }
+
+  if (!items || items.length === 0) {
+    return `
+      ${volverHtml}
+      <p style="margin: 0 0 14px 0; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
+      ${paradaInfoHtml}
+      ${avisoHtml}
+      <p style="font-size: 14px; color: var(--text-muted, #999); text-align: center; padding: 14px 0;">Sin más servicios programados por ahora.</p>
+    `;
+  }
+
+  const itemsHtml = items.map((item, i) => {
+    const esProximo = i === 0;
+    const minRedondeado = Math.max(0, Math.round(item.minutosDesdeAhora));
+    const diaTxt = etiquetaDiaRelativoHorarios(item.dayOffset);
+    const esPronto = !diaTxt && minRedondeado <= 60;
+    const principal = diaTxt ? `${diaTxt}${item.horaTexto}` : (esPronto ? `${minRedondeado} min` : item.horaTexto);
+    const subtitulo = diaTxt
+      ? 'Próximo día con servicio'
+      : (esPronto ? item.horaTexto : (esProximo ? 'Próxima salida estimada' : ''));
+
+    return `
+      <li style="
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 14px;
+        border-radius: 10px;
+        background: ${esProximo ? 'rgba(0,123,255,0.08)' : 'transparent'};
+        border: 1px solid ${esProximo ? 'rgba(0,123,255,0.25)' : 'rgba(0,0,0,0.07)'};
+        margin-bottom: 10px;
+      ">
+        <span style="font-size: 28px; font-weight: 700; color: ${esProximo ? '#007BFF' : 'var(--text-primary, #333)'}; min-width: 84px;">${escapeHtml(principal)}</span>
+        <span style="font-size: 13px; color: var(--text-secondary, #888);">${escapeHtml(subtitulo)}</span>
+      </li>
+    `;
+  }).join('');
+
+  return `
+    ${volverHtml}
+    <p style="margin: 0 0 14px 0; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
+    ${paradaInfoHtml}
+    ${avisoHtml}
+    <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
+    <ul style="list-style: none; padding: 0; margin: 0;">${itemsHtml}</ul>
+    ${adsHtml}
+    <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">Horario estimado según datos públicos de la línea (Moovit), sin tiempo real.</p>
+  `;
+}
+
+/**
+ * Tarjeta compacta de "próximas llegadas" para insertar dentro de la vista de
+ * recorrido completo de una línea (cuando se llegó ahí desde una parada puntual).
+ */
+function renderArribosPreviewHtml(items, paradaNombre, sinDatos = false) {
+  const paradaTxt = paradaNombre ? ` en ${escapeHtml(paradaNombre)}` : '';
+
+  if (sinDatos || !items || items.length === 0) {
+    const msg = sinDatos
+      ? 'Todavía no tenemos horario aproximado para esta línea.'
+      : 'Sin más servicios programados por ahora.';
+    return `
+      <div style="padding: 14px; border-radius: 12px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); margin: 12px 0; text-align: center;">
+        <p style="margin: 0; font-size: 13px; color: var(--glass-fg); font-weight: 500;">⏱ ${escapeHtml(msg)}</p>
+      </div>
+    `;
+  }
+
+  const chips = items.map((item, i) => {
+    const minRedondeado = Math.max(0, Math.round(item.minutosDesdeAhora));
+    const diaTxt = etiquetaDiaRelativoHorarios(item.dayOffset);
+    const label = diaTxt ? `${diaTxt}${item.horaTexto}` : (minRedondeado <= 60 ? `${minRedondeado} min` : item.horaTexto);
+    const esProximo = i === 0;
+    return `
+      <span style="
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: ${esProximo ? 'rgba(0,123,255,0.12)' : 'rgba(0,0,0,0.05)'};
+        border: 1px solid ${esProximo ? 'rgba(0,123,255,0.3)' : 'rgba(0,0,0,0.08)'};
+      ">
+        <span style="font-size: ${esProximo ? '18px' : '15px'}; font-weight: 700; color: ${esProximo ? '#007BFF' : 'var(--glass-fg)'};">${escapeHtml(label)}</span>
+      </span>
+    `;
+  }).join('');
+
+  return `
+    <div style="padding: 12px 14px; border-radius: 12px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); margin: 12px 0;">
+      <p style="margin: 0 0 10px 0; font-size: 12px; color: var(--text-muted, #888); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;">⏱ Próximas llegadas${paradaTxt}</p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">${chips}</div>
+      <p style="margin: 10px 0 0 0; font-size: 10.5px; color: var(--text-muted, #999);">Estimado según horario publicado, no es tiempo real.</p>
+    </div>
+  `;
+}
+
+async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNombre = '') {
+  const ref = String(lineaRef || '').trim();
+  const name = String(lineaNombre || '').trim();
+  const feature = paradaFeature || window._currentFeature;
+  const paradaNombreBase = obtenerNombreParadaBase(feature);
+  const subtitulo = paradaNombreBase ? `Parada: ${paradaNombreBase}` : '';
+  const titulo = `Línea ${ref}`;
+
+  abrirBottomSheet(titulo, renderEstadoCargaArribos(ref, name), 'linea', subtitulo);
+
+  try {
+    const mapaHorarios = await cargarHorariosAproximados();
+    const lineaEntry = buscarLineaEnHorariosAproximados(mapaHorarios, ref);
+
+    if (!lineaEntry) {
+      abrirBottomSheet(titulo, renderArribosAproximadosHtml([], ref, paradaNombreBase, {
+        sinDatos: true,
+        mensaje: 'Todavía no tenemos horario aproximado cargado para esta línea.',
+      }), 'linea', subtitulo);
+      return;
+    }
+
+    const candidatos = obtenerCandidatosNombreParada(feature, paradaNombreBase);
+    const stopMatch = buscarParadaEnLineaAproximada(lineaEntry, candidatos);
+    const offsetMin = Number(stopMatch?.est_offset_min) || 0;
+
+    const items = generarProximasLlegadasAproximadas(lineaEntry, offsetMin, new Date());
+    abrirBottomSheet(titulo, renderArribosAproximadosHtml(items, ref, paradaNombreBase), 'linea', subtitulo);
+  } catch (err) {
+    console.warn('Error calculando horario aproximado de arribos:', err);
+    abrirBottomSheet(titulo, renderArribosAproximadosHtml([], ref, paradaNombreBase, {
+      sinDatos: true,
+      mensaje: 'No se pudo calcular el horario aproximado. Intenta de nuevo.',
+    }), 'linea', subtitulo);
+  }
 }
 
 async function dibujarParadasDeLineaCercanasAlOrigen(relIds, origenLat, origenLng, lineaRef, lineaNombre = '', opts = {}) {
@@ -1267,6 +1555,7 @@ if (document.readyState === 'loading') {
     setupGuardadosSearch();
     setupPreferenciaHudParada();
     setupTarjetaParadaCercanaDashboard();
+    setupToggleTemaOscuro();
     renderHistorialDashboard();
     renderSeccionGuardados();
     renderAccesosRapidosDashboard();
@@ -1283,6 +1572,7 @@ if (document.readyState === 'loading') {
   setupGuardadosSearch();
   setupPreferenciaHudParada();
   setupTarjetaParadaCercanaDashboard();
+  setupToggleTemaOscuro();
   renderHistorialDashboard();
   renderSeccionGuardados();
   renderAccesosRapidosDashboard();
@@ -1755,6 +2045,40 @@ function aplicarModoOscuro() {
 
 function aplicarTransparencia() {
   document.documentElement.classList.remove('no-transparency');
+}
+
+const THEME_COLOR_CLARO = '#f3f1ec';
+const THEME_COLOR_OSCURO = '#141419';
+
+/**
+ * Alterna entre el tema claro (por defecto) y un modo oscuro real: agrega/quita
+ * la clase zm-theme-dark en <html> (paleta oscura definida en el CSS), y con
+ * ella el mapa deja de aplicar el filtro que lo oscurece "gratis" (ver CSS de
+ * #map .leaflet-tile-pane) — en modo oscuro se ve con las tiles de OSM tal cual.
+ */
+function aplicarPreferenciaTemaOscuro(activo) {
+  const esOscuro = Boolean(activo);
+  document.documentElement.classList.toggle('zm-theme-dark', esOscuro);
+  document.head.querySelector('meta[name="theme-color"]')?.setAttribute('content', esOscuro ? THEME_COLOR_OSCURO : THEME_COLOR_CLARO);
+
+  const btn = document.getElementById('btn-theme-toggle');
+  if (btn) {
+    btn.setAttribute('aria-pressed', esOscuro ? 'true' : 'false');
+    const label = esOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+  }
+}
+
+function setupToggleTemaOscuro() {
+  const btn = document.getElementById('btn-theme-toggle');
+  aplicarPreferenciaTemaOscuro(leerBoolLocalStorage(STORAGE_DARK_MODE_KEY, false));
+
+  btn?.addEventListener('click', () => {
+    const esOscuro = !document.documentElement.classList.contains('zm-theme-dark');
+    aplicarPreferenciaTemaOscuro(esOscuro);
+    guardarBoolLocalStorage(STORAGE_DARK_MODE_KEY, esOscuro);
+  });
 }
 
 function cambiarVista(vistaId) {
@@ -5073,10 +5397,23 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
   dibujarFeatureRecorridoConFlechas(layerRec, featureElegido, lineColor, Boolean(invertido));
 
   try {
-    const bounds = layerRec.getBounds?.();
-    if (bounds && bounds.isValid && bounds.isValid()) {
-      leafletMap.fitBounds(bounds, { padding: [20, 20] });
-      establecerVistaMapaBounds(bounds, { padding: [20, 20] });
+    // Si la línea se abrió desde una parada específica, centrar el mapa en esa
+    // parada (no en todo el recorrido) para que el usuario la vea de inmediato.
+    // El encuadre a todo el recorrido queda reservado para cuando se llega
+    // buscando la línea o viendo el recorrido completo (sin parada de origen).
+    const coordsOrigen = paradaOrigen?.geometry?.coordinates;
+    const latOrigen = Array.isArray(coordsOrigen) ? Number(coordsOrigen[1]) : NaN;
+    const lngOrigen = Array.isArray(coordsOrigen) ? Number(coordsOrigen[0]) : NaN;
+
+    if (Number.isFinite(latOrigen) && Number.isFinite(lngOrigen)) {
+      const zoomActual = typeof leafletMap.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_CALLE;
+      centrarMapaEnPunto(latOrigen, lngOrigen, Math.max(zoomActual, ZOOM_CALLE));
+    } else {
+      const bounds = layerRec.getBounds?.();
+      if (bounds && bounds.isValid && bounds.isValid()) {
+        leafletMap.fitBounds(bounds, { padding: [20, 20] });
+        establecerVistaMapaBounds(bounds, { padding: [20, 20] });
+      }
     }
   } catch {
     // noop
@@ -5119,20 +5456,26 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
     ? '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>'
     : '';
 
-  const infoArribosHtml = paradaOrigen
-    ? `<div style="
-         padding: 12px;
-         border-radius: 12px;
-         background: var(--glass-bg-strong);
-         border: 1px solid var(--glass-border);
-         margin: 12px 0;
-         text-align: center;
-       ">
-         <p style="margin: 0; font-size: 13px; color: var(--glass-fg); font-weight: 500;">
-           ⏱ Los tiempos de llegada en vivo se implementarán pronto.
-         </p>
-       </div>`
-    : '';
+  let infoArribosHtml = '';
+  if (paradaOrigen) {
+    try {
+      const paradaOrigenNombre = obtenerNombreParadaBase(paradaOrigen);
+      const mapaHorarios = await cargarHorariosAproximados();
+      const lineaEntryArribos = buscarLineaEnHorariosAproximados(mapaHorarios, ref);
+      if (!lineaEntryArribos) {
+        infoArribosHtml = renderArribosPreviewHtml([], paradaOrigenNombre, true);
+      } else {
+        const candidatosArribos = obtenerCandidatosNombreParada(paradaOrigen, paradaOrigenNombre);
+        const stopMatchArribos = buscarParadaEnLineaAproximada(lineaEntryArribos, candidatosArribos);
+        const offsetMinArribos = Number(stopMatchArribos?.est_offset_min) || 0;
+        const itemsArribos = generarProximasLlegadasAproximadas(lineaEntryArribos, offsetMinArribos, new Date(), 3);
+        infoArribosHtml = renderArribosPreviewHtml(itemsArribos, paradaOrigenNombre, false);
+      }
+    } catch (err) {
+      console.warn('Error calculando horario aproximado en recorrido de línea:', err);
+      infoArribosHtml = renderArribosPreviewHtml([], obtenerNombreParadaBase(paradaOrigen), true);
+    }
+  }
 
   const favsLineas = obtenerLineasFavs();
   const esLineaFav = favsLineas.some((f) => (f?.ref && ref && f.ref === ref) || (typeof f === 'string' && f === ref));

@@ -1,0 +1,2 @@
+feed_publisher_name,feed_publisher_url,feed_lang,feed_version
+Extracción no oficial (Moovit) - San Juan RedTulum - horarios aproximados,https://moovitapp.com,es,2026-09-11-v2-aprox
