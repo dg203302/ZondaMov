@@ -1,0 +1,138 @@
+route_id,agency_id,route_short_name,route_long_name,route_type,route_url
+184765575,3760653,100,Barrio Ate Api - Centro Cívico - Av. Rawson y Santa Fe,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-100-San_Juan-6206-3760653-184765575-0
+184765576,3760653,101,Barrio Ate Api - Complejo Deportivo El Palomar - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-101-San_Juan-6206-3760653-184765576-0
+184765577,3760653,102,Barrio Las Acacias - Hospital Rawson - Estación Córdoba,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-102-San_Juan-6206-3760653-184765577-0
+184765578,3760653,103,Av. Circunvalación y Av. Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-103-San_Juan-6206-3760653-184765578-0
+184765579,3760653,104,Villa Del Bono - Plaza De Trinidad - Estación Córdoba,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-104-San_Juan-6206-3760653-184765579-0
+184765580,3760653,120,Barrio Soldado Argentino - Barrio Valle Grande -Barrio Soldado Argentino,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-120-San_Juan-6206-3760653-184765580-0
+184765581,3760653,121,B° Piuquén - Parque De Rivadavia - Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-121-San_Juan-6206-3760653-184765581-0
+184765582,3760653,122,Av. Libertador Y España - Av. Libertador Y Baigorria,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-122-San_Juan-6206-3760653-184765582-0
+184765583,3760653,123,Cementerio El Mirador - Centro Cívico - Plaza Aberastain,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-123-San_Juan-6206-3760653-184765583-0
+184765584,3760653,124,B° Cgt Rivadavia - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-124-San_Juan-6206-3760653-184765584-0
+184765585,3760653,125,Av. Libertador Y Roger Balet,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-125-San_Juan-6206-3760653-184765585-0
+184765586,3760653,126,Villa Obrera - Complejo El Palomar - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-126-San_Juan-6206-3760653-184765586-0
+184765587,3760653,127,Necochea Y San Lorenzo - Parque De Rivadavia,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-127-San_Juan-6206-3760653-184765587-0
+184765588,3760653,128,Barrio CGT Chimbas - Universidades,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-128-San_Juan-6206-3760653-184765588-0
+184765589,3760653,129,B° Cgt Rivadavia - Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-129-San_Juan-6206-3760653-184765589-0
+184765590,3760653,130,Calle 5 Y Pellegrini - Terminal De Ómnibus De San Juan,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-130-San_Juan-6206-3760653-184765590-0
+184765573,3760653,B,Estación Córdoba - Av. Libertador Y Baigorria,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-b-San_Juan-6206-3760653-184765573-0
+184765574,3760653,E,Plaza Trinidad - Centro Cívico - Estación Córdoba,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-e-San_Juan-6206-3760653-184765574-0
+184765591,3760653,TEO1,La Bebida - Lote Hogar 3 - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-teo1-San_Juan-6206-3760653-184765591-0
+184765592,3760653,TEO2,Esquina Del Sauce - La Bebida - Barrio El Jilguero,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-teo2-San_Juan-6206-3760653-184765592-0
+184765593,3760653,TEO3,Esquina Del Sauce - La Bebida - Barrio Conjunto 5,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-teo3-San_Juan-6206-3760653-184765593-0
+184765615,3760655,4,Bº Kirchner Campo Afuera - Centro Cívico - Bº Kirchner Campo Afuera,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-4-San_Juan-6206-3760655-184765615-0
+184765616,3760655,40,Plaza De Chimbas - Universidades,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-40-San_Juan-6206-3760655-184765616-0
+184765617,3760655,400,Villa Observatorio - Hospital Rawson - Villa Observatorio,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-400-San_Juan-6206-3760655-184765617-0
+184765618,3760655,401,Av. Dr. Guillermo Rawson y Santa Fe,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-401-San_Juan-6206-3760655-184765618-0
+184765619,3760655,402,Barrio Las Calandrias - Terminal De Ómnibus De San Juan,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-402-San_Juan-6206-3760655-184765619-0
+184765620,3760655,403,Plaza De Chimbas - Terminal De Ómnibus De San Juan,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-403-San_Juan-6206-3760655-184765620-0
+184765621,3760655,404,Barrio Las Calandrias - Plaza Chimbas - Centro Cívico - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-404-San_Juan-6206-3760655-184765621-0
+184765622,3760655,405,Barrio Natania VIII - Terminal De Ómnibus De San Juan,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-405-San_Juan-6206-3760655-184765622-0
+184765623,3760655,406,Lote Hogar 59 - Villa Paula - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-406-San_Juan-6206-3760655-184765623-0
+184765624,3760655,407,Villa Mariano Moreno - Hospital Rawson - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-407-San_Juan-6206-3760655-184765624-0
+184765625,3760655,408,Benavidez Y Flores - Plaza Chimbas - Centro Cívico - Hospital Rawson Der.,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-408-San_Juan-6206-3760655-184765625-0
+184765626,3760655,420,Centro Cívico - Piedritas,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-420-San_Juan-6206-3760655-184765626-0
+184765627,3760655,421,Campo Afuera,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-421-San_Juan-6206-3760655-184765627-0
+184765628,3760655,422,Hospital J. Giordano,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-422-San_Juan-6206-3760655-184765628-0
+184765629,3760655,423,La Laja Y Nacional - Hospital Giordano,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-423-San_Juan-6206-3760655-184765629-0
+184765634,3760655,440-A,Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-440_a-San_Juan-6206-3760655-184765634-0
+184765635,3760655,440-B,Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-440_b-San_Juan-6206-3760655-184765635-0
+184765636,3760655,440-C,Villa El Salvador,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-440_c-San_Juan-6206-3760655-184765636-0
+184765637,3760655,440-D,Villa El Salvador,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-440_d-San_Juan-6206-3760655-184765637-0
+184765638,3760655,441-A,Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-441_a-San_Juan-6206-3760655-184765638-0
+184765639,3760655,441-B,Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-441_b-San_Juan-6206-3760655-184765639-0
+184765640,3760655,441-C,Centro -Villa El Salvador - Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-441_c-San_Juan-6206-3760655-184765640-0
+184765641,3760655,441-D,Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-441_d-San_Juan-6206-3760655-184765641-0
+184765642,3760655,441-E,Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-441_e-San_Juan-6206-3760655-184765642-0
+185312229,3760655,441-F,Centro - Villa El Salvador,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-441_f-San_Juan-6206-3760655-185312229-0
+184765630,3760655,442,Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-442-San_Juan-6206-3760655-184765630-0
+184765631,3760655,460,Centro - Dos Acequias,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-460-San_Juan-6206-3760655-184765631-0
+184765632,3760655,461,A - Boca Del Tigre - Estación Córdoba,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-461-San_Juan-6206-3760655-184765632-0
+184765633,3760655,462,Boca Del Tigre,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-462-San_Juan-6206-3760655-184765633-0
+184765594,3760654,3,Caucete,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-3-San_Juan-6206-3760654-184765594-0
+184765595,3760654,320,Las Chacritas - Cementerio De Santa Lucía - Centro Cívico - Las Chacritas,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-320-San_Juan-6206-3760654-184765595-0
+184765596,3760654,321,Barrio Cooperativa,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-321-San_Juan-6206-3760654-184765596-0
+184765597,3760654,322,A - Aeropuerto D.F. Sarmiento - Centro Cívico - Aeropuerto D.F. Sarmiento,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-322-San_Juan-6206-3760654-184765597-0
+184765598,3760654,323,Centro Cívico - Barrio Del Sur - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-323-San_Juan-6206-3760654-184765598-0
+184765599,3760654,340,Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-340-San_Juan-6206-3760654-184765599-0
+184765600,3760654,341,Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-341-San_Juan-6206-3760654-184765600-0
+184765601,3760654,342,Los Compatros - Las Talas - Terminal De Ómnibus De Caucete,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-342-San_Juan-6206-3760654-184765601-0
+184765602,3760654,343,Los Médanos,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-343-San_Juan-6206-3760654-184765602-0
+184765603,3760654,344,Terminal De Ómnibus Caucete - El Rincón - Villa Independencia,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-344-San_Juan-6206-3760654-184765603-0
+184765604,3760654,345,A - Barrio Felipe Cobas,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-345-San_Juan-6206-3760654-184765604-0
+184765605,3760654,346,Barrio Rivadavia - Terminal De Ómnibus De Caucete,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-346-San_Juan-6206-3760654-184765605-0
+184765606,3760654,360,Caucete,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-360-San_Juan-6206-3760654-184765606-0
+184765607,3760654,361,La Chimbera - Villa El Tango - Villa Santa Rosa - Caucete,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-361-San_Juan-6206-3760654-184765607-0
+184765608,3760654,362,Caucete,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-362-San_Juan-6206-3760654-184765608-0
+184765609,3760654,363,Caucete,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-363-San_Juan-6206-3760654-184765609-0
+184765610,3760654,364,A - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-364-San_Juan-6206-3760654-184765610-0
+184765611,3760654,700,Calingasta - Barreal,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-700-San_Juan-6206-3760654-184765611-0
+184765612,3760654,701,A - Barreal - V° Nueva (Vía Tamberías),3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-701-San_Juan-6206-3760654-184765612-0
+184765613,3760654,702,Barreal - Sorocayense - Alcaparrosa - Calingasta - Tamberías,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-702-San_Juan-6206-3760654-184765613-0
+184765614,3760654,TNS,Plaza De Chimbas - Plaza Villa Krause,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-tns-San_Juan-6206-3760654-184765614-0
+184765651,3760657,2,Villa Aberastain - Villa Krause - Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-2-San_Juan-6206-3760657-184765651-0
+184765653,3760657,10,Plaza Centenario - Universidades - Hospital M. Quiroga,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-10-San_Juan-6206-3760657-184765653-0
+184765654,3760657,20,Plaza Centenario - Plaza Almirante Brown - Hospital Rawson- Plaza Centenario,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-20-San_Juan-6206-3760657-184765654-0
+184765655,3760657,200,A-Plaza Villa Krause - Medano de Oro - Plaza Bolaños,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-200-San_Juan-6206-3760657-184765655-0
+184765656,3760657,201,A-Villa Bolaños - Hospital Rawson - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-201-San_Juan-6206-3760657-184765656-0
+184765657,3760657,202,Hospital Dr. Federico Cantoni - Villa Bolaños - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-202-San_Juan-6206-3760657-184765657-0
+184765658,3760657,203,Centro - Villa Krause,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-203-San_Juan-6206-3760657-184765658-0
+184765659,3760657,204,Barrio Conjunto 8 - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-204-San_Juan-6206-3760657-184765659-0
+184765660,3760657,205,Barrio Fanzolato - Hospital Rawson - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-205-San_Juan-6206-3760657-184765660-0
+184765661,3760657,206,Barrio Lagares - Centro Cívico - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-206-San_Juan-6206-3760657-184765661-0
+184765662,3760657,207,Barrio Valle Grande - Mendoza Y Boulevar Sarmiento,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-207-San_Juan-6206-3760657-184765662-0
+184765663,3760657,208,Barrio Solares - Hospital Rawson - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-208-San_Juan-6206-3760657-184765663-0
+184765664,3760657,209,Bº Conjunto 8 - Villa Santa Filomena - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-209-San_Juan-6206-3760657-184765664-0
+184765665,3760657,210,A - Barrio La Rinconada - Villa Aberastain - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-210-San_Juan-6206-3760657-184765665-0
+184765666,3760657,211,Barrio Valle Grande - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-211-San_Juan-6206-3760657-184765666-0
+184765667,3760657,212,Villa Krause - Barrio Güemes - Hospital M. Quiroga,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-212-San_Juan-6206-3760657-184765667-0
+184765668,3760657,213,Lote Hogar 39 - Hospital Rawson - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-213-San_Juan-6206-3760657-184765668-0
+184765669,3760657,214,Villa San Miguel - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-214-San_Juan-6206-3760657-184765669-0
+184765670,3760657,240,Villa Aberastain - Centro - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-240-San_Juan-6206-3760657-184765670-0
+184765671,3760657,241,Paula A. De Sarmiento Y República Del Líbano - Villa Aberastain,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-241-San_Juan-6206-3760657-184765671-0
+184765672,3760657,242,Av. Dr. Guillermo Rawson y Santa Fe,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-242-San_Juan-6206-3760657-184765672-0
+184765673,3760657,243,Barrio Upcn - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-243-San_Juan-6206-3760657-184765673-0
+184765674,3760657,244,Mendoza Y Estado De Israel - Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-244-San_Juan-6206-3760657-184765674-0
+184765675,3760657,245,Barrio Ruta 40 - Hospital Cantoni,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-245-San_Juan-6206-3760657-184765675-0
+184765676,3760657,246,Nacional Y Tascharet - Villa Krause,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-246-San_Juan-6206-3760657-184765676-0
+184765677,3760657,247,Hospital Dr. Federico Cantoni - Quinto Cuartel - Centro,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-247-San_Juan-6206-3760657-184765677-0
+184765678,3760657,248,A - B° Campo De Batalla - La Rinconada - Villa Aberastain,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-248-San_Juan-6206-3760657-184765678-0
+184765652,3760657,C,Barrio Piuquen - Hospital Rawson - Estacion Cordoba,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-c-San_Juan-6206-3760657-184765652-0
+184765644,3760656,30,Plaza De Chimbas - Plaza De Santa Lucía,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-30-San_Juan-6206-3760656-184765644-0
+184765645,3760656,300,Alto De Sierra - Centro Comercial Paseo Libertad San Juan,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-300-San_Juan-6206-3760656-184765645-0
+184765646,3760656,301,Barrio Balcarce - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-301-San_Juan-6206-3760656-184765646-0
+184765647,3760656,302,Barrio Villa Maria - Barrio Santa Lucia - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-302-San_Juan-6206-3760656-184765647-0
+184765648,3760656,303,Barrio Rural - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-303-San_Juan-6206-3760656-184765648-0
+184765649,3760656,304,Barrio Bermejito - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-304-San_Juan-6206-3760656-184765649-0
+184765650,3760656,305,Barrio Retiro - Centro Cívico,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-305-San_Juan-6206-3760656-184765650-0
+184765643,3760656,D,Alto De Sierra - Estación Córdoba,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-d-San_Juan-6206-3760656-184765643-0
+184765686,3760659,260,San Juan - Capital,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-260-San_Juan-6206-3760659-184765686-0
+184765687,3760659,261,Villa Aberastain,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-261-San_Juan-6206-3760659-184765687-0
+184765688,3760659,262,A- San Juan Capital,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-262-San_Juan-6206-3760659-184765688-0
+184765689,3760659,263,A- Cañada Honda -Los Berros,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-263-San_Juan-6206-3760659-184765689-0
+184765690,3760659,264,Cienaguita-Divisadero-Pedernal - Villa Media Agua,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-264-San_Juan-6206-3760659-184765690-0
+184765691,3760659,265,A - Villa Media Agua - San Carlos - Tres Esquinas - Las Lagunas - Villa Media Agua,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-265-San_Juan-6206-3760659-184765691-0
+184765692,3760659,266,A-Cochagual Por Punta Del Médano,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-266-San_Juan-6206-3760659-184765692-0
+184765680,3760658,140,Hospital Dra. Julieta Lanteri - Sierras Azules - Cementerio Zonda,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-140-San_Juan-6206-3760658-184765680-0
+184765681,3760658,141,Terminal De Ómnibus De San Juan - Hospital Julieta Lanteri - Villa Tacú,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-141-San_Juan-6206-3760658-184765681-0
+184765682,3760658,142,Camping Cerro Blanco - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-142-San_Juan-6206-3760658-184765682-0
+184765683,3760658,160,Barrio Agapito Gil,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-160-San_Juan-6206-3760658-184765683-0
+184765684,3760658,161,Diferimientos - Villa Basilio Nievas - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-161-San_Juan-6206-3760658-184765684-0
+184765685,3760658,162,Dique De Ullum - Dique Punta Negra,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-162-San_Juan-6206-3760658-184765685-0
+184765679,3760658,A,Hospital Marcial Quiroga - Hospital Rawson,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-a-San_Juan-6206-3760658-184765679-0
+184765706,3760661,600,Iglesia,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-600-San_Juan-6206-3760661-184765706-0
+184765707,3760661,601,Bella Vista - Iglesia - Las Flores - Rodeo,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-601-San_Juan-6206-3760661-184765707-0
+184765708,3760661,602,Angualasto - Rodeo - Las Flores - Tudcum,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-602-San_Juan-6206-3760661-184765708-0
+184765693,3760660,500,A- Jáchal - San Juan,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-500-San_Juan-6206-3760660-184765693-0
+184765694,3760660,501,San José De Jáchal - El Fical - Pampa Vieja - El Médano,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-501-San_Juan-6206-3760660-184765694-0
+184765695,3760660,502,Entre Ríos - San Isidro - San José De Jáchal,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-502-San_Juan-6206-3760660-184765695-0
+184765696,3760660,503,Mogna - San José De Jachal,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-503-San_Juan-6206-3760660-184765696-0
+184765697,3760660,504,Terminal de San José de Jachal - Huaco,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-504-San_Juan-6206-3760660-184765697-0
+184765698,3760660,505,Niquivil - San José De Jáchal,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-505-San_Juan-6206-3760660-184765698-0
+184765699,3760660,560,Bella Vista - Iglesia - Las Flores - Rodeo - San José De Jáchal,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-560-San_Juan-6206-3760660-184765699-0
+184765700,3760660,800,San Juan - Valle Fértil,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-800-San_Juan-6206-3760660-184765700-0
+184765701,3760660,801,San Agustín - Balde De Las Chilcas - Usno,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-801-San_Juan-6206-3760660-184765701-0
+184765702,3760660,802,San Agustín - Barrio Parque - Usno,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-802-San_Juan-6206-3760660-184765702-0
+184765703,3760660,803,Chucuma,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-803-San_Juan-6206-3760660-184765703-0
+184765704,3760660,808,Bermejo,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-808-San_Juan-6206-3760660-184765704-0
+184765705,3760660,850,Estación Terminal De Ómnibus San Agustín - Ischigualasto,3,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-line-850-San_Juan-6206-3760660-184765705-0

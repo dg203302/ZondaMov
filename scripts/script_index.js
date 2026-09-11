@@ -14,6 +14,7 @@ let recorridoLayer = null;
 let recorridoActivo = null;
 let paradasRecorrido = null;
 let paradasRecorridoMarkers = null;
+let _cargaDiferidaParadasHandler = null; // listener 'zoomend' pendiente para dibujar paradas de línea al hacer zoom
 let seleccionParadaLayer = null;
 let _planeoParadasIndex = null; // Map(paradaId -> { feature, lat, lng }) para listas de paradas en planeo
 let _indiceParadasApi = null; // Cache de nombres canónicos para arrivals API
@@ -213,12 +214,102 @@ let _userWaypointVisible = false;
 function destacarParadaEnMapa(lat, lng, nombre = '') {
   // Ocultar cualquier waypoint de usuario y no desplegar marcador invasivo sobre la parada centrada
   ocultarMarcadorUsuario();
+  limpiarMarcadoresSeleccion();
+}
+
+let _iconoDestinoMarcadorLeaflet = null;
+let _iconoOrigenMarcadorLeaflet = null;
+let _origenMarcadorActivo = null;
+
+function crearIconoMarcadorSeleccion(gradFrom, gradTo, gradId, claseCss) {
+  return L.divIcon({
+    className: claseCss,
+    iconSize: [32, 40],
+    iconAnchor: [16, 38],
+    popupAnchor: [0, -36],
+    html: `
+      <svg width="32" height="40" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+        <defs>
+          <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="${gradFrom}"/>
+            <stop offset="100%" stop-color="${gradTo}"/>
+          </linearGradient>
+        </defs>
+        <path d="M17 1 C8.16 1 1 8.16 1 17 C1 27.5 17 41 17 41 C17 41 33 27.5 33 17 C33 8.16 25.84 1 17 1 Z" fill="url(#${gradId})" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="17" cy="17" r="7" fill="#ffffff"/>
+      </svg>
+    `,
+  });
+}
+
+function obtenerIconoDestinoMarcador() {
+  if (_iconoDestinoMarcadorLeaflet) return _iconoDestinoMarcadorLeaflet;
+  _iconoDestinoMarcadorLeaflet = crearIconoMarcadorSeleccion('#ff735c', '#e6351d', 'destinoPinGrad', 'destino-marker-icon');
+  return _iconoDestinoMarcadorLeaflet;
+}
+
+function obtenerIconoOrigenMarcador() {
+  if (_iconoOrigenMarcadorLeaflet) return _iconoOrigenMarcadorLeaflet;
+  _iconoOrigenMarcadorLeaflet = crearIconoMarcadorSeleccion('#60a5fa', '#1d4ed8', 'origenPinGrad', 'origen-marker-icon');
+  return _iconoOrigenMarcadorLeaflet;
+}
+
+// Marcadores de "punto elegido": origen y destino son independientes entre sí (así se ven
+// los dos juntos al planificar un viaje) y a propósito no se usan para paradas de colectivo,
+// que ya tienen su propio ícono en el mapa — ver destacarParadaEnMapa/limpiarMarcadoresSeleccion.
+function mostrarMarcadorDestino(lat, lng, nombre = '') {
+  if (!leafletMap || typeof L === 'undefined') return;
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return;
 
   const layerSel = typeof asegurarSeleccionParadaLayer === 'function' ? asegurarSeleccionParadaLayer() : null;
   if (!layerSel) return;
 
-  layerSel.clearLayers();
+  if (_marcadorDestacadoActivo) {
+    try { layerSel.removeLayer(_marcadorDestacadoActivo); } catch { /* noop */ }
+  }
+  const marker = L.marker([latNum, lngNum], { icon: obtenerIconoDestinoMarcador(), keyboard: false }).addTo(layerSel);
+  const nombreTexto = String(nombre || '').trim();
+  if (nombreTexto) {
+    marker.bindTooltip(nombreTexto, { direction: 'top', offset: [0, -34] });
+  }
+  _marcadorDestacadoActivo = marker;
+}
+
+function mostrarMarcadorOrigen(lat, lng, nombre = '') {
+  if (!leafletMap || typeof L === 'undefined') return;
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return;
+
+  const layerSel = typeof asegurarSeleccionParadaLayer === 'function' ? asegurarSeleccionParadaLayer() : null;
+  if (!layerSel) return;
+
+  if (_origenMarcadorActivo) {
+    try { layerSel.removeLayer(_origenMarcadorActivo); } catch { /* noop */ }
+  }
+  const marker = L.marker([latNum, lngNum], { icon: obtenerIconoOrigenMarcador(), keyboard: false }).addTo(layerSel);
+  const nombreTexto = String(nombre || '').trim();
+  if (nombreTexto) {
+    marker.bindTooltip(nombreTexto, { direction: 'top', offset: [0, -34] });
+  }
+  _origenMarcadorActivo = marker;
+}
+
+function limpiarMarcadoresSeleccion() {
+  const layerSel = typeof asegurarSeleccionParadaLayer === 'function' ? asegurarSeleccionParadaLayer() : null;
+  if (layerSel) layerSel.clearLayers();
   _marcadorDestacadoActivo = null;
+  _origenMarcadorActivo = null;
+}
+
+function limpiarMarcadorOrigen() {
+  const layerSel = typeof asegurarSeleccionParadaLayer === 'function' ? asegurarSeleccionParadaLayer() : null;
+  if (layerSel && _origenMarcadorActivo) {
+    try { layerSel.removeLayer(_origenMarcadorActivo); } catch { /* noop */ }
+  }
+  _origenMarcadorActivo = null;
 }
 
 function ocultarMarcadorUsuario() {
@@ -340,6 +431,50 @@ function asegurarMarcadorUsuario(lat, lng) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Vista activa del mapa (punto o bounds): un único estado compartido que
+// reemplaza al viejo `window._activeMapCenter`. El bug de "queda centrado en
+// lo anterior" pasaba porque cada acción (centrar una parada, un lugar guardado,
+// mostrar una línea) reprogramaba varios setTimeout que aplicaban la posición
+// que tenían "capturada" en ese momento; si el usuario disparaba una acción nueva
+// mientras los timeouts de la anterior todavía no terminaban, el último en
+// ejecutarse podía pisar la posición correcta con una vieja. Ahora los timeouts
+// no capturan nada: siempre leen `window._activeMapView` en el momento en que
+// se ejecutan, así que una acción más nueva siempre gana sin importar el orden.
+function establecerVistaMapaPunto(lat, lng, zoom) {
+  const safeLat = Number(lat);
+  const safeLng = Number(lng);
+  if (!Number.isFinite(safeLat) || !Number.isFinite(safeLng)) return;
+  const z = Number.isFinite(Number(zoom)) ? Number(zoom) : ZOOM_CALLE;
+  window._activeMapView = { type: 'point', lat: safeLat, lng: safeLng, zoom: z };
+}
+
+function establecerVistaMapaBounds(bounds, fitOpts = { padding: [20, 20] }) {
+  if (!bounds) return;
+  window._activeMapView = { type: 'bounds', bounds, fitOpts: fitOpts || { padding: [20, 20] } };
+}
+
+function reaplicarVistaMapaActiva({ invalidateSize = true } = {}) {
+  if (!leafletMap) return;
+  if (invalidateSize && typeof leafletMap.invalidateSize === 'function') {
+    leafletMap.invalidateSize({ animate: false });
+  }
+  const v = window._activeMapView;
+  if (!v) return;
+  if (v.type === 'bounds' && v.bounds) {
+    try {
+      leafletMap.fitBounds(v.bounds, { ...(v.fitOpts || { padding: [20, 20] }), animate: false });
+    } catch {
+      // noop
+    }
+    return;
+  }
+  if (v.type === 'point' && Number.isFinite(v.lat) && Number.isFinite(v.lng)) {
+    const z = Number.isFinite(v.zoom) ? v.zoom : (typeof leafletMap.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_CALLE);
+    leafletMap.setView([v.lat, v.lng], z, { animate: false });
+  }
+}
+
 function centrarMapaEnPunto(lat, lng, zoom = ZOOM_CALLE) {
   const safeLat = Number(lat);
   const safeLng = Number(lng);
@@ -349,24 +484,16 @@ function centrarMapaEnPunto(lat, lng, zoom = ZOOM_CALLE) {
   ocultarMarcadorUsuario();
 
   const z = Number.isFinite(Number(zoom)) ? Number(zoom) : ZOOM_CALLE;
-  window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: z };
+  establecerVistaMapaPunto(safeLat, safeLng, z);
 
   if (!leafletMap) return;
 
-  const aplicarCentrado = () => {
-    if (!leafletMap) return;
-    if (typeof leafletMap.invalidateSize === 'function') {
-      leafletMap.invalidateSize({ animate: false });
-    }
-    leafletMap.setView([safeLat, safeLng], z, { animate: false });
-  };
-
-  aplicarCentrado();
-  requestAnimationFrame(aplicarCentrado);
-  setTimeout(aplicarCentrado, 50);
-  setTimeout(aplicarCentrado, 150);
-  setTimeout(aplicarCentrado, 250);
-  setTimeout(aplicarCentrado, 380);
+  reaplicarVistaMapaActiva();
+  requestAnimationFrame(() => reaplicarVistaMapaActiva());
+  setTimeout(() => reaplicarVistaMapaActiva(), 50);
+  setTimeout(() => reaplicarVistaMapaActiva(), 150);
+  setTimeout(() => reaplicarVistaMapaActiva(), 250);
+  setTimeout(() => reaplicarVistaMapaActiva(), 380);
 }
 
 function obtenerIconoUserWaypointLeaflet() {
@@ -550,25 +677,22 @@ function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
   }
 
   const recentrarFeature = () => {
-    let targetLat = null;
-    let targetLng = null;
-    let targetZoom = null;
-
-    if (window._activeMapCenter && Number.isFinite(window._activeMapCenter.lat) && Number.isFinite(window._activeMapCenter.lng)) {
-      targetLat = window._activeMapCenter.lat;
-      targetLng = window._activeMapCenter.lng;
-      targetZoom = window._activeMapCenter.zoom;
-    } else if (window._currentFeature?.geometry?.coordinates) {
-      const coords = window._currentFeature.geometry.coordinates;
-      if (Array.isArray(coords) && coords.length >= 2) {
-        targetLat = Number(coords[1]);
-        targetLng = Number(coords[0]);
+    // Reaplica lo que haya vigente en window._activeMapView (un punto o, si se está
+    // mostrando una línea, sus bounds) — nunca una posición vieja capturada de antes.
+    if (window._activeMapView) {
+      reaplicarVistaMapaActiva();
+      return;
+    }
+    const coords = window._currentFeature?.geometry?.coordinates;
+    if (Array.isArray(coords) && coords.length >= 2) {
+      const targetLat = Number(coords[1]);
+      const targetLng = Number(coords[0]);
+      if (Number.isFinite(targetLat) && Number.isFinite(targetLng)) {
+        centrarMapaEnPunto(targetLat, targetLng, leafletMap && typeof leafletMap.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_CALLE);
+        return;
       }
     }
-
-    if (Number.isFinite(targetLat) && Number.isFinite(targetLng)) {
-      centrarMapaEnPunto(targetLat, targetLng, targetZoom || (leafletMap && typeof leafletMap.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_CALLE));
-    } else if (leafletMap && typeof leafletMap.invalidateSize === 'function') {
+    if (leafletMap && typeof leafletMap.invalidateSize === 'function') {
       leafletMap.invalidateSize({ animate: false });
     }
   };
@@ -1240,7 +1364,7 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'cur
   const safeLng = Number(lng);
   if (Number.isFinite(safeLat) && Number.isFinite(safeLng)) {
     const z = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
-    window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: z };
+    establecerVistaMapaPunto(safeLat, safeLng, z);
     window._currentFeature = null;
     centrarMapaEnPunto(safeLat, safeLng, z);
   }
@@ -1350,7 +1474,7 @@ function abrirBottomSheetLugarGuardado(nombreLugar, lat, lng, paradaCercana = nu
   const safeLat = Number(lat);
   const safeLng = Number(lng);
   if (Number.isFinite(safeLat) && Number.isFinite(safeLng)) {
-    window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: leafletMap?.getZoom() || ZOOM_CALLE };
+    establecerVistaMapaPunto(safeLat, safeLng, leafletMap?.getZoom() || ZOOM_CALLE);
     window._currentFeature = null;
   }
 
@@ -1626,7 +1750,7 @@ function guardarBoolLocalStorage(key, value) {
 function aplicarModoOscuro() {
   document.documentElement.classList.add('dark-mode');
   document.documentElement.classList.remove('no-transparency');
-  document.head.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0f0f12');
+  document.head.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f3f1ec');
 }
 
 function aplicarTransparencia() {
@@ -1635,7 +1759,13 @@ function aplicarTransparencia() {
 
 function cambiarVista(vistaId) {
   if (vistaId !== 'view-map') {
-    if (typeof cerrarBottomSheet === 'function') cerrarBottomSheet(true);
+    // Solo cerrar si en verdad hay algo abierto: cerrarBottomSheet() termina llamando a
+    // asegurarVistaMenuEnEscritorio(), que en escritorio puede volver a llamar a
+    // cambiarVista('view-dashboard') si no hay ningún menú activo todavía (porque esta
+    // misma función no marcó la vista como activa hasta más abajo). Sin esta guarda,
+    // esas dos funciones se llaman entre sí sin parar y revientan el call stack.
+    const bsAbierto = document.getElementById('bottom-sheet')?.classList.contains('active');
+    if (bsAbierto && typeof cerrarBottomSheet === 'function') cerrarBottomSheet(true);
     if (_pickingOrigenEnMapa) cancelarSeleccionOrigenEnMapa();
   }
 
@@ -1658,23 +1788,10 @@ function cambiarVista(vistaId) {
   });
 
   if (vistaId === 'view-map') {
-    const reajustar = () => {
-      if (!leafletMap) return;
-      if (typeof leafletMap.invalidateSize === 'function') {
-        leafletMap.invalidateSize({ animate: false });
-      }
-      if (window._activeMapCenter && Number.isFinite(window._activeMapCenter.lat) && Number.isFinite(window._activeMapCenter.lng)) {
-        leafletMap.setView(
-          [window._activeMapCenter.lat, window._activeMapCenter.lng],
-          window._activeMapCenter.zoom || (leafletMap && typeof leafletMap.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_CALLE),
-          { animate: false }
-        );
-      }
-    };
-    requestAnimationFrame(reajustar);
-    setTimeout(reajustar, 50);
-    setTimeout(reajustar, 150);
-    setTimeout(reajustar, 260);
+    requestAnimationFrame(() => reaplicarVistaMapaActiva());
+    setTimeout(() => reaplicarVistaMapaActiva(), 50);
+    setTimeout(() => reaplicarVistaMapaActiva(), 150);
+    setTimeout(() => reaplicarVistaMapaActiva(), 260);
     setTimeout(() => { void actualizarHudParadaMasCercana(); }, 320);
   } else {
     document.getElementById('map-nearest-stop-hud')?.classList.remove('visible');
@@ -1693,6 +1810,7 @@ function cambiarVista(vistaId) {
 
 function setupNavegacion() {
   setupNearestStopHud();
+  setupMapPickingBanner();
 
   const tabs = document.querySelectorAll('.nav-tab[data-view]');
   tabs.forEach((tab) => {
@@ -2823,9 +2941,9 @@ async function centrarEnLugarGuardado({ nombre, lat, lng }) {
 
   const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
   const zoomTarget = Number.isFinite(z) ? Math.min(z, 18) : ZOOM_CALLE;
-  window._activeMapCenter = { lat: latNum, lng: lngNum, zoom: zoomTarget };
+  establecerVistaMapaPunto(latNum, lngNum, zoomTarget);
 
-  destacarParadaEnMapa(latNum, lngNum, nombre);
+  mostrarMarcadorDestino(latNum, lngNum, nombre);
   centrarMapaEnPunto(latNum, lngNum, zoomTarget);
 
   // Abrir panel con la información del lugar guardado
@@ -2923,7 +3041,7 @@ async function centrarEnParadaGuardada(parada) {
 
   if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
     const z = Math.min(typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : 18, 18);
-    window._activeMapCenter = { lat: latNum, lng: lngNum, zoom: z };
+    establecerVistaMapaPunto(latNum, lngNum, z);
     if (typeof leafletMap.flyTo === 'function') {
       leafletMap.flyTo([latNum, lngNum], z, { duration: 0.8 });
     } else {
@@ -3078,6 +3196,21 @@ function obtenerEtiquetaParada(feature) {
   if (typeof id === 'string' && id.trim()) return id.trim();
 
   return 'Parada';
+}
+
+function toggleGuardarLineaSheet(btn) {
+  const container = btn?.closest('.save-location-sheet');
+  const body = container?.querySelector('.save-location-body');
+  if (!body) return;
+
+  const isCollapsed = body.classList.contains('collapsed');
+  if (isCollapsed) {
+    body.classList.remove('collapsed');
+    btn.setAttribute('aria-expanded', 'true');
+  } else {
+    body.classList.add('collapsed');
+    btn.setAttribute('aria-expanded', 'false');
+  }
 }
 
 function toggleTransitTimeline(btn) {
@@ -4465,14 +4598,50 @@ function limpiarRecorrido() {
   recorridoActivo = null;
   paradasRecorrido = null;
   paradasRecorridoMarkers = null;
+  limpiarCargaDiferidaParadasRecorrido();
+  document.body.classList.remove('is-viewing-linea-map');
   if (recorridoLayer) recorridoLayer.clearLayers();
   if (typeof limpiarRutaGpsActiva === 'function') limpiarRutaGpsActiva();
+}
+
+// Dibuja los markers de las paradas de la línea recién que el usuario hace zoom lo
+// suficiente (misma referencia que zoomEsSuficiente()/ZOOM_PARADAS_EN_VISTA que ya usa
+// el resto del mapa): al mostrar una línea, el fitBounds suele alejar la vista para que
+// entre todo el recorrido, y crear de entrada un marker por cada parada ahí ya no aporta
+// (no se distinguen) y cuesta rendimiento en líneas con muchas paradas. La lista de
+// paradas del panel no se ve afectada: `seleccion` ya viene calculada de antes.
+function programarCargaDiferidaParadasRecorrido(seleccion) {
+  limpiarCargaDiferidaParadasRecorrido();
+  if (!leafletMap) return;
+
+  if (zoomEsSuficiente()) {
+    dibujarMarkersParadasRecorrido(seleccion);
+    return;
+  }
+
+  const layerParadas = asegurarParadasLayer();
+  layerParadas?.clearLayers();
+  paradasRecorridoMarkers = new Map();
+
+  _cargaDiferidaParadasHandler = () => {
+    if (!zoomEsSuficiente()) return;
+    limpiarCargaDiferidaParadasRecorrido();
+    dibujarMarkersParadasRecorrido(seleccion);
+  };
+  leafletMap.on('zoomend', _cargaDiferidaParadasHandler);
+}
+
+function limpiarCargaDiferidaParadasRecorrido() {
+  if (_cargaDiferidaParadasHandler && leafletMap) {
+    leafletMap.off('zoomend', _cargaDiferidaParadasHandler);
+  }
+  _cargaDiferidaParadasHandler = null;
 }
 
 function volverVistaGeneral() {
   limpiarRecorrido();
   if (typeof limpiarRutaGpsActiva === 'function') limpiarRutaGpsActiva();
-  if (seleccionParadaLayer) seleccionParadaLayer.clearLayers();
+  limpiarMarcadoresSeleccion();
   void actualizarParadasSegunVista();
 }
 
@@ -4495,16 +4664,15 @@ function featurePerteneceAAlgunaRelacion(feature, relIds) {
   return rels.some((r) => Number.isFinite(r?.rel) && relIds.has(r.rel));
 }
 
-async function dibujarParadasDelRecorrido(relIds, featureRuta = null, invertido = false) {
-  if (!leafletMap || typeof L === 'undefined') return;
-  const layerParadas = asegurarParadasLayer();
-  if (!layerParadas) return;
-  layerParadas.clearLayers();
-
-  paradasRecorridoMarkers = new Map();
-
+// Calcula y ordena las paradas de la línea (para la lista del panel, que tiene que estar
+// completa de una) sin tocar el mapa. dibujarMarkersParadasRecorrido() es la parte "cara"
+// (crear un marker de Leaflet por parada) que sí conviene diferir según el zoom.
+async function calcularParadasDelRecorrido(relIds, featureRuta = null, invertido = false) {
   const puntos = await cargarParadasPuntos();
-  if (!puntos) return;
+  if (!puntos) {
+    paradasRecorrido = [];
+    return paradasRecorrido;
+  }
 
   const seleccion = [];
   for (const p of puntos) {
@@ -4528,6 +4696,17 @@ async function dibujarParadasDelRecorrido(relIds, featureRuta = null, invertido 
   }
 
   paradasRecorrido = seleccion;
+  return seleccion;
+}
+
+function dibujarMarkersParadasRecorrido(seleccion) {
+  if (!leafletMap || typeof L === 'undefined') return;
+  const layerParadas = asegurarParadasLayer();
+  if (!layerParadas) return;
+  layerParadas.clearLayers();
+
+  paradasRecorridoMarkers = new Map();
+  if (!Array.isArray(seleccion) || seleccion.length === 0) return;
 
   const cColor = getColorForLinea(recorridoActivo?.ref);
   for (const item of seleccion) {
@@ -4538,6 +4717,12 @@ async function dibujarParadasDelRecorrido(relIds, featureRuta = null, invertido 
       paradasRecorridoMarkers.set(item.paradaId, marker);
     }
   }
+}
+
+// Mantenido por compatibilidad: calcula y dibuja de una (comportamiento previo).
+async function dibujarParadasDelRecorrido(relIds, featureRuta = null, invertido = false) {
+  const seleccion = await calcularParadasDelRecorrido(relIds, featureRuta, invertido);
+  dibujarMarkersParadasRecorrido(seleccion);
 }
 
 async function dibujarParadasDelRecorridoRecortadas(relIds, latLngsRuta, startIndex, endIndex) {
@@ -4838,7 +5023,7 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
   // Verificar si venimos desde una parada seleccionada
   const paradaOrigen = window._lineaDesdeParadaFeature || null;
 
-  if (seleccionParadaLayer) seleccionParadaLayer.clearLayers();
+  limpiarMarcadoresSeleccion();
 
   const data = await cargarParadasGeojson();
   if (!data) return;
@@ -4875,6 +5060,7 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
   const nombreVariante = featureElegido.properties?.name || (name || `Línea ${ref}`);
 
   recorridoActivo = { ref: String(ref), name: String(nombreVariante), feature: featureElegido, invertido: Boolean(invertido) };
+  document.body.classList.add('is-viewing-linea-map');
   const relIds = obtenerRelIdsDeRutas([featureElegido]);
 
   const layerRec = asegurarRecorridoLayer();
@@ -4886,16 +5072,22 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
   const lineColor = getColorForLinea(ref);
   dibujarFeatureRecorridoConFlechas(layerRec, featureElegido, lineColor, Boolean(invertido));
 
-  await dibujarParadasDelRecorrido(relIds, featureElegido, Boolean(invertido));
-
   try {
     const bounds = layerRec.getBounds?.();
     if (bounds && bounds.isValid && bounds.isValid()) {
       leafletMap.fitBounds(bounds, { padding: [20, 20] });
+      establecerVistaMapaBounds(bounds, { padding: [20, 20] });
     }
   } catch {
     // noop
   }
+
+  // La lista de paradas del panel necesita los datos ya (se calculan siempre), pero los
+  // markers en el mapa —la parte cara— se dibujan de una solo si ya se está lo bastante
+  // cerca; si el fitBounds alejó la vista para que entre todo el recorrido, se dibujan
+  // recién cuando el usuario haga zoom (ver programarCargaDiferidaParadasRecorrido).
+  const paradasCalculadas = await calcularParadasDelRecorrido(relIds, featureElegido, Boolean(invertido));
+  programarCargaDiferidaParadasRecorrido(paradasCalculadas);
 
   window._currentLineaRef = ref;
   window._currentLineaName = nombreVariante;
@@ -4915,11 +5107,7 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
         <button type="button" class="btn-route-switch-dir" onclick="cambiarSentidoRecorrido('${escapeHtml(String(ref))}', ${(indexElegido + 1) % totalVariantes}, false)">
           ⇄ Alternar sentido
         </button>
-      ` : `
-        <button type="button" class="btn-route-switch-dir" onclick="cambiarSentidoRecorrido('${escapeHtml(String(ref))}', ${indexElegido}, ${!invertido})">
-          ⇄ Invertir orientación
-        </button>
-      `}
+      ` : ''}
     </div>
   `;
 
@@ -4951,37 +5139,49 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
 
   const saveLineaHtml = `
     <div class="save-location-sheet" id="save-linea-container" style="${esLineaFav ? 'display: none;' : ''}">
-      <p class="save-location-title">¿Guardar esta línea?</p>
-      <p class="save-location-description">
-        Podrás acceder rápidamente al recorrido y paradas desde tu sección de <strong>Guardados</strong>.
-      </p>
-      <div class="save-location-field">
-        <label for="input-nombre-linea" class="save-location-label">
-          Nombre o referencia
-        </label>
-        <input
-          id="input-nombre-linea"
-          type="text"
-          class="save-location-input"
-          value="${escapeHtml(nombreVariante ? `Línea ${ref} - ${nombreVariante}` : `Línea ${ref}`)}"
-          placeholder="Ej: Mi colectivo, Línea ${ref}..."
-          maxlength="60"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('button[data-save-linea=\\'1\\']')?.click();}"
-        />
-      </div>
-      <div class="save-location-buttonarea">
-        <button
-          type="button"
-          class="btn-save-location-primary"
-          data-save-linea="1"
-          data-linea-ref="${escapeHtml(String(ref))}"
-          data-linea-name="${escapeHtml(String(nombreVariante))}"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button type="button" class="save-location-toggle" onclick="toggleGuardarLineaSheet(this)" aria-expanded="false" aria-controls="save-linea-body">
+        <span class="save-location-toggle-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
           </svg>
-          <span>Guardar en mis líneas</span>
-        </button>
+        </span>
+        <span class="save-location-toggle-text">¿Guardar esta línea?</span>
+        <svg class="save-location-toggle-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m6 9 6 6 6-6"></path>
+        </svg>
+      </button>
+      <div class="save-location-body collapsed" id="save-linea-body">
+        <p class="save-location-description">
+          Podrás acceder rápidamente al recorrido y paradas desde tu sección de <strong>Guardados</strong>.
+        </p>
+        <div class="save-location-field">
+          <label for="input-nombre-linea" class="save-location-label">
+            Nombre o referencia
+          </label>
+          <input
+            id="input-nombre-linea"
+            type="text"
+            class="save-location-input"
+            value="${escapeHtml(nombreVariante ? `Línea ${ref} - ${nombreVariante}` : `Línea ${ref}`)}"
+            placeholder="Ej: Mi colectivo, Línea ${ref}..."
+            maxlength="60"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('button[data-save-linea=\\'1\\']')?.click();}"
+          />
+        </div>
+        <div class="save-location-buttonarea">
+          <button
+            type="button"
+            class="btn-save-location-primary"
+            data-save-linea="1"
+            data-linea-ref="${escapeHtml(String(ref))}"
+            data-linea-name="${escapeHtml(String(nombreVariante))}"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
+            </svg>
+            <span>Guardar en mis líneas</span>
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -5016,7 +5216,7 @@ function mostrarLineasEnContenedorParadas(feature, opts = {}) {
       const lng = Number(coords[0]);
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
         const z = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
-        window._activeMapCenter = { lat, lng, zoom: z };
+        establecerVistaMapaPunto(lat, lng, z);
         if (!opts?.gpsWalk) {
           centrarMapaEnPunto(lat, lng, z);
         }
@@ -5792,12 +5992,14 @@ async function trazarRutaGpsAParadaCercana(paradaItem) {
     // Centrar y encuadrar mapa
     if (leafletMap) {
       if (distM > 35) {
-        leafletMap.fitBounds([[latO, lngO], [latD, lngD]], {
+        const gpsBounds = [[latO, lngO], [latD, lngD]];
+        const gpsFitOpts = {
           paddingTopLeft: [40, 40],
           paddingBottomRight: [40, 220],
           maxZoom: 18,
-          animate: true,
-        });
+        };
+        leafletMap.fitBounds(gpsBounds, { ...gpsFitOpts, animate: true });
+        establecerVistaMapaBounds(gpsBounds, gpsFitOpts);
       } else {
         centrarMapaEnPunto(latD, lngD, 18);
       }
@@ -5934,11 +6136,10 @@ function cargarLF(coords, zoomObjetivo = null) {
     }).setView([coords.lat, coords.lng], typeof zoomObjetivo === 'number' ? zoomObjetivo : ZOOM_CALLE);
 
     // Basemap estándar de OpenStreetMap: gratuito, sin API key y sin restricciones
-    // de referrer/uso que otros proveedores (CARTO, Wikimedia) sí exigen.
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // de referrer/uso que otros proveedores (CARTO, Stadia, Thunderforest) sí exigen.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abc',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution: '&copy; OpenStreetMap contributors',
     }).addTo(leafletMap);
 
     leafletMap.on('moveend', agendarActualizacionParadas);
@@ -6904,7 +7105,7 @@ async function centrarEnLugar(lat, lng, nombreLugar) {
   if (!leafletMap) return;
 
   cerrarModalBusqueda();
-  window._activeMapCenter = { lat: safeLat, lng: safeLng, zoom: ZOOM_CALLE };
+  establecerVistaMapaPunto(safeLat, safeLng, ZOOM_CALLE);
 
   limpiarRecorrido();
   ocultarMarcadorUsuario();
@@ -7256,11 +7457,15 @@ function establecerOrigenPlaneo(lat, lng, nombre) {
   const lngN = Number(lng);
   if (!Number.isFinite(latN) || !Number.isFinite(lngN)) return;
   _routePlanOrigin = { lat: latN, lng: lngN, nombre: String(nombre || 'Punto de partida').trim() || 'Punto de partida' };
+  mostrarMarcadorOrigen(latN, lngN, _routePlanOrigin.nombre);
   refrescarPlaneoTrasElegirOrigen();
 }
 
 function usarMiUbicacionComoOrigenPlaneo() {
   _routePlanOrigin = null;
+  // El GPS ya se muestra con su propio marcador ("tu ubicación"); si había un pin de
+  // origen elegido a mano, se saca para no dejarlo confundiendo sobre el mapa.
+  limpiarMarcadorOrigen();
   refrescarPlaneoTrasElegirOrigen();
 }
 
@@ -7275,6 +7480,7 @@ function establecerDestinoPlaneo(lat, lng, nombre, feature = null) {
     lng: lngN,
     stopId: feature ? obtenerIdParada(feature) : null,
   };
+  mostrarMarcadorDestino(latN, lngN, _routePlanTarget.nombre);
   void mostrarOpcionesRutaParaTarget(true);
 }
 
@@ -7282,22 +7488,48 @@ let _pickingModoEnMapa = 'origen'; // 'origen' | 'destino'
 
 function activarSeleccionEnMapa(modo) {
   if (!leafletMap) return;
+  // Importante: cerrar el sheet y fijar la vista ANTES de prender el flag de picking.
+  // cerrarBottomSheet() termina llamando a asegurarVistaMenuEnEscritorio(), que en
+  // escritorio (>=1024px) puede disparar cambiarVista('view-dashboard') si en ese
+  // instante no hay ningún menú activo — y cambiarVista() cancela cualquier picking en
+  // curso (_pickingOrigenEnMapa) como parte de una navegación real. Si el flag ya
+  // estuviera en true acá, se cancelaba solo apenas se activaba y tocar el mapa no
+  // hacía nada en escritorio.
+  if (typeof cerrarBottomSheet === 'function') cerrarBottomSheet(true);
+  cambiarVista('view-map');
+
   _pickingOrigenEnMapa = true;
   _pickingModoEnMapa = modo === 'destino' ? 'destino' : 'origen';
-  cambiarVista('view-map');
-  // Cerrar el bottom sheet (el selector) para dejar el mapa libre para tocar.
-  if (typeof cerrarBottomSheet === 'function') cerrarBottomSheet(true);
-  const mapEl = document.getElementById('map');
-  if (mapEl) mapEl.classList.add('picking-origen-cursor');
-  alert(_pickingModoEnMapa === 'destino'
-    ? 'Tocá un punto del mapa para usarlo como destino.'
-    : 'Tocá un punto del mapa para usarlo como punto de partida.');
+  mostrarBannerSeleccionEnMapa(_pickingModoEnMapa);
+  document.body.classList.add('is-picking-map-point');
+}
+
+function mostrarBannerSeleccionEnMapa(modo) {
+  const banner = document.getElementById('map-picking-banner');
+  const texto = document.getElementById('map-picking-banner-text');
+  if (texto) {
+    texto.textContent = modo === 'destino'
+      ? 'Tocá un punto del mapa para usarlo como destino'
+      : 'Tocá un punto del mapa para usarlo como punto de partida';
+  }
+  if (banner) banner.hidden = false;
 }
 
 function cancelarSeleccionOrigenEnMapa() {
   _pickingOrigenEnMapa = false;
-  const mapEl = document.getElementById('map');
-  if (mapEl) mapEl.classList.remove('picking-origen-cursor');
+  const banner = document.getElementById('map-picking-banner');
+  if (banner) banner.hidden = true;
+  document.body.classList.remove('is-picking-map-point');
+}
+
+function setupMapPickingBanner() {
+  const cancelBtn = document.getElementById('map-picking-banner-cancel');
+  if (cancelBtn) {
+    cancelBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      cancelarSeleccionOrigenEnMapa();
+    };
+  }
 }
 
 async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino, nombreDestino = '', allowedRefs = null, origenOverride = null) {
@@ -7484,6 +7716,7 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
     const recBounds = layerRec?.getBounds?.();
     if (recBounds && recBounds.isValid && recBounds.isValid()) bounds.extend(recBounds);
     leafletMap.fitBounds(bounds, { padding: [20, 20] });
+    establecerVistaMapaBounds(bounds, { padding: [20, 20] });
   } catch {
     // noop
   }
@@ -7888,6 +8121,7 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
     const recBounds = layerRec?.getBounds?.();
     if (recBounds && recBounds.isValid && recBounds.isValid()) bounds.extend(recBounds);
     leafletMap.fitBounds(bounds, { padding: [20, 20] });
+    establecerVistaMapaBounds(bounds, { padding: [20, 20] });
   } catch {
     // noop
   }

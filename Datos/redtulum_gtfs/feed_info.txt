@@ -1,0 +1,2 @@
+feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_version
+"Elaborado a partir de datos publicos de Moovit y RedTulum (no es un feed oficial)",https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-linesIndex-San_Juan-1-6206,es,20260911,2026.09.11-v1

@@ -1,0 +1,10 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang
+3760653,UTE - La Marina - La Positiva,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760653,America/Argentina/San_Juan,es
+3760655,Albardón,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760655,America/Argentina/San_Juan,es
+3760654,El Triunfo,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760654,America/Argentina/San_Juan,es
+3760657,Mayo,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760657,America/Argentina/San_Juan,es
+3760656,Alto de Sierra,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760656,America/Argentina/San_Juan,es
+3760659,Nuevo Sur,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760659,America/Argentina/San_Juan,es
+3760658,Libertador,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760658,America/Argentina/San_Juan,es
+3760661,Valle Del Sol,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760661,America/Argentina/San_Juan,es
+3760660,Vallecito,https://moovitapp.com/index/es-419/transporte_p%C3%BAblico-lines-San_Juan-6206-3760660,America/Argentina/San_Juan,es
