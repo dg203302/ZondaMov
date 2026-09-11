@@ -27,6 +27,8 @@ let _lastUrlsPorLineaError = ''; // Último error al cargar urls_por_linea.json 
 
 // ─── Planeo de ruta (opciones / trasbordos) ─────────────────────────────────
 let _routePlanTarget = null; // { feature, nombre, lat, lng, stopId }
+let _routePlanOrigin = null; // { lat, lng, nombre } | null (null = usar mi ubicación GPS)
+let _pickingOrigenEnMapa = false; // true mientras se espera que el usuario toque un punto del mapa
 let _indiceLineasPorStopId = null; // Map(stopId -> Set(refs)) (legacy; puede no coincidir con GeoJSON)
 let _indiceParadasPuntosPorId = null; // Map(stopId -> { lat, lng, feature })
 let _stopIdsSetPorLinea = null; // Map(ref -> Set(stopIds)) (legacy)
@@ -139,6 +141,8 @@ function montarAdsEnBottomSheetSiCorresponde() {
 const WALKING_SPEED_M_S = 1.35; // ~4.9 km/h
 const BUS_SPEED_M_S = 5.0; // ~18 km/h (estimación conservadora)
 const DESTINO_UMBRAL_CORTE_M = 90; // cortar tramo si pasa a <= 90m del destino
+const CAMINATA_EXCESIVA_UMBRAL_M = 500; // a partir de acá, caminar hasta el origen de la ruta se penaliza
+const CAMINATA_EXCESIVA_PENALIZACION = 1.8; // multiplicador de tiempo aplicado a esa caminata
 
 
 // Long press en mapa para guardar ubicación
@@ -1001,10 +1005,32 @@ function cerrarBottomSheet(force = false) {
   limpiarRecorrido();
   if (typeof limpiarRutaGpsActiva === 'function') limpiarRutaGpsActiva();
   volverVistaGeneral();
+  asegurarVistaMenuEnEscritorio();
 
   setTimeout(() => {
     void actualizarHudParadaMasCercana();
   }, 280);
+}
+
+// SOLO afecta el layout de escritorio (>=1024px, ver el @media al final de index.html).
+// Ahí el mapa se interactúa directamente (tocar una parada, el HUD, etc.) sin pasar
+// nunca por "Inicio"/"Guardados", así que al cerrar el panel de detalle la columna
+// izquierda podía quedar completamente vacía (ninguna vista de menú activa). En mobile
+// esto nunca pasa: cerrar el panel simplemente te deja viendo el mapa a pantalla completa,
+// que ahí sí es un estado válido.
+function asegurarVistaMenuEnEscritorio() {
+  if (!window.matchMedia('(min-width: 1024px)').matches) return;
+
+  const dash = document.getElementById('view-dashboard');
+  const guardados = document.getElementById('view-guardados');
+  const bs = document.getElementById('bottom-sheet');
+
+  const hayMenuActivo = Boolean(dash?.classList.contains('active') || guardados?.classList.contains('active'));
+  const hayDetalleAbierto = Boolean(bs?.classList.contains('active'));
+
+  if (!hayMenuActivo && !hayDetalleAbierto) {
+    cambiarVista('view-dashboard');
+  }
 }
 
 async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNombre = '') {
@@ -1116,8 +1142,11 @@ if (document.readyState === 'loading') {
     setupDashboardSearch();
     setupGuardadosSearch();
     setupPreferenciaHudParada();
+    setupTarjetaParadaCercanaDashboard();
     renderHistorialDashboard();
     renderSeccionGuardados();
+    renderAccesosRapidosDashboard();
+    void actualizarTarjetaParadaCercanaDashboard();
     iniciarCarruselHeroDashboard();
   });
 } else {
@@ -1129,8 +1158,11 @@ if (document.readyState === 'loading') {
   setupDashboardSearch();
   setupGuardadosSearch();
   setupPreferenciaHudParada();
+  setupTarjetaParadaCercanaDashboard();
   renderHistorialDashboard();
   renderSeccionGuardados();
+  renderAccesosRapidosDashboard();
+  void actualizarTarjetaParadaCercanaDashboard();
   iniciarCarruselHeroDashboard();
 }
 
@@ -1170,7 +1202,13 @@ async function Centrar(esRecentradoManual = false) {
 }
 
 async function CentrarYOferécerGuardar() {
-  await Centrar(true);
+  const btns = document.querySelectorAll('.btn-centrar-trigger, #btn-centrar, #btn-centrar-nav, #btn-centrar-container');
+  btns.forEach((btn) => btn.classList.add('is-loading'));
+  try {
+    await Centrar(true);
+  } finally {
+    btns.forEach((btn) => btn.classList.remove('is-loading'));
+  }
 }
 
 function abrirGuardadoDesdeMarcadorUbicacion() {
@@ -1596,8 +1634,9 @@ function aplicarTransparencia() {
 }
 
 function cambiarVista(vistaId) {
-  if (vistaId !== 'view-map' && typeof cerrarBottomSheet === 'function') {
-    cerrarBottomSheet(true);
+  if (vistaId !== 'view-map') {
+    if (typeof cerrarBottomSheet === 'function') cerrarBottomSheet(true);
+    if (_pickingOrigenEnMapa) cancelarSeleccionOrigenEnMapa();
   }
 
   const vistas = document.querySelectorAll('.app-view');
@@ -1643,7 +1682,11 @@ function cambiarVista(vistaId) {
     if (vistaId === 'view-guardados') {
       renderSeccionGuardados();
     } else if (vistaId === 'view-dashboard') {
+      // Volver al dashboard cierra la sesión de planeo: la próxima ruta arranca de nuevo desde el GPS.
+      _routePlanOrigin = null;
       renderHistorialDashboard();
+      renderAccesosRapidosDashboard();
+      void actualizarTarjetaParadaCercanaDashboard();
     }
   }
 }
@@ -1668,11 +1711,13 @@ function setupNavegacion() {
 let dashSearchTimeout = null;
 let dashSearchAbort = null;
 let dashSearchSeq = 0;
+let _dashSearchFilter = 'todo'; // 'todo' | 'linea' | 'parada' | 'calle'
 
 function setupDashboardSearch() {
   const input = document.getElementById('dash-search-input');
   const clearBtn = document.getElementById('dash-search-clear');
   const resultsDiv = document.getElementById('dash-search-results');
+  const filtersDiv = document.getElementById('dash-search-filters');
   const clearHistoryBtn = document.getElementById('btn-clear-recent-searches');
 
   clearHistoryBtn?.addEventListener('click', () => {
@@ -1687,6 +1732,35 @@ function setupDashboardSearch() {
       resultsDiv.style.display = 'none';
       resultsDiv.innerHTML = '';
     }
+  });
+
+  const placeholdersPorFiltro = {
+    todo: 'Buscar líneas, paradas o calles...',
+    linea: 'Buscar una línea por número o nombre...',
+    calle: 'Buscar una calle o dirección...',
+    parada: 'Buscar una parada por nombre...',
+  };
+
+  filtersDiv?.querySelectorAll('button[data-search-filter]').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const filtro = chip.dataset.searchFilter || 'todo';
+      // Tocar el filtro ya activo lo desactiva y vuelve a buscar en todas las categorías.
+      _dashSearchFilter = filtro === _dashSearchFilter ? 'todo' : filtro;
+
+      filtersDiv.querySelectorAll('button[data-search-filter]').forEach((c) => {
+        const activo = c.dataset.searchFilter === _dashSearchFilter;
+        c.classList.toggle('active', activo);
+        c.setAttribute('aria-pressed', activo ? 'true' : 'false');
+      });
+
+      if (input) input.placeholder = placeholdersPorFiltro[_dashSearchFilter] || placeholdersPorFiltro.todo;
+
+      const val = input?.value.trim() || '';
+      if (val.length >= 2) {
+        if (dashSearchTimeout) clearTimeout(dashSearchTimeout);
+        ejecutarBusquedaDashboard(val);
+      }
+    });
   });
 
   if (!input) return;
@@ -1713,15 +1787,118 @@ function setupDashboardSearch() {
       return;
     }
 
-    if (resultsDiv) {
-      resultsDiv.style.display = 'flex';
-      resultsDiv.innerHTML = '<p class="search-results-loading">Buscando líneas y calles...</p>';
-    }
-
+    // Búsqueda local (líneas/paradas) sin debounce: es instantánea porque no pega a la red.
     dashSearchTimeout = setTimeout(() => {
       ejecutarBusquedaDashboard(val);
-    }, 250);
+    }, 120);
   });
+}
+
+function crearBotonResultadoBusquedaDashboard(item, resultsDiv) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'search-unified-item';
+
+  const cerrarYLimpiar = () => {
+    resultsDiv.style.display = 'none';
+    const inp = document.getElementById('dash-search-input');
+    if (inp) inp.value = '';
+    const clr = document.getElementById('dash-search-clear');
+    if (clr) clr.style.display = 'none';
+  };
+
+  if (item.tipoResultado === 'linea') {
+    const ref = String(item.ref || '').trim();
+    const name = String(item.name || '').trim();
+    const c = getColorForLinea(ref);
+    const tc = getTextColorForBg(c);
+
+    btn.innerHTML = `
+      <div class="search-unified-item-main">
+        <span class="search-unified-item-title">${escapeHtml(name || `Línea ${ref}`)}</span>
+        <span class="search-unified-item-sub">Línea RedTulum</span>
+      </div>
+      <span class="search-badge-line" style="background-color: ${c}; color: ${tc};">${escapeHtml(ref)}</span>
+    `;
+
+    btn.addEventListener('click', () => {
+      agregarAHistorialBusqueda({ tipo: 'linea', ref, name });
+      cerrarYLimpiar();
+      cambiarVista('view-map');
+      void mostrarRecorridoDeLinea(ref, name);
+    });
+  } else if (item.tipoResultado === 'parada') {
+    const nombre = String(item.nombre || 'Parada').trim();
+    const lat = Number(item.lat);
+    const lng = Number(item.lng);
+    const paradaId = item.paradaId || '';
+
+    btn.innerHTML = `
+      <div class="search-unified-item-main">
+        <span class="search-unified-item-title">${escapeHtml(nombre)}</span>
+        <span class="search-unified-item-sub">Parada de colectivos</span>
+      </div>
+      <span style="color: #38bdf8; font-size: 14px;">🚏</span>
+    `;
+
+    btn.addEventListener('click', () => {
+      agregarAHistorialBusqueda({ tipo: 'parada', nombre, lat, lng });
+      cerrarYLimpiar();
+      void centrarEnParadaGuardada({ id: paradaId, nombre, lat, lng });
+    });
+  } else {
+    const nombre = String(item.nombre || item.display_name || 'Lugar').trim();
+    const lat = Number(item.lat);
+    const lng = Number(item.lng || item.lon);
+
+    btn.innerHTML = `
+      <div class="search-unified-item-main">
+        <span class="search-unified-item-title">${escapeHtml(nombre)}</span>
+        <span class="search-unified-item-sub">Calle / Ubicación</span>
+      </div>
+      <span style="color: #71717a; font-size: 14px;">📍</span>
+    `;
+
+    btn.addEventListener('click', () => {
+      agregarAHistorialBusqueda({ tipo: 'calle', nombre, lat, lng });
+      cerrarYLimpiar();
+      cambiarVista('view-map');
+      centrarEnLugar(lat, lng, nombre);
+    });
+  }
+
+  return btn;
+}
+
+function ordenarResultadosBusquedaDashboard({ lineas = [], paradas = [], calles = [] }, query) {
+  const items = [
+    ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
+    ...paradas.map((p) => ({ ...p, tipoResultado: 'parada' })),
+    ...calles,
+  ];
+  if (pareceBusquedaLinea(query)) {
+    items.sort((a, b) => (a.tipoResultado === 'linea' ? -1 : 0) - (b.tipoResultado === 'linea' ? -1 : 0));
+  }
+  return items;
+}
+
+function renderResultadosBusquedaDashboard(items, resultsDiv, { pendienteCalles = false } = {}) {
+  if (!items.length && !pendienteCalles) {
+    resultsDiv.innerHTML = '<p class="search-results-hint">No se encontraron resultados en San Juan</p>';
+    return;
+  }
+
+  resultsDiv.innerHTML = '';
+  for (const item of items) {
+    resultsDiv.appendChild(crearBotonResultadoBusquedaDashboard(item, resultsDiv));
+  }
+
+  if (pendienteCalles) {
+    const loading = document.createElement('p');
+    loading.className = 'search-results-loading';
+    loading.textContent = 'Buscando lugares y calles...';
+    resultsDiv.appendChild(loading);
+  }
 }
 
 async function ejecutarBusquedaDashboard(query) {
@@ -1733,91 +1910,48 @@ async function ejecutarBusquedaDashboard(query) {
   }
   dashSearchAbort = new AbortController();
   const mySeq = ++dashSearchSeq;
+  const filtro = _dashSearchFilter;
 
+  const wantLineas = filtro === 'todo' || filtro === 'linea';
+  const wantParadas = filtro === 'todo' || filtro === 'parada';
+  const wantCalles = filtro === 'todo' || filtro === 'calle';
+
+  // Paso 1: resultados locales (líneas/paradas ya están cacheadas en memoria, sin red).
+  let lineas = [];
+  let paradas = [];
   try {
-    const [lineas, calles] = await Promise.all([
-      buscarLineasLocales(query),
-      buscarCallesEnSanJuan(query, dashSearchAbort.signal),
+    [lineas, paradas] = await Promise.all([
+      wantLineas ? buscarLineasLocales(query) : Promise.resolve([]),
+      wantParadas ? buscarParadasLocales(query) : Promise.resolve([]),
     ]);
+  } catch {
+    // noop
+  }
 
+  if (mySeq !== dashSearchSeq) return;
+
+  renderResultadosBusquedaDashboard(
+    ordenarResultadosBusquedaDashboard({ lineas, paradas }, query),
+    resultsDiv,
+    { pendienteCalles: wantCalles },
+  );
+
+  if (!wantCalles) return;
+
+  // Paso 2: calles/lugares vía Nominatim (red). Se agregan cuando llegan, sin bloquear lo anterior.
+  try {
+    const calles = await buscarCallesEnSanJuan(query, dashSearchAbort.signal);
     if (mySeq !== dashSearchSeq) return;
-
-    const resultados = pareceBusquedaLinea(query)
-      ? [
-        ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
-        ...calles,
-      ]
-      : [
-        ...calles,
-        ...lineas.map((l) => ({ ...l, tipoResultado: 'linea' })),
-      ];
-
-    if (!resultados.length) {
-      resultsDiv.innerHTML = '<p class="search-results-hint">No se encontraron resultados en San Juan</p>';
-      return;
-    }
-
-    resultsDiv.innerHTML = '';
-    for (const item of resultados) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'search-unified-item';
-
-      if (item.tipoResultado === 'linea') {
-        const ref = String(item.ref || '').trim();
-        const name = String(item.name || '').trim();
-        const c = getColorForLinea(ref);
-        const tc = getTextColorForBg(c);
-
-        btn.innerHTML = `
-          <div class="search-unified-item-main">
-            <span class="search-unified-item-title">${name || `Línea ${ref}`}</span>
-            <span class="search-unified-item-sub">Línea RedTulum</span>
-          </div>
-          <span class="search-badge-line" style="background-color: ${c}; color: ${tc};">${ref}</span>
-        `;
-
-        btn.addEventListener('click', () => {
-          agregarAHistorialBusqueda({ tipo: 'linea', ref, name });
-          resultsDiv.style.display = 'none';
-          const inp = document.getElementById('dash-search-input');
-          if (inp) inp.value = '';
-          const clr = document.getElementById('dash-search-clear');
-          if (clr) clr.style.display = 'none';
-          cambiarVista('view-map');
-          void mostrarRecorridoDeLinea(ref, name);
-        });
-      } else {
-        const nombre = String(item.nombre || item.display_name || 'Lugar').trim();
-        const lat = Number(item.lat);
-        const lng = Number(item.lng || item.lon);
-
-        btn.innerHTML = `
-          <div class="search-unified-item-main">
-            <span class="search-unified-item-title">${nombre}</span>
-            <span class="search-unified-item-sub">Calle / Ubicación</span>
-          </div>
-          <span style="color: #71717a; font-size: 14px;">📍</span>
-        `;
-
-        btn.addEventListener('click', () => {
-          agregarAHistorialBusqueda({ tipo: 'calle', nombre, lat, lng });
-          resultsDiv.style.display = 'none';
-          const inp = document.getElementById('dash-search-input');
-          if (inp) inp.value = '';
-          const clr = document.getElementById('dash-search-clear');
-          if (clr) clr.style.display = 'none';
-          cambiarVista('view-map');
-          centrarEnLugar(lat, lng, nombre);
-        });
-      }
-
-      resultsDiv.appendChild(btn);
-    }
+    renderResultadosBusquedaDashboard(
+      ordenarResultadosBusquedaDashboard({ lineas, paradas, calles }, query),
+      resultsDiv,
+    );
   } catch (error) {
     if (error && error.name === 'AbortError') return;
     console.error('Error en búsqueda dashboard:', error);
-    resultsDiv.innerHTML = '<p class="search-results-error">Error al buscar. Intenta de nuevo.</p>';
+    if (!lineas.length && !paradas.length) {
+      resultsDiv.innerHTML = '<p class="search-results-error">Error al buscar. Intenta de nuevo.</p>';
+    }
   }
 }
 
@@ -2270,6 +2404,7 @@ function obtenerLineasFavs() {
 function guardarLineasFavs(arr) {
   guardarJsonLocalStorage(STORAGE_LINEAS_FAVS_KEY, arr);
   if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
+  if (typeof renderAccesosRapidosDashboard === 'function') renderAccesosRapidosDashboard();
 }
 
 function obtenerParadasFavs() {
@@ -2299,6 +2434,7 @@ function obtenerParadasFavs() {
 function guardarParadasFavs(arr) {
   guardarJsonLocalStorage(STORAGE_PARADAS_FAVS_KEY, arr);
   if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
+  if (typeof renderAccesosRapidosDashboard === 'function') renderAccesosRapidosDashboard();
 }
 
 function renderLineasFavs() {
@@ -2375,6 +2511,51 @@ if (bsContent) {
       const pref = (btnPref.dataset.routePref || '').toLowerCase();
       const permitirTrasbordo = pref === 'transfer' || pref === 'trasbordo' || pref === 'si' || pref === '1';
       void mostrarOpcionesRutaParaTarget(permitirTrasbordo);
+      return;
+    }
+
+    const btnCambiarOrigen = target.closest('button[data-route-change-origin="1"]');
+    if (btnCambiarOrigen instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      mostrarSelectorUbicacionRuta('origen');
+      return;
+    }
+
+    const btnTripPick = target.closest('button[data-trip-pick]');
+    if (btnTripPick instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const modo = btnTripPick.dataset.tripPick === 'destino' ? 'destino' : 'origen';
+      mostrarSelectorUbicacionRuta(modo);
+      return;
+    }
+
+    const btnOrigenGps = target.closest('button[data-origin-pick="gps"]');
+    if (btnOrigenGps instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      usarMiUbicacionComoOrigenPlaneo();
+      return;
+    }
+
+    const btnOrigenMapa = target.closest('button[data-origin-pick="mapa"]');
+    if (btnOrigenMapa instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      activarSeleccionEnMapa(_ubicacionPickerModo || 'origen');
+      return;
+    }
+
+    const btnOrigenResultado = target.closest('button[data-origin-lat][data-origin-lng]');
+    if (btnOrigenResultado instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      const lat = Number(btnOrigenResultado.dataset.originLat);
+      const lng = Number(btnOrigenResultado.dataset.originLng);
+      const nombre = btnOrigenResultado.dataset.originNombre || 'Punto de partida';
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        if (_ubicacionPickerModo === 'destino') {
+          establecerDestinoPlaneo(lat, lng, nombre);
+        } else {
+          establecerOrigenPlaneo(lat, lng, nombre);
+        }
+      }
       return;
     }
 
@@ -4239,6 +4420,7 @@ function renderEstadoCargaArribos(lineaRef, lineaNombre) {
 }
 
 function obtenerLineasDetalleDesdeRelations(feature) {
+  if (!feature) return [];
   const rels = feature.properties?.['@relations'];
   if (!Array.isArray(rels)) return [];
 
@@ -4334,8 +4516,7 @@ async function dibujarParadasDelRecorrido(relIds, featureRuta = null, invertido 
 
   // Ordenar paradas secuencialmente siguiendo la geometría de la ruta
   if (featureRuta) {
-    const segs = extraerSegmentosLineasDeFeature(featureRuta);
-    let latLngsRuta = segs.flat();
+    let latLngsRuta = extraerLatLngsDeGeometria(featureRuta.geometry || featureRuta);
     if (invertido) latLngsRuta = [...latLngsRuta].reverse();
     if (latLngsRuta.length >= 2) {
       seleccion.sort((a, b) => {
@@ -4635,11 +4816,17 @@ function dibujarTrazoRecorridoConFlechas(layer, latLngs, colorLinea) {
 
 function dibujarFeatureRecorridoConFlechas(layer, feature, colorLinea, invertido = false) {
   if (!layer || !feature) return;
-  const segmentos = extraerSegmentosLineasDeFeature(feature);
-  for (const seg of segmentos) {
-    const finalSeg = invertido ? [...seg].reverse() : seg;
-    dibujarTrazoRecorridoConFlechas(layer, finalSeg, colorLinea);
-  }
+
+  // Importante: no dibujar cada segmento crudo del MultiLineString por separado.
+  // OSM/Overpass no garantiza que todos los segmentos de una relación de ruta estén
+  // orientados en el mismo sentido, así que dibujarlos "tal como vienen" produce
+  // flechas de dirección que apuntan al revés en algunos tramos. `extraerLatLngsDeGeometria`
+  // ya cose los segmentos en un único camino continuo y coherente (misma lógica que usa
+  // el algoritmo de planeo de rutas), así que reutilizamos eso acá también.
+  let latLngs = extraerLatLngsDeGeometria(feature.geometry || feature);
+  if (!Array.isArray(latLngs) || latLngs.length < 2) return;
+  if (invertido) latLngs = [...latLngs].reverse();
+  dibujarTrazoRecorridoConFlechas(layer, latLngs, colorLinea);
 }
 
 async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, invertido = false) {
@@ -5328,6 +5515,176 @@ async function actualizarHudParadaMasCercana() {
   hud.classList.add('visible');
 }
 
+let _dashNearestStopParada = null;
+
+// Tarjeta "Tu parada más cercana" en el Dashboard: ahorra tener que entrar al mapa
+// para saber a qué parada ir y qué líneas pasan por ahí.
+async function actualizarTarjetaParadaCercanaDashboard() {
+  // La tarjeta (contenedor) siempre queda visible porque también aloja el toggle de
+  // preferencia; solo se oculta/muestra el bloque de datos de la parada en sí.
+  const body = document.getElementById('dashboard-nearest-stop-body');
+  if (!body) return;
+
+  let refLat = null;
+  let refLng = null;
+
+  if (ubicacion && Number.isFinite(ubicacion.lat) && Number.isFinite(ubicacion.lng)) {
+    refLat = Number(ubicacion.lat);
+    refLng = Number(ubicacion.lng);
+  } else {
+    try {
+      const position = await obtenerPosicionActual();
+      refLat = position.coords.latitude;
+      refLng = position.coords.longitude;
+      ubicacion = { lat: refLat, lng: refLng };
+    } catch {
+      body.style.display = 'none';
+      return;
+    }
+  }
+
+  const puntos = await cargarParadasPuntos();
+  if (!Array.isArray(puntos) || puntos.length === 0) {
+    body.style.display = 'none';
+    return;
+  }
+
+  let mejor = null;
+  let minDist = Infinity;
+  for (const p of puntos) {
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+    const d = calcularDistancia(refLat, refLng, p.lat, p.lng);
+    if (d < minDist) {
+      minDist = d;
+      mejor = p;
+    }
+  }
+
+  if (!mejor || !mejor.feature || minDist > 3000) {
+    body.style.display = 'none';
+    return;
+  }
+
+  _dashNearestStopParada = mejor;
+
+  const nombreParada = typeof obtenerNombreParadaCompleto === 'function'
+    ? obtenerNombreParadaCompleto(mejor.feature)
+    : (mejor.feature.properties?.name || 'Parada cercana');
+  const distTexto = minDist < 1000 ? `${Math.round(minDist)} m` : `${(minDist / 1000).toFixed(1)} km`;
+
+  const nameEl = document.getElementById('dash-nearest-stop-name');
+  const distEl = document.getElementById('dash-nearest-stop-dist');
+  const linesEl = document.getElementById('dash-nearest-stop-lines');
+
+  if (nameEl) nameEl.textContent = nombreParada;
+  if (distEl) distEl.textContent = `A ${distTexto} de tu ubicación`;
+
+  if (linesEl) {
+    const lineas = obtenerLineasDetalleDesdeRelations(mejor.feature);
+    if (lineas.length === 0) {
+      linesEl.innerHTML = '<span style="font-size: 12px; color: #71717a; font-weight: 500;">Sin líneas registradas</span>';
+    } else {
+      const maxShow = 6;
+      const shown = lineas.slice(0, maxShow);
+      const remaining = lineas.length - maxShow;
+
+      const pillsHtml = shown
+        .map((l) => {
+          const rawRef = String(l.ref || l.name || '').trim();
+          const cleanRef = formatBadgeLinea(rawRef);
+          const c = getColorForLinea(rawRef);
+          const tc = getTextColorForBg(c);
+          return `<span class="hud-line-pill" style="background-color: ${c}; color: ${tc};">${escapeHtml(cleanRef)}</span>`;
+        })
+        .join('');
+
+      const moreHtml = remaining > 0 ? `<span class="hud-line-more">+${remaining}</span>` : '';
+      linesEl.innerHTML = pillsHtml + moreHtml;
+    }
+  }
+
+  body.style.display = '';
+}
+
+function setupTarjetaParadaCercanaDashboard() {
+  const btn = document.getElementById('dash-nearest-stop-btn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (!_dashNearestStopParada || !_dashNearestStopParada.feature) return;
+    cambiarVista('view-map');
+    mostrarLineasEnContenedorParadas(_dashNearestStopParada.feature);
+  });
+}
+
+// Accesos rápidos a favoritos (lugares/líneas/paradas guardados) debajo del buscador.
+function renderAccesosRapidosDashboard() {
+  const section = document.getElementById('quick-favs-section');
+  const row = document.getElementById('quick-favs-row');
+  if (!section || !row) return;
+
+  const lugares = obtenerLugaresFavs();
+  const lineas = obtenerLineasFavs();
+  const paradas = obtenerParadasFavs();
+
+  const items = [
+    ...lugares.map((l) => ({ tipo: 'lugar', data: l })),
+    ...lineas.map((l) => ({ tipo: 'linea', data: l })),
+    ...paradas.map((p) => ({ tipo: 'parada', data: p })),
+  ].slice(0, 3);
+
+  if (items.length === 0) {
+    section.style.display = 'none';
+    row.innerHTML = '';
+    return;
+  }
+
+  row.innerHTML = '';
+  for (const item of items) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'quick-fav-chip';
+
+    if (item.tipo === 'linea') {
+      const ref = String(item.data.ref || item.data.linea || '').trim();
+      const name = String(item.data.name || item.data.nombre || `Línea ${ref}`).trim();
+      const c = getColorForLinea(ref);
+      const tc = getTextColorForBg(c);
+      chip.innerHTML = `
+        <span class="quick-fav-chip-icon" style="background-color: ${c}; color: ${tc};">${escapeHtml(formatBadgeLinea(ref))}</span>
+        <span class="quick-fav-chip-label">${escapeHtml(name)}</span>
+      `;
+      chip.addEventListener('click', () => {
+        cambiarVista('view-map');
+        void mostrarRecorridoDeLinea(ref, name);
+      });
+    } else if (item.tipo === 'parada') {
+      const nombre = String(item.data.nombre || item.data.label || 'Parada').trim();
+      chip.innerHTML = `
+        <span class="quick-fav-chip-icon">🚏</span>
+        <span class="quick-fav-chip-label">${escapeHtml(nombre)}</span>
+      `;
+      chip.addEventListener('click', () => {
+        void centrarEnParadaGuardada(item.data);
+      });
+    } else {
+      const nombre = String(item.data.nombre || 'Lugar').trim();
+      const lat = Number(item.data.lat);
+      const lng = Number(item.data.lng);
+      chip.innerHTML = `
+        <span class="quick-fav-chip-icon">📌</span>
+        <span class="quick-fav-chip-label">${escapeHtml(nombre)}</span>
+      `;
+      chip.addEventListener('click', () => {
+        centrarEnLugar(lat, lng, nombre);
+      });
+    }
+
+    row.appendChild(chip);
+  }
+
+  section.style.display = '';
+}
+
 async function trazarRutaGpsAParadaCercana(paradaItem) {
   if (!paradaItem || !paradaItem.feature) return;
   const latD = Number(paradaItem.lat);
@@ -5460,6 +5817,90 @@ async function trazarRutaGpsAParadaCercana(paradaItem) {
   }
 }
 
+// Dibuja la caminata desde el origen hasta la primera parada de una ruta ya planeada
+// (directa o con trasbordo) y muestra la distancia/tiempo en la barra superior.
+// No abre ningún panel: el bottom sheet de la ruta planeada ya está a cargo de eso.
+async function trazarCaminataHaciaPrimeraParadaPlaneada(origenLat, origenLng, paradaItem) {
+  if (!paradaItem || !paradaItem.feature) return;
+  const latO = Number(origenLat);
+  const lngO = Number(origenLng);
+  const latD = Number(paradaItem.lat);
+  const lngD = Number(paradaItem.lng);
+  if (!Number.isFinite(latO) || !Number.isFinite(lngO) || !Number.isFinite(latD) || !Number.isFinite(lngD)) return;
+
+  const layer = asegurarIndicacionGpsLayer();
+  if (layer) layer.clearLayers();
+
+  const distM = calcularDistancia(latO, lngO, latD, lngD);
+  const minPie = Math.max(1, Math.round(distM / 75));
+  const distTexto = distM < 1000 ? `${Math.round(distM)} m` : `${(distM / 1000).toFixed(1)} km`;
+
+  let coordsRuta = [[latO, lngO], [latD, lngD]];
+
+  try {
+    const controller = new AbortController();
+    const toId = setTimeout(() => controller.abort(), 2500);
+    const osrmUrl = `https://router.project-osrm.org/route/v1/walking/${lngO},${latO};${lngD},${latD}?overview=full&geometries=geojson`;
+    const resp = await fetch(osrmUrl, { signal: controller.signal });
+    clearTimeout(toId);
+    if (resp.ok) {
+      const data = await resp.json();
+      const geom = data?.routes?.[0]?.geometry?.coordinates;
+      if (Array.isArray(geom) && geom.length >= 2) {
+        coordsRuta = geom.map((pt) => [pt[1], pt[0]]);
+      }
+    }
+  } catch {
+    // Fallback a línea directa
+  }
+
+  // Si mientras se consultaba OSRM se cerró la ruta planeada, no dibujar nada.
+  if (!recorridoActivo || !recorridoActivo.planned) return;
+
+  if (layer && typeof L !== 'undefined') {
+    L.polyline(coordsRuta, {
+      color: '#e6351d',
+      weight: 8,
+      opacity: 0.4,
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(layer);
+
+    L.polyline(coordsRuta, {
+      color: '#ff735c',
+      weight: 4,
+      opacity: 0.95,
+      dashArray: '8, 8',
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(layer);
+
+    const stopIcon = L.divIcon({
+      className: 'gps-stop-pin-icon',
+      html: `
+        <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 71, 46, 0.35); animation: hudDotPulse 1.5s infinite ease-in-out;"></div>
+          <div style="width: 20px; height: 20px; border-radius: 50%; background: #ff472e; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #ffffff;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+        </div>
+      `,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+    L.marker([latD, lngD], { icon: stopIcon }).addTo(layer);
+  }
+
+  const nombreParada = typeof obtenerNombreParadaCompleto === 'function'
+    ? obtenerNombreParadaCompleto(paradaItem.feature)
+    : (paradaItem.feature?.properties?.name || obtenerNombreParadaBase(paradaItem.feature) || 'la primera parada');
+
+  mostrarBarraRutaGpsActiva(distTexto, minPie, nombreParada);
+}
+
 function setupNearestStopHud() {
   const hud = document.getElementById('map-nearest-stop-hud');
   if (!hud) return;
@@ -5492,13 +5933,28 @@ function cargarLF(coords, zoomObjetivo = null) {
       maxZoom: 19,
     }).setView([coords.lat, coords.lng], typeof zoomObjetivo === 'number' ? zoomObjetivo : ZOOM_CALLE);
 
+    // Basemap estándar de OpenStreetMap: gratuito, sin API key y sin restricciones
+    // de referrer/uso que otros proveedores (CARTO, Wikimedia) sí exigen.
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
+      subdomains: 'abc',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(leafletMap);
 
     leafletMap.on('moveend', agendarActualizacionParadas);
     leafletMap.on('zoomend', agendarActualizacionParadas);
+    leafletMap.on('click', (e) => {
+      if (!_pickingOrigenEnMapa) return;
+      const { lat, lng } = e.latlng || {};
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const modo = _pickingModoEnMapa;
+      cancelarSeleccionOrigenEnMapa();
+      if (modo === 'destino') {
+        establecerDestinoPlaneo(lat, lng, 'Punto elegido en el mapa');
+      } else {
+        establecerOrigenPlaneo(lat, lng, 'Punto elegido en el mapa');
+      }
+    });
 
     setupLongPressGuardarUbicacionEnMapa();
   }
@@ -5644,6 +6100,7 @@ function obtenerLugaresFavs() {
 function guardarLugaresFavs(arr) {
   guardarJsonLocalStorage(STORAGE_LUGARES_FAVS_KEY, arr);
   if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
+  if (typeof renderAccesosRapidosDashboard === 'function') renderAccesosRapidosDashboard();
 }
 
 function esMismoLugarGuardado(a, b) {
@@ -5846,6 +6303,7 @@ const SAN_JUAN_BOUNDS = {
 
 const SEARCH_LINEAS_MAX_RESULTS = 8;
 const SEARCH_CALLES_MAX_RESULTS = 8;
+const SEARCH_PARADAS_MAX_RESULTS = 8;
 const SEARCH_NOMINATIM_RAW_LIMIT = 24;
 
 function normalizarTextoBusqueda(texto) {
@@ -5923,7 +6381,14 @@ function deduplicarResultadosNominatim(arr) {
   return out;
 }
 
+const _nominatimCache = new Map(); // clave: "bounded:query" -> resultados crudos
+const NOMINATIM_CACHE_MAX_ENTRIES = 60;
+
 async function fetchNominatimSanJuan(query, signal, bounded = true) {
+  const cacheKey = `${bounded ? '1' : '0'}:${query}`;
+  const cached = _nominatimCache.get(cacheKey);
+  if (cached) return cached;
+
   const url = new URL('https://nominatim.openstreetmap.org/search');
   url.searchParams.set('q', `${query}, San Juan, Argentina`);
   url.searchParams.set('format', 'jsonv2');
@@ -5944,7 +6409,16 @@ async function fetchNominatimSanJuan(query, signal, bounded = true) {
   });
   if (!response.ok) throw new Error('Error en búsqueda');
   const raw = await response.json();
-  return Array.isArray(raw) ? raw : [];
+  const resultados = Array.isArray(raw) ? raw : [];
+
+  // Cachear para que retipear o borrar/reescribir la misma búsqueda no vuelva a pegarle a la red.
+  if (_nominatimCache.size >= NOMINATIM_CACHE_MAX_ENTRIES) {
+    const oldestKey = _nominatimCache.keys().next().value;
+    _nominatimCache.delete(oldestKey);
+  }
+  _nominatimCache.set(cacheKey, resultados);
+
+  return resultados;
 }
 
 function pareceBusquedaLinea(query) {
@@ -6050,6 +6524,51 @@ async function buscarLineasLocales(query) {
   return candidatos.slice(0, SEARCH_LINEAS_MAX_RESULTS);
 }
 
+let _paradasBusquedaCache = null;
+
+async function obtenerParadasParaBusqueda() {
+  if (_paradasBusquedaCache) return _paradasBusquedaCache;
+
+  const puntos = await cargarParadasPuntos();
+  if (!Array.isArray(puntos)) {
+    _paradasBusquedaCache = [];
+    return _paradasBusquedaCache;
+  }
+
+  const arr = [];
+  for (const p of puntos) {
+    if (!p || !p.feature) continue;
+    const props = p.feature.properties || {};
+    const name = typeof props.name === 'string' ? props.name.trim() : '';
+    const street = typeof props['addr:street'] === 'string' ? props['addr:street'].trim() : '';
+    const nombre = name || street;
+    if (!nombre) continue; // Evita listar paradas sin nombre real (ruido en la búsqueda)
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+    arr.push({ nombre, lat: p.lat, lng: p.lng, paradaId: obtenerIdParada(p.feature), feature: p.feature });
+  }
+
+  _paradasBusquedaCache = arr;
+  return _paradasBusquedaCache;
+}
+
+async function buscarParadasLocales(query) {
+  const queryNorm = normalizarTextoBusqueda(query);
+  if (!queryNorm) return [];
+  const tokens = tokenizarBusqueda(queryNorm);
+
+  const paradas = await obtenerParadasParaBusqueda();
+  if (!Array.isArray(paradas) || paradas.length === 0) return [];
+
+  const candidatos = [];
+  for (const p of paradas) {
+    const score = scoreTextoContraQuery(p.nombre, queryNorm, tokens);
+    if (score > 0) candidatos.push({ ...p, score });
+  }
+
+  candidatos.sort((a, b) => b.score - a.score);
+  return candidatos.slice(0, SEARCH_PARADAS_MAX_RESULTS);
+}
+
 function esResultadoCalleNominatim(item) {
   const clazz = normalizarTextoBusqueda(item?.class);
   const type = normalizarTextoBusqueda(item?.type);
@@ -6066,7 +6585,8 @@ async function buscarCallesEnSanJuan(query, signal) {
   const tokens = tokenizarBusqueda(queryNorm);
 
   const baseBounded = await fetchNominatimSanJuan(queryNorm, signal, true);
-  const baseUnbounded = baseBounded.length < 5
+  // Solo se paga el segundo round-trip de red si la búsqueda acotada no trajo nada.
+  const baseUnbounded = baseBounded.length === 0
     ? await fetchNominatimSanJuan(queryNorm, signal, false)
     : [];
 
@@ -6664,11 +7184,120 @@ function distanciaAcumuladaEnCamino(latLngs, startIndex, endIndex) {
 }
 
 function estimarTiempoTotalSegundos({ dO, dD, rideDist, waitSecs }) {
-  const walkSecs = (Number(dO) + Number(dD)) / WALKING_SPEED_M_S;
+  const dOn = Number(dO);
+  const dDn = Number(dD);
+  const walkOSecs = dOn / WALKING_SPEED_M_S;
+  const walkDSecs = dDn / WALKING_SPEED_M_S;
+  // Penaliza rutas que obligan a caminar demasiado hasta el punto de abordaje,
+  // favoreciendo líneas que pasan más cerca del origen aunque el viaje sea similar.
+  const walkOSecsPenalizado = dOn > CAMINATA_EXCESIVA_UMBRAL_M
+    ? walkOSecs * CAMINATA_EXCESIVA_PENALIZACION
+    : walkOSecs;
   const rideSecs = Number(rideDist) / BUS_SPEED_M_S;
   const wait = Number(waitSecs);
-  const total = walkSecs + rideSecs + (Number.isFinite(wait) ? wait : 0);
+  const total = walkOSecsPenalizado + walkDSecs + rideSecs + (Number.isFinite(wait) ? wait : 0);
   return Number.isFinite(total) ? total : Infinity;
+}
+
+async function obtenerParadasEnTramoPlaneado(relIds, latLngs, iO, iD) {
+  if (!relIds || relIds.size === 0) return [];
+  if (!Array.isArray(latLngs) || latLngs.length < 2) return [];
+
+  const start = Math.min(Number(iO), Number(iD));
+  const end = Math.max(Number(iO), Number(iD));
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end < 0) return [];
+
+  const puntos = await cargarParadasPuntos();
+  if (!Array.isArray(puntos)) return [];
+
+  const seleccion = [];
+  for (const p of puntos) {
+    if (!p || !p.feature) continue;
+    if (!featurePerteneceAAlgunaRelacion(p.feature, relIds)) continue;
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+    const idx = indiceMasCercanoEnCaminoPreciso(p.lat, p.lng, latLngs);
+    if (idx < start || idx > end) continue;
+    const paradaId = obtenerIdParada(p.feature);
+    seleccion.push({ feature: p.feature, lat: p.lat, lng: p.lng, paradaId, idx });
+  }
+
+  // Ordenar por posición a lo largo del tramo (no por cercanía al origen).
+  seleccion.sort((a, b) => a.idx - b.idx);
+  if (seleccion.length > MAX_PARADAS_MOSTRAR) seleccion.length = MAX_PARADAS_MOSTRAR;
+  return seleccion.map(({ idx, ...rest }) => rest);
+}
+
+// Resuelve el punto de partida activo para planear una ruta: el punto elegido por el
+// usuario (buscado, guardado o tocado en el mapa) si hay uno, o su ubicación GPS actual.
+async function resolverOrigenPlaneo() {
+  if (_routePlanOrigin && Number.isFinite(_routePlanOrigin.lat) && Number.isFinite(_routePlanOrigin.lng)) {
+    return { lat: _routePlanOrigin.lat, lng: _routePlanOrigin.lng, nombre: _routePlanOrigin.nombre || 'Punto de partida' };
+  }
+  if (!ubicacion || !Number.isFinite(ubicacion.lat) || !Number.isFinite(ubicacion.lng)) {
+    const position = await obtenerPosicionActual();
+    ubicacion = { lat: position.coords.latitude, lng: position.coords.longitude };
+  }
+  return { lat: ubicacion.lat, lng: ubicacion.lng, nombre: 'Mi ubicación actual' };
+}
+
+// Tras elegir un nuevo origen: si ya hay destino elegido (flujo "Opciones de ruta"),
+// recalcula las opciones; si todavía no hay destino (flujo "Planificar viaje" desde
+// el dashboard), vuelve a mostrar el planificador con el origen actualizado.
+function refrescarPlaneoTrasElegirOrigen() {
+  if (_routePlanTarget && Number.isFinite(_routePlanTarget.lat) && Number.isFinite(_routePlanTarget.lng)) {
+    void mostrarOpcionesRutaParaTarget(_routePlanLastAllowTransfer);
+  } else {
+    renderPlanificadorViajeSheet();
+  }
+}
+
+function establecerOrigenPlaneo(lat, lng, nombre) {
+  const latN = Number(lat);
+  const lngN = Number(lng);
+  if (!Number.isFinite(latN) || !Number.isFinite(lngN)) return;
+  _routePlanOrigin = { lat: latN, lng: lngN, nombre: String(nombre || 'Punto de partida').trim() || 'Punto de partida' };
+  refrescarPlaneoTrasElegirOrigen();
+}
+
+function usarMiUbicacionComoOrigenPlaneo() {
+  _routePlanOrigin = null;
+  refrescarPlaneoTrasElegirOrigen();
+}
+
+function establecerDestinoPlaneo(lat, lng, nombre, feature = null) {
+  const latN = Number(lat);
+  const lngN = Number(lng);
+  if (!Number.isFinite(latN) || !Number.isFinite(lngN)) return;
+  _routePlanTarget = {
+    feature: feature || null,
+    nombre: String(nombre || 'Destino').trim() || 'Destino',
+    lat: latN,
+    lng: lngN,
+    stopId: feature ? obtenerIdParada(feature) : null,
+  };
+  void mostrarOpcionesRutaParaTarget(true);
+}
+
+let _pickingModoEnMapa = 'origen'; // 'origen' | 'destino'
+
+function activarSeleccionEnMapa(modo) {
+  if (!leafletMap) return;
+  _pickingOrigenEnMapa = true;
+  _pickingModoEnMapa = modo === 'destino' ? 'destino' : 'origen';
+  cambiarVista('view-map');
+  // Cerrar el bottom sheet (el selector) para dejar el mapa libre para tocar.
+  if (typeof cerrarBottomSheet === 'function') cerrarBottomSheet(true);
+  const mapEl = document.getElementById('map');
+  if (mapEl) mapEl.classList.add('picking-origen-cursor');
+  alert(_pickingModoEnMapa === 'destino'
+    ? 'Tocá un punto del mapa para usarlo como destino.'
+    : 'Tocá un punto del mapa para usarlo como punto de partida.');
+}
+
+function cancelarSeleccionOrigenEnMapa() {
+  _pickingOrigenEnMapa = false;
+  const mapEl = document.getElementById('map');
+  if (mapEl) mapEl.classList.remove('picking-origen-cursor');
 }
 
 async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino, nombreDestino = '', allowedRefs = null, origenOverride = null) {
@@ -6685,6 +7314,14 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
   if (origenOverride && typeof origenOverride === 'object') {
     latO = Number(origenOverride.lat);
     lngO = Number(origenOverride.lng);
+  }
+
+  // Si el usuario eligió un punto de partida personalizado (buscado/guardado/en el mapa)
+  // para esta sesión de planeo, tiene prioridad sobre la ubicación GPS.
+  if ((!Number.isFinite(latO) || !Number.isFinite(lngO)) && _routePlanOrigin
+    && Number.isFinite(_routePlanOrigin.lat) && Number.isFinite(_routePlanOrigin.lng)) {
+    latO = Number(_routePlanOrigin.lat);
+    lngO = Number(_routePlanOrigin.lng);
   }
 
   // Si no hay override válido, usar ubicación actual
@@ -6803,6 +7440,9 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
       }
       if (cutCandidate != null) end = cutCandidate;
 
+      startIndex = iO;
+      endIndex = end;
+
       const tramo = latLngs.slice(iO, end + 1);
       if (tramo.length >= 2) {
         dibujarTrazoRecorridoConFlechas(layerRec, tramo, colorLinea);
@@ -6810,12 +7450,20 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
     }
   }
 
-  // Asignar los IDs de relación y cargar paradas cercanas sin dibujarlas en el mapa
+  if (recorridoActivo) {
+    recorridoActivo.startIndex = startIndex;
+    recorridoActivo.endIndex = endIndex;
+  }
+
+  // Asignar los IDs de relación y cargar las paradas reales del tramo (a lo largo de la geometría
+  // recortada), sin dibujarlas en el mapa.
   try {
     const relIds = obtenerRelIdsDeRutas([mejorFeature]);
     if (recorridoActivo) recorridoActivo.relIds = relIds;
     if (relIds && relIds.size > 0) {
-      const seleccion = await dibujarParadasDeLineaCercanasAlOrigen(relIds, latO, lngO, mejor.ref, mejor.name, { draw: false });
+      const seleccion = (startIndex != null && endIndex != null)
+        ? await obtenerParadasEnTramoPlaneado(relIds, latLngs, startIndex, endIndex)
+        : await dibujarParadasDeLineaCercanasAlOrigen(relIds, latO, lngO, mejor.ref, mejor.name, { draw: false });
       if (recorridoActivo && Array.isArray(seleccion)) recorridoActivo.nearbyStops = seleccion;
     }
   } catch {
@@ -6843,6 +7491,12 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
   if (nombreDestino) {
     // Mantener el nombre en memoria si luego se quiere reusar
     window._ultimoDestinoBusqueda = { nombre: String(nombreDestino), lat: latD, lng: lngD };
+  }
+
+  // Trazar la caminata desde el origen hasta la primera parada del tramo y mostrarla arriba del mapa.
+  const primeraParada = recorridoActivo?.nearbyStops?.[0] || null;
+  if (primeraParada) {
+    void trazarCaminataHaciaPrimeraParadaPlaneada(latO, lngO, primeraParada);
   }
 }
 
@@ -6879,31 +7533,158 @@ function normalizarParadasSeleccionParaLista(seleccion, lineaRef, lineaName) {
   return out;
 }
 
-function renderListaParadasPlaneo({ tituloIzq = 'Paradas cercanas', stops = [], totalLabel = '' } = {}) {
-  const total = Array.isArray(stops) ? stops.length : 0;
-  const right = totalLabel ? escapeHtml(String(totalLabel)) : `${total}`;
-  const left = escapeHtml(String(tituloIzq || 'Paradas'));
+function renderListaParadasPlaneoTimeline({ legs = [], transferLabel = '' } = {}) {
+  const validLegs = (Array.isArray(legs) ? legs : []).filter((l) => Array.isArray(l?.stops) && l.stops.length > 0);
+  if (validLegs.length === 0) return '';
 
-  const items = (Array.isArray(stops) ? stops : [])
-    .map((p) => {
-      const paradaId = p.paradaId || obtenerIdParada(p.feature);
-      const etiqueta = p.etiqueta || obtenerEtiquetaParada(p.feature);
-      const lineaRef = p.lineaRef || '';
-      const lineaName = p.lineaName || '';
-      const refLabel = lineaRef ? `Línea ${String(lineaRef)}` : 'Línea';
-      const nameLabel = lineaName ? ` — ${String(lineaName)}` : '';
-      const c = getColorForLinea(lineaRef);
-      const tc = getTextColorForBg(c);
-      return `<li><button type="button" class="btn-linea btn-parada-planeo" style="--line-color: ${c}; --line-text: ${tc};" data-plane-stop-id="${escapeHtml(String(paradaId))}" data-plane-line-ref="${escapeHtml(String(lineaRef))}" data-plane-line-name="${escapeHtml(String(lineaName))}"><span class="linea-button-ref">${escapeHtml(String(etiqueta))}</span><span class="linea-button-name">${escapeHtml(refLabel + nameLabel)}</span></button></li>`;
-    })
-    .join('');
+  const getStopName = (p) => {
+    if (!p) return 'Parada';
+    if (typeof p.etiqueta === 'string' && p.etiqueta.trim()) return p.etiqueta.trim();
+    const nombre = obtenerNombreParadaBase(p.feature);
+    if (nombre) return nombre;
+    const et = obtenerEtiquetaParada(p.feature);
+    return et || 'Parada';
+  };
+  const getStopId = (p) => p.paradaId || obtenerIdParada(p.feature) || '';
+
+  const stopIconSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+  const stopIconSvgSmall = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+  const destinoIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>';
+
+  let rowsHtml = '<div class="transit-faint-dot"></div>';
+
+  validLegs.forEach((leg, legIdx) => {
+    const stops = leg.stops;
+    const ref = String(leg.ref || '').trim();
+    const name = String(leg.name || '').trim();
+    const lineColor = getColorForLinea(ref) || '#ef4444';
+    const textColor = getTextColorForBg(lineColor);
+    const badgeText = formatBadgeLinea(ref) || '1';
+    const isFirstLeg = legIdx === 0;
+    const isLastLeg = legIdx === validLegs.length - 1;
+    const singleStop = stops.length === 1;
+
+    if (validLegs.length > 1) {
+      rowsHtml += `
+        <div class="planeo-timeline-header">
+          <span class="planeo-timeline-badge" style="background-color: ${lineColor}; color: ${textColor};">${escapeHtml(badgeText)}</span>
+          <span class="planeo-timeline-title">${escapeHtml(isFirstLeg ? 'Tramo 1' : 'Tramo 2')}${name ? ` — ${escapeHtml(name)}` : ` — Línea ${escapeHtml(ref)}`}</span>
+        </div>
+      `;
+    }
+
+    const first = stops[0];
+    const last = stops[stops.length - 1];
+    const intermediate = stops.slice(1, stops.length - 1);
+
+    const firstId = getStopId(first);
+    const firstName = getStopName(first);
+    let firstMeta = isFirstLeg ? 'Tu posición' : 'Parada de cambio';
+    if (singleStop && isLastLeg) firstMeta += ' · Destino final';
+    const firstDataAttrs = `data-plane-stop-id="${escapeHtml(firstId)}" data-plane-line-ref="${escapeHtml(ref)}" data-plane-line-name="${escapeHtml(name)}"`;
+
+    rowsHtml += `
+      <div class="transit-row transit-row-origin${isFirstLeg ? ' transit-row-current' : ''}">
+        <div class="transit-badge-col">
+          <span class="transit-line-pill-badge" style="background-color: ${lineColor}; color: ${textColor};">${escapeHtml(badgeText)}</span>
+        </div>
+        <div class="transit-rail-col">
+          <div class="transit-tube-seg" style="top: 14px; border-radius: 9999px 9999px 0 0; background: ${lineColor};">
+            <span class="transit-dot"></span>
+          </div>
+        </div>
+        <button type="button" class="transit-stop-btn" ${firstDataAttrs}>
+          <span class="transit-stop-icon-badge">${stopIconSvg}</span>
+          <div class="transit-stop-info">
+            <span class="transit-stop-name transit-stop-name-primary">${escapeHtml(firstName)}</span>
+            <span class="transit-stop-meta">${escapeHtml(firstMeta)}</span>
+          </div>
+        </button>
+      </div>
+    `;
+
+    if (intermediate.length > 0) {
+      const rows = intermediate.map((p) => {
+        const pId = getStopId(p);
+        const pName = getStopName(p);
+        const dataAttrs = `data-plane-stop-id="${escapeHtml(pId)}" data-plane-line-ref="${escapeHtml(ref)}" data-plane-line-name="${escapeHtml(name)}"`;
+        return `
+          <div class="transit-row transit-row-intermediate">
+            <div class="transit-badge-col"></div>
+            <div class="transit-rail-col">
+              <div class="transit-tube-seg" style="background: ${lineColor};">
+                <span class="transit-dot"></span>
+              </div>
+            </div>
+            <button type="button" class="transit-stop-btn" ${dataAttrs}>
+              <span class="transit-stop-icon-badge">${stopIconSvgSmall}</span>
+              <div class="transit-stop-info">
+                <span class="transit-stop-name">${escapeHtml(pName)}</span>
+              </div>
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      rowsHtml += `
+        <div class="transit-row transit-accordion-row">
+          <div class="transit-badge-col"></div>
+          <div class="transit-rail-col">
+            <div class="transit-tube-seg" style="background: ${lineColor};">
+              <span class="transit-dot"></span>
+            </div>
+          </div>
+          <button type="button" class="transit-accordion-btn" onclick="toggleTransitTimeline(this)" aria-expanded="false">
+            <div class="transit-accordion-left">
+              <span class="transit-accordion-icon" style="transform: rotate(180deg);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 14 4-4 4 4"/></svg>
+              </span>
+              <span class="transit-accordion-label">${intermediate.length} paradas en el trayecto</span>
+            </div>
+          </button>
+        </div>
+        <div class="transit-intermediate-stops collapsed">
+          ${rows}
+        </div>
+      `;
+    }
+
+    if (!singleStop) {
+      const lastId = getStopId(last);
+      const lastName = getStopName(last);
+      const lastMetaText = isLastLeg
+        ? 'Destino final'
+        : `Trasbordo en: ${String(transferLabel || '').trim() || 'punto de cambio'}`;
+      const lastDataAttrs = `data-plane-stop-id="${escapeHtml(lastId)}" data-plane-line-ref="${escapeHtml(ref)}" data-plane-line-name="${escapeHtml(name)}"`;
+
+      rowsHtml += `
+        <div class="transit-row transit-row-dest">
+          <div class="transit-badge-col"></div>
+          <div class="transit-rail-col">
+            <div class="transit-tube-seg" style="${isLastLeg ? 'bottom: 14px; border-radius: 0 0 9999px 9999px;' : ''} background: ${lineColor};">
+              <span class="transit-dot"></span>
+            </div>
+          </div>
+          <button type="button" class="transit-stop-btn" ${lastDataAttrs}>
+            <span class="transit-stop-icon-badge">${stopIconSvg}</span>
+            <div class="transit-stop-info">
+              <span class="transit-stop-name transit-stop-name-primary">${escapeHtml(lastName)}</span>
+              <span class="transit-stop-meta">${isLastLeg ? destinoIconSvg : ''}${escapeHtml(lastMetaText)}</span>
+            </div>
+          </button>
+        </div>
+      `;
+    }
+  });
+
+  rowsHtml += '<div class="transit-faint-dot"></div><div class="transit-faint-dot"></div>';
 
   return `
-    <div class="recorrido-indice">
-      <span class="recorrido-indice-left">${left}</span>
-      <span class="recorrido-indice-right">${right}</span>
+    <div class="transit-timeline-container">
+      <div class="transit-timeline-track">
+        ${rowsHtml}
+      </div>
     </div>
-    <ul class="lineas-list planeo-paradas-list">${items}</ul>
   `;
 }
 
@@ -6917,8 +7698,8 @@ function mostrarParadasPlaneoActualEnBottomSheet({ ref, name } = {}) {
 
   const subtitulo = lineaRef ? `Línea ${lineaRef}${lineaName ? ` — ${lineaName}` : ''}` : '';
   const html = stops.length
-    ? `${renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops, totalLabel: `${stops.length} paradas` })}
-       <p style="margin: 14px 0 0 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>`
+    ? `${renderListaParadasPlaneoTimeline({ legs: [{ ref: lineaRef, name: lineaName, stops }] })}
+       <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>`
     : `<p style="margin: 0; font-size: 14px; color: var(--text-secondary, #666); text-align: center;">No se encontraron paradas cercanas para esta línea.</p>`;
 
   abrirBottomSheet('Ruta', html, '', subtitulo);
@@ -6938,14 +7719,16 @@ function mostrarParadasPlaneadasEnBottomSheet() {
 
     const tName = String(recorridoActivo.transferName || '').trim();
     const subtitulo = tName ? `Trasbordo en: ${tName}` : '';
-    const html = `
-      <p style="margin: 0 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Opción con trasbordo</p>
-      <p style="margin: 0 0 14px 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>
-      <p style="margin: 0 0 8px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Tramo 1 — Línea ${escapeHtml(aRef)}</p>
-      ${stops1.length ? renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops: stops1, totalLabel: `${stops1.length} paradas` }) : '<p style="margin:0 0 12px 0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">Sin paradas cercanas para el tramo 1.</p>'}
-      <p style="margin: 16px 0 8px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Tramo 2 — Línea ${escapeHtml(bRef)}</p>
-      ${stops2.length ? renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops: stops2, totalLabel: `${stops2.length} paradas` }) : '<p style="margin:0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">Sin paradas cercanas para el tramo 2.</p>'}
-    `;
+    const html = (stops1.length && stops2.length)
+      ? `<p style="margin: 0 0 12px 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>
+         ${renderListaParadasPlaneoTimeline({
+           legs: [
+             { ref: aRef, name: leg1.name, stops: stops1 },
+             { ref: bRef, name: leg2.name, stops: stops2 },
+           ],
+           transferLabel: tName,
+         })}`
+      : '<p style="margin:0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">No se encontraron paradas suficientes para mostrar el trayecto completo.</p>';
     abrirBottomSheet('Ruta', html, '', subtitulo);
     return;
   }
@@ -7025,25 +7808,23 @@ function calcularTramoRecortado(latO, lngO, latD, lngD, feature, mejor) {
 
   const tramo = latLngs.slice(iO, end + 1);
   if (tramo.length < 2) return null;
-  return tramo;
+  return { tramo, latLngs, startIndex: iO, endIndex: end };
 }
 
 async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
   if (!leafletMap || typeof L === 'undefined') return;
 
-  // asegurar ubicación actual
-  if (!ubicacion || !Number.isFinite(ubicacion.lat) || !Number.isFinite(ubicacion.lng)) {
-    try {
-      const position = await obtenerPosicionActual();
-      ubicacion = { lat: position.coords.latitude, lng: position.coords.longitude };
-    } catch {
-      alert('No se pudo obtener tu ubicación actual.');
-      return;
-    }
+  // Resolver el punto de partida activo: el elegido por el usuario o su GPS actual.
+  let origen;
+  try {
+    origen = await resolverOrigenPlaneo();
+  } catch {
+    alert('No se pudo obtener tu ubicación actual.');
+    return;
   }
 
-  const latO = Number(ubicacion.lat);
-  const lngO = Number(ubicacion.lng);
+  const latO = origen.lat;
+  const lngO = origen.lng;
   const tLat = Number(transfer?.lat);
   const tLng = Number(transfer?.lng);
   const dLat = Number(destino?.lat);
@@ -7072,24 +7853,24 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
   const layerParadas = asegurarParadasLayer();
   layerParadas?.clearLayers();
 
-  const latLngs1 = calcularTramoRecortado(latO, lngO, tLat, tLng, tramo1.feature, tramo1.mejor);
-  const latLngs2 = calcularTramoRecortado(tLat, tLng, dLat, dLng, tramo2.feature, tramo2.mejor);
-  if (Array.isArray(latLngs1) && latLngs1.length >= 2) dibujarTrazoRecorridoConFlechas(layerRec, latLngs1, colorA);
-  if (Array.isArray(latLngs2) && latLngs2.length >= 2) dibujarTrazoRecorridoConFlechas(layerRec, latLngs2, colorB);
+  const tramoInfo1 = calcularTramoRecortado(latO, lngO, tLat, tLng, tramo1.feature, tramo1.mejor);
+  const tramoInfo2 = calcularTramoRecortado(tLat, tLng, dLat, dLng, tramo2.feature, tramo2.mejor);
+  if (tramoInfo1) dibujarTrazoRecorridoConFlechas(layerRec, tramoInfo1.tramo, colorA);
+  if (tramoInfo2) dibujarTrazoRecorridoConFlechas(layerRec, tramoInfo2.tramo, colorB);
 
   const relIds1 = obtenerRelIdsDeRutas([tramo1.feature]);
   const relIds2 = obtenerRelIdsDeRutas([tramo2.feature]);
 
-  const sel1 = (relIds1 && relIds1.size > 0)
-    ? await dibujarParadasDeLineaCercanasAlOrigen(relIds1, latO, lngO, aRef, tramo1.mejor?.name || '', { clear: true, draw: false })
+  const sel1 = (relIds1 && relIds1.size > 0 && tramoInfo1)
+    ? await obtenerParadasEnTramoPlaneado(relIds1, tramoInfo1.latLngs, tramoInfo1.startIndex, tramoInfo1.endIndex)
     : [];
-  const sel2 = (relIds2 && relIds2.size > 0)
-    ? await dibujarParadasDeLineaCercanasAlOrigen(relIds2, tLat, tLng, bRef, tramo2.mejor?.name || '', { clear: false, draw: false })
+  const sel2 = (relIds2 && relIds2.size > 0 && tramoInfo2)
+    ? await obtenerParadasEnTramoPlaneado(relIds2, tramoInfo2.latLngs, tramoInfo2.startIndex, tramoInfo2.endIndex)
     : [];
 
   recorridoActivo.legs = [
-    { ref: aRef, name: tramo1.mejor?.name || '', relIds: relIds1, origen: { lat: latO, lng: lngO }, destino: { lat: tLat, lng: tLng }, nearbyStops: sel1 || [] },
-    { ref: bRef, name: tramo2.mejor?.name || '', relIds: relIds2, origen: { lat: tLat, lng: tLng }, destino: { lat: dLat, lng: dLng }, nearbyStops: sel2 || [] },
+    { ref: aRef, name: tramo1.mejor?.name || '', relIds: relIds1, origen: { lat: latO, lng: lngO }, destino: { lat: tLat, lng: tLng }, nearbyStops: sel1 || [], startIndex: tramoInfo1?.startIndex ?? null, endIndex: tramoInfo1?.endIndex ?? null },
+    { ref: bRef, name: tramo2.mejor?.name || '', relIds: relIds2, origen: { lat: tLat, lng: tLng }, destino: { lat: dLat, lng: dLng }, nearbyStops: sel2 || [], startIndex: tramoInfo2?.startIndex ?? null, endIndex: tramoInfo2?.endIndex ?? null },
   ];
 
   ocultarMarcadorUsuario();
@@ -7117,15 +7898,23 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
 
   const tName = String(transfer?.name || '').trim();
   const subtitulo = tName ? `Trasbordo en: ${tName}` : '';
-  const html = `
-    <p style="margin: 0 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Opción con trasbordo</p>
-    <p style="margin: 0 0 14px 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>
-    <p style="margin: 0 0 8px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Tramo 1 — Línea ${escapeHtml(aRef)}</p>
-    ${stops1.length ? renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops: stops1, totalLabel: `${stops1.length} paradas` }) : '<p style="margin:0 0 12px 0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">Sin paradas cercanas para el tramo 1.</p>'}
-    <p style="margin: 16px 0 8px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Tramo 2 — Línea ${escapeHtml(bRef)}</p>
-    ${stops2.length ? renderListaParadasPlaneo({ tituloIzq: 'Paradas cercanas', stops: stops2, totalLabel: `${stops2.length} paradas` }) : '<p style="margin:0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">Sin paradas cercanas para el tramo 2.</p>'}
-  `;
+  const html = (stops1.length && stops2.length)
+    ? `<p style="margin: 0 0 12px 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una parada para ver arribos.</p>
+       ${renderListaParadasPlaneoTimeline({
+         legs: [
+           { ref: aRef, name: tramo1.mejor?.name || '', stops: stops1 },
+           { ref: bRef, name: tramo2.mejor?.name || '', stops: stops2 },
+         ],
+         transferLabel: tName,
+       })}`
+    : '<p style="margin:0; font-size:14px; color: var(--text-secondary,#666); text-align:center;">No se encontraron paradas suficientes para mostrar el trayecto completo.</p>';
   abrirBottomSheet('Ruta', html, '', subtitulo);
+
+  // Trazar la caminata desde el origen hasta la primera parada del primer tramo.
+  const primeraParada = sel1?.[0] || null;
+  if (primeraParada) {
+    void trazarCaminataHaciaPrimeraParadaPlaneada(latO, lngO, primeraParada);
+  }
 }
 
 async function obtenerIndiceParadasPuntosPorId() {
@@ -7313,21 +8102,20 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
     // noop
   }
 
-  // Asegurar ubicación actual
-  if (!ubicacion || !Number.isFinite(ubicacion.lat) || !Number.isFinite(ubicacion.lng)) {
-    try {
-      const position = await obtenerPosicionActual();
-      ubicacion = { lat: position.coords.latitude, lng: position.coords.longitude };
-    } catch {
-      alert('No se pudo obtener tu ubicación actual.');
-      return;
-    }
+  let origen;
+  try {
+    origen = await resolverOrigenPlaneo();
+  } catch {
+    alert('No se pudo obtener tu ubicación actual.');
+    return;
   }
+  const latO = origen.lat;
+  const lngO = origen.lng;
 
   await obtenerIndiceParadasPuntosPorId();
   await obtenerStopsIndexPorLinea();
 
-  const origenStops = await obtenerParadasCercanasA(ubicacion.lat, ubicacion.lng, ROUTE_NEARBY_STOPS_RADIUS_M, ROUTE_NEARBY_STOPS_MAX);
+  const origenStops = await obtenerParadasCercanasA(latO, lngO, ROUTE_NEARBY_STOPS_RADIUS_M, ROUTE_NEARBY_STOPS_MAX);
   const origenRefs = new Set();
   for (const s of origenStops) {
     const lineas = obtenerLineasDetalleDesdeRelations(s.feature);
@@ -7338,25 +8126,36 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
     }
   }
 
-  // Líneas que pasan por la parada destino
-  const detalleDestino = obtenerLineasDetalleDesdeRelations(_routePlanTarget.feature);
+  // Líneas candidatas para el destino: la parada exacta (si el destino es una parada
+  // de colectivo) y, sobre todo, cualquier parada cercana por proximidad. Esto es lo
+  // que permite planear rutas hacia una dirección buscada, un lugar guardado o un
+  // punto cualquiera del mapa, que no tienen una parada/relación de OSM asociada.
+  const destinoStops = await obtenerParadasCercanasA(_routePlanTarget.lat, _routePlanTarget.lng, ROUTE_NEARBY_STOPS_RADIUS_M, ROUTE_NEARBY_STOPS_MAX);
   const refToName = new Map();
-  for (const l of detalleDestino) {
-    if (l?.ref) refToName.set(String(l.ref).trim(), String(l.name || '').trim());
+  const destinoRefsSet = new Set();
+
+  const registrarLinea = (l) => {
+    const ref = l && l.ref != null ? String(l.ref).trim() : '';
+    if (!ref) return;
+    destinoRefsSet.add(ref);
+    const name = String(l.name || '').trim();
+    if (name && !refToName.get(ref)) refToName.set(ref, name);
+  };
+
+  for (const l of obtenerLineasDetalleDesdeRelations(_routePlanTarget.feature)) registrarLinea(l);
+  for (const s of destinoStops) {
+    const lineas = obtenerLineasDetalleDesdeRelations(s.feature);
+    if (!Array.isArray(lineas)) continue;
+    for (const l of lineas) registrarLinea(l);
   }
-  let destinoRefs = detalleDestino
-    .map((l) => (l && l.ref != null ? String(l.ref).trim() : ''))
-    .filter(Boolean);
 
-  // Si no hay relations, no hay forma confiable de listar líneas para esa parada.
-
-  // "Sin trasbordo" = cualquier línea que pase por la parada destino.
-  destinoRefs = Array.from(new Set(destinoRefs));
+  // "Sin trasbordo" = cualquier línea que pase cerca del destino.
+  let destinoRefs = Array.from(destinoRefsSet);
 
   const directValid = [];
   for (const ref of destinoRefs) {
     if (directValid.length >= ROUTE_MAX_OPCIONES_DIRECTAS) break;
-    const result = await elegirMejorRutaFeatureEntre(ubicacion.lat, ubicacion.lng, _routePlanTarget.lat, _routePlanTarget.lng, [ref]);
+    const result = await elegirMejorRutaFeatureEntre(latO, lngO, _routePlanTarget.lat, _routePlanTarget.lng, [ref]);
     if (result) {
       directValid.push(ref);
     }
@@ -7367,8 +8166,6 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
   if (permitirTrasbordo && destinoRefs.length && origenRefs.size) {
     const destinoSet = new Set(destinoRefs);
     let count = 0;
-    const latO = Number(ubicacion.lat);
-    const lngO = Number(ubicacion.lng);
     const latD = Number(_routePlanTarget.lat);
     const lngD = Number(_routePlanTarget.lng);
 
@@ -7450,7 +8247,24 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
       : `<p style="margin: 0; font-size: 14px; color: var(--text-secondary, #666); text-align: center;">No se encontraron combinaciones con 1 trasbordo.</p>`)
     : '';
 
+  const origenNombre = String(origen.nombre || 'Mi ubicación actual').trim();
+  const origenRowHtml = `
+    <div class="route-origin-row">
+      <div class="route-origin-row-info">
+        <span class="route-origin-row-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M3 12h4m10 0h4M12 3v4m0 10v4"></path></svg>
+        </span>
+        <div class="route-origin-row-text">
+          <span class="route-origin-row-label">Desde</span>
+          <span class="route-origin-row-name">${escapeHtml(origenNombre)}</span>
+        </div>
+      </div>
+      <button type="button" class="route-origin-row-change" data-route-change-origin="1">Cambiar</button>
+    </div>
+  `;
+
   const html = `
+    ${origenRowHtml}
     <p style="margin: 0 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Sin trasbordo</p>
     ${directHtml}
     <p style="margin: 14px 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Con trasbordo</p>
@@ -7458,6 +8272,190 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
     <p style="margin: 14px 0 0 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Tocá una opción para dibujar la ruta.</p>
   `;
   abrirBottomSheet('Opciones de ruta', html, '', subtitulo);
+}
+
+function renderResultadosOrigenPicker(items, container) {
+  if (!Array.isArray(items) || items.length === 0) {
+    container.innerHTML = '<p class="search-results-hint">Sin resultados</p>';
+    return;
+  }
+
+  container.innerHTML = '';
+  for (const item of items) {
+    const nombre = String(item.nombre || 'Lugar').trim();
+    const lat = Number(item.lat);
+    const lng = Number(item.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+    const esParada = item.tipoResultado === 'parada';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'search-unified-item';
+    btn.dataset.originLat = String(lat);
+    btn.dataset.originLng = String(lng);
+    btn.dataset.originNombre = nombre;
+    btn.innerHTML = `
+      <div class="search-unified-item-main">
+        <span class="search-unified-item-title">${escapeHtml(nombre)}</span>
+        <span class="search-unified-item-sub">${esParada ? 'Parada de colectivos' : 'Calle / Ubicación'}</span>
+      </div>
+      <span style="font-size: 14px;">${esParada ? '🚏' : '📍'}</span>
+    `;
+    container.appendChild(btn);
+  }
+}
+
+let _origenPickerSeq = 0;
+let _origenPickerTimeout = null;
+
+async function ejecutarBusquedaOrigenPicker(query) {
+  const container = document.getElementById('origin-picker-results');
+  if (!container) return;
+  const mySeq = ++_origenPickerSeq;
+
+  let paradas = [];
+  try {
+    paradas = await buscarParadasLocales(query);
+  } catch {
+    // noop
+  }
+  if (mySeq !== _origenPickerSeq) return;
+  renderResultadosOrigenPicker(paradas.map((p) => ({ ...p, tipoResultado: 'parada' })), container);
+
+  try {
+    const calles = await buscarCallesEnSanJuan(query);
+    if (mySeq !== _origenPickerSeq) return;
+    renderResultadosOrigenPicker(
+      [...paradas.map((p) => ({ ...p, tipoResultado: 'parada' })), ...calles],
+      container,
+    );
+  } catch {
+    // Se quedan los resultados locales (paradas) ya mostrados.
+  }
+}
+
+// Selector de punto de partida: permite planear rutas desde cualquier lugar
+// (ubicación GPS, un punto tocado en el mapa, una búsqueda o un guardado/favorito),
+// no solo desde la posición actual del usuario.
+let _ubicacionPickerModo = 'origen'; // 'origen' | 'destino': a cuál de los dos le pega el picker abierto
+
+// Selector de ubicación reutilizable para elegir tanto el origen como el destino de una
+// ruta: por GPS (solo tiene sentido para el origen), tocando un punto del mapa, buscando
+// una calle/parada, o desde los lugares/paradas guardados como favoritos.
+function mostrarSelectorUbicacionRuta(modo) {
+  _ubicacionPickerModo = modo === 'destino' ? 'destino' : 'origen';
+  const esDestino = _ubicacionPickerModo === 'destino';
+
+  const favLugares = obtenerLugaresFavs();
+  const favParadas = obtenerParadasFavs();
+  const guardadosItems = [
+    ...favLugares.map((l) => ({ ...l, tipoResultado: 'calle' })),
+    ...favParadas.map((p) => ({ ...p, tipoResultado: 'parada' })),
+  ].slice(0, 10);
+
+  const guardadosHtml = guardadosItems.length
+    ? guardadosItems
+      .map((item) => {
+        const nombre = String(item.nombre || item.label || 'Guardado').trim();
+        const lat = Number(item.lat);
+        const lng = Number(item.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return '';
+        const esParada = item.tipoResultado === 'parada';
+        return `<button type="button" class="search-unified-item" data-origin-lat="${lat}" data-origin-lng="${lng}" data-origin-nombre="${escapeHtml(nombre)}">
+          <div class="search-unified-item-main">
+            <span class="search-unified-item-title">${escapeHtml(nombre)}</span>
+            <span class="search-unified-item-sub">Guardado</span>
+          </div>
+          <span style="font-size: 14px;">${esParada ? '🚏' : '📌'}</span>
+        </button>`;
+      })
+      .join('')
+    : '';
+
+  const quickActionsHtml = esDestino
+    ? `<div class="origin-picker-quick-actions origin-picker-quick-actions--single">
+        <button type="button" class="btn-nav-row" data-origin-pick="mapa">🗺️ Elegir en el mapa</button>
+      </div>`
+    : `<div class="origin-picker-quick-actions">
+        <button type="button" class="btn-nav-row" data-origin-pick="gps">📍 Mi ubicación actual</button>
+        <button type="button" class="btn-nav-row" data-origin-pick="mapa">🗺️ Elegir en el mapa</button>
+      </div>`;
+
+  const html = `
+    ${quickActionsHtml}
+    <div class="search-unified-box" style="margin: 16px 0 0 0;">
+      <span class="search-unified-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      </span>
+      <input type="text" id="origin-picker-input" class="search-unified-input" placeholder="${esDestino ? '¿A dónde vas?' : 'Buscar una calle o parada...'}" autocomplete="off" />
+    </div>
+    <div id="origin-picker-results" class="search-unified-dropdown search-unified-dropdown-inline" style="display: none;"></div>
+    ${guardadosItems.length ? `
+      <p class="origin-picker-section-title">Guardados</p>
+      <div class="search-unified-dropdown search-unified-dropdown-inline">${guardadosHtml}</div>
+    ` : ''}
+  `;
+
+  abrirBottomSheet(esDestino ? 'Elegir destino' : 'Punto de partida', html, '', '');
+
+  const input = document.getElementById('origin-picker-input');
+  const results = document.getElementById('origin-picker-results');
+  if (input && results) {
+    input.addEventListener('input', () => {
+      const val = input.value.trim();
+      if (_origenPickerTimeout) clearTimeout(_origenPickerTimeout);
+      if (val.length < 2) {
+        results.style.display = 'none';
+        results.innerHTML = '';
+        return;
+      }
+      results.style.display = 'flex';
+      results.innerHTML = '<p class="search-results-loading">Buscando...</p>';
+      _origenPickerTimeout = setTimeout(() => ejecutarBusquedaOrigenPicker(val), 150);
+    });
+  }
+}
+
+// Accesos directos desde el Dashboard: abre el mapa con el planificador de viaje,
+// permitiendo elegir tanto el origen como el destino (con buscador) antes de calcular rutas.
+function mostrarPlanificadorViaje() {
+  _routePlanTarget = null;
+  _routePlanOrigin = null;
+  cambiarVista('view-map');
+  renderPlanificadorViajeSheet();
+}
+
+function renderPlanificadorViajeSheet() {
+  const origenNombre = _routePlanOrigin?.nombre || 'Mi ubicación actual';
+  const destinoNombre = String(_routePlanTarget?.nombre || '').trim();
+
+  const html = `
+    <div class="trip-planner-rows">
+      <div class="trip-planner-row">
+        <span class="trip-planner-row-icon trip-planner-row-icon-origin" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"></circle></svg>
+        </span>
+        <div class="trip-planner-row-text">
+          <span class="trip-planner-row-label">Desde</span>
+          <span class="trip-planner-row-value">${escapeHtml(origenNombre)}</span>
+        </div>
+        <button type="button" class="trip-planner-row-btn" data-trip-pick="origen">Elegir</button>
+      </div>
+      <div class="trip-planner-row">
+        <span class="trip-planner-row-icon trip-planner-row-icon-dest" aria-hidden="true">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        </span>
+        <div class="trip-planner-row-text">
+          <span class="trip-planner-row-label">Hasta</span>
+          <span class="trip-planner-row-value${destinoNombre ? '' : ' trip-planner-row-placeholder'}">${destinoNombre ? escapeHtml(destinoNombre) : '¿A dónde vas?'}</span>
+        </div>
+        <button type="button" class="trip-planner-row-btn" data-trip-pick="destino">${destinoNombre ? 'Cambiar' : 'Buscar'}</button>
+      </div>
+    </div>
+    <p style="margin: 14px 0 0 0; font-size: 12px; color: var(--text-muted, #888); text-align: center;">Elegí el destino para ver las opciones de ruta.</p>
+  `;
+
+  abrirBottomSheet('Planificar viaje', html, '', '');
 }
 
 async function verLineaMasCercanaHastaParadaSeleccionada(featureParada) {

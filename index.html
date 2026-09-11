@@ -4,7 +4,7 @@
 <head>
   <meta name="theme-color" content="#0f0f12">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <title>TransitSJ</title>
@@ -224,8 +224,8 @@
       margin: 0 auto;
     }
 
-    .dashboard-scroll > *,
-    .guardados-scroll > * {
+    .dashboard-scroll>*,
+    .guardados-scroll>* {
       flex-shrink: 0;
     }
 
@@ -280,7 +280,7 @@
       height: 100%;
       z-index: 2;
       background: linear-gradient(180deg, rgba(14, 14, 18, 0.52) 0%, rgba(14, 14, 18, 0.82) 100%),
-                  radial-gradient(circle at center, rgba(14, 14, 18, 0.25) 0%, rgba(14, 14, 18, 0.82) 100%);
+        radial-gradient(circle at center, rgba(14, 14, 18, 0.25) 0%, rgba(14, 14, 18, 0.82) 100%);
       pointer-events: none;
     }
 
@@ -415,6 +415,229 @@
       backdrop-filter: blur(12px);
     }
 
+    /* Variante embebida dentro del contenido de un bottom sheet (no flotante) */
+    .search-unified-dropdown-inline {
+      position: static;
+      width: auto;
+      max-height: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      padding: 0;
+      margin: 8px 0 0 0;
+    }
+
+    .origin-picker-section-title {
+      margin: 16px 0 6px 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-muted, #888);
+    }
+
+    .origin-picker-quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .origin-picker-quick-actions--single {
+      grid-template-columns: 1fr;
+    }
+
+    /* Fila "Desde" en el panel de Opciones de ruta */
+    .route-origin-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      margin: 0 0 14px 0;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+    }
+
+    .route-origin-row-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .route-origin-row-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--brand-orange-bg, rgba(255, 71, 46, 0.14));
+      color: var(--brand-orange, #ff472e);
+      flex-shrink: 0;
+    }
+
+    .route-origin-row-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .route-origin-row-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted, #888);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .route-origin-row-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary, #f4f4f6);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Especificidad reforzada (.route-origin-row + button.route-origin-row-change) a propósito:
+       las reglas genéricas ".bottom-sheet-content button" / ".panel-content button" (más abajo
+       en la hoja de estilos) fuerzan width:100%, display:flex y otro padding/fondo en TODO botón
+       dentro de un bottom sheet, y le ganaban a este botón chico por especificidad + orden. */
+    .route-origin-row button.route-origin-row-change {
+      width: auto;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--brand-orange-border, rgba(255, 71, 46, 0.45));
+      background: transparent;
+      color: var(--brand-orange, #ff472e);
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: none;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .route-origin-row button.route-origin-row-change:hover {
+      background: var(--brand-orange-bg, rgba(255, 71, 46, 0.14));
+      transform: none;
+    }
+
+    /* Cursor especial mientras se espera que el usuario elija un punto del mapa como origen */
+    #map.picking-origen-cursor {
+      cursor: crosshair;
+    }
+
+    /* Planificador de viaje: filas "Desde" / "Hasta" con conector vertical, estilo Google Maps */
+    .trip-planner-rows {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .trip-planner-rows::before {
+      content: '';
+      position: absolute;
+      left: 25px;
+      top: 34px;
+      bottom: 34px;
+      width: 2px;
+      background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 0 4px, transparent 4px 8px);
+      z-index: 0;
+    }
+
+    .trip-planner-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+    }
+
+    .trip-planner-row-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .trip-planner-row-icon-origin {
+      background: rgba(56, 189, 248, 0.14);
+      color: #38bdf8;
+    }
+
+    .trip-planner-row-icon-dest {
+      background: var(--brand-orange-bg, rgba(255, 71, 46, 0.14));
+      color: var(--brand-orange, #ff472e);
+    }
+
+    .trip-planner-row-text {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .trip-planner-row-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted, #888);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .trip-planner-row-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary, #f4f4f6);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .trip-planner-row-value.trip-planner-row-placeholder {
+      color: var(--text-muted, #888);
+      font-weight: 600;
+    }
+
+    .trip-planner-row .trip-planner-row-btn {
+      flex-shrink: 0;
+      width: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary, #f4f4f6);
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: none;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .trip-planner-row .trip-planner-row-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: none;
+    }
+
     .search-unified-item {
       display: flex;
       align-items: center;
@@ -485,6 +708,182 @@
 
     .search-badge-add:hover {
       background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Botones para personalizar qué tipo de resultado buscar: siempre visibles,
+       integrados como parte de la misma barra de búsqueda (no un chip flotante aparte). */
+    .search-filter-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .search-filter-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #1c1c23;
+      color: #a1a1aa;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .search-filter-chip:hover {
+      background: #24242d;
+      color: #f4f4f6;
+    }
+
+    .search-filter-chip.active {
+      background: var(--brand-orange, #ff472e);
+      border-color: var(--brand-orange, #ff472e);
+      color: #ffffff;
+    }
+
+    /* Tarjeta: Tu parada más cercana (Dashboard) + toggle para activarla/desactivarla en el mapa */
+    .nearest-stop-dash-card {
+      gap: 12px;
+    }
+
+    .nearest-stop-dash-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 2px 0;
+    }
+
+    .nearest-stop-dash-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .nearest-stop-dash-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nearest-stop-dash-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: #f4f4f6;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nearest-stop-dash-dist {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--brand-orange-light, #ff735c);
+      margin: 0;
+    }
+
+    .nearest-stop-dash-lines {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .btn-nearest-stop-dash {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 11px 16px;
+      border-radius: 12px;
+      border: none;
+      background: var(--brand-orange, #ff472e);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 18px var(--brand-orange-glow, rgba(255, 71, 46, 0.35));
+      transition: background 0.15s ease, transform 0.12s ease;
+    }
+
+    .btn-nearest-stop-dash:hover {
+      background: var(--brand-orange-hover, #ff5e47);
+    }
+
+    .btn-nearest-stop-dash:active {
+      transform: scale(0.97);
+    }
+
+    /* Accesos rápidos a favoritos (Dashboard) */
+    .quick-favs-section {
+      margin: 0;
+    }
+
+    .quick-favs-row {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 2px 2px 4px 2px;
+      scrollbar-width: none;
+    }
+
+    .quick-favs-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .quick-fav-chip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 14px;
+      background: #16161a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #f4f4f6;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      max-width: 180px;
+      white-space: nowrap;
+      transition: background 0.15s ease, transform 0.12s ease;
+    }
+
+    .quick-fav-chip:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .quick-fav-chip:active {
+      transform: scale(0.97);
+    }
+
+    .quick-fav-chip-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .quick-fav-chip-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* Tarjetas del Dashboard */
@@ -622,6 +1021,28 @@
     .btn-quick-explore:hover {
       background: #272730;
       transform: translateY(-1px);
+    }
+
+    .dashboard-quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-quick-explore--primary {
+      background: var(--brand-orange, #ff472e);
+      border-color: var(--brand-orange, #ff472e);
+      box-shadow: 0 6px 20px var(--brand-orange-glow, rgba(255, 71, 46, 0.35));
+    }
+
+    .btn-quick-explore--primary:hover {
+      background: var(--brand-orange-hover, #ff5e47);
+    }
+
+    @media (max-width: 380px) {
+      .dashboard-quick-actions {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* Créditos en Dashboard */
@@ -1074,6 +1495,31 @@
       box-shadow: 0 0 16px rgba(59, 130, 246, 0.45) !important;
     }
 
+    .map-corner-centrar.is-loading {
+      pointer-events: none;
+    }
+
+    .map-corner-centrar.is-loading svg {
+      opacity: 0.3;
+    }
+
+    .map-corner-centrar.is-loading::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 50%;
+      border: 2.5px solid transparent;
+      border-top-color: var(--brand-orange, #ff472e);
+      border-right-color: var(--brand-orange, #ff472e);
+      animation: centrarSpin 0.7s linear infinite;
+    }
+
+    @keyframes centrarSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
 
     .toggle-row {
       display: inline-flex;
@@ -1390,7 +1836,7 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
-      background: rgba(0, 0, 0, 0.38);
+      background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(calc(var(--glass-blur) * 0.7)) saturate(var(--glass-saturate));
       -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.7)) saturate(var(--glass-saturate));
     }
@@ -1399,29 +1845,71 @@
       display: flex;
     }
 
+    @keyframes confirmModalPop {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
     .confirm-modal {
-      width: min(560px, 100%);
+      width: min(380px, 100%);
       background: var(--glass-bg-strong);
       color: var(--text-primary);
       border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+      border-radius: 22px;
+      padding: 26px 22px 20px 22px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
       -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      text-align: center;
+      animation: confirmModalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .confirm-modal-icon {
+      width: 56px;
+      height: 56px;
+      min-width: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+    }
+
+    .confirm-modal-icon.icon-danger {
+      background: var(--brand-orange-bg, rgba(255, 71, 46, 0.14));
+      border: 1px solid var(--brand-orange-border, rgba(255, 71, 46, 0.45));
+      color: var(--brand-orange, #ff472e);
+    }
+
+    .confirm-modal-icon.icon-info {
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
     }
 
     .confirm-modal h3 {
       margin: 0 0 8px 0;
       font-size: 18px;
       font-weight: 900;
+      letter-spacing: -0.2px;
     }
 
     .confirm-modal p {
-      margin: 0 0 12px 0;
+      margin: 0 0 4px 0;
       color: var(--text-secondary);
       font-size: 14px;
-      line-height: 1.35;
+      line-height: 1.45;
+    }
+
+    .confirm-modal p:last-of-type {
+      margin-bottom: 0;
     }
 
     .confirm-modal ul.bs-nav-rows {
@@ -1429,13 +1917,13 @@
       display: grid;
       grid-template-columns: 1fr;
       gap: 10px;
-      padding: 10px 4px 4px 4px;
-      margin: 0;
+      padding: 0;
+      margin: 22px 0 0 0;
     }
 
     .confirm-modal ul.bs-nav-rows.bs-nav-rows--two {
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
     }
 
     .confirm-modal ul.bs-nav-rows li {
@@ -1444,39 +1932,42 @@
 
     .confirm-modal button.btn-nav-row {
       width: 100%;
-      text-align: left;
-      font-size: 16px;
+      text-align: center;
+      font-size: 15px;
       font-weight: 800;
-      padding: 16px 16px;
-      border-radius: 12px;
-      border: 2px solid rgba(0, 123, 255, 0.35);
-      background: var(--glass-bg, rgba(255, 255, 255, 0.1));
-      color: var(--text-primary, #222);
+      padding: 13px 10px;
+      border-radius: 13px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .confirm-modal button.btn-nav-row:hover {
-      background: rgba(0, 123, 255, 0.06);
-      border-color: #007BFF;
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.26);
     }
 
     .confirm-modal button.btn-nav-row:active {
-      transform: scale(0.99);
+      transform: scale(0.98);
     }
 
-    .dark-mode .confirm-modal button.btn-nav-row {
-      border-color: rgba(59, 130, 246, 0.45);
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text-primary, #e5e7eb);
+    .confirm-modal button.btn-nav-row.btn-nav-row--danger,
+    .confirm-modal button.btn-nav-row.btn-nav-row--primary {
+      background: var(--brand-orange, #ff472e);
+      border-color: var(--brand-orange, #ff472e);
+      color: #ffffff;
+      box-shadow: 0 8px 20px var(--brand-orange-glow, rgba(255, 71, 46, 0.35));
     }
 
-    .dark-mode .confirm-modal button.btn-nav-row:hover {
-      background: rgba(59, 130, 246, 0.10);
-      border-color: rgba(59, 130, 246, 0.9);
+    .confirm-modal button.btn-nav-row.btn-nav-row--danger:hover,
+    .confirm-modal button.btn-nav-row.btn-nav-row--primary:hover {
+      background: var(--brand-orange-hover, #ff5e47);
+      border-color: var(--brand-orange-hover, #ff5e47);
     }
 
     /* Panel de detalle moderno (ocupa el 76% cuando el mapa se achica al 24%) */
@@ -1816,6 +2307,29 @@
       transform: scale(0.98);
     }
 
+    /* El selector de ubicación (origen/destino) reutiliza .search-unified-item dentro de un
+       bottom sheet; sin esto la regla genérica ".bottom-sheet-content button" de arriba le
+       pisa el padding/fondo/box-shadow y rompe el layout de ícono + texto + badge. */
+    .bottom-sheet-content .search-unified-item,
+    .panel-content .search-unified-item {
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: none;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .bottom-sheet-content .search-unified-item:hover,
+    .panel-content .search-unified-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.14);
+      transform: none;
+      box-shadow: none;
+    }
+
     .btn-volver-parada {
       background: rgba(30, 41, 59, 0.7) !important;
       color: #93c5fd !important;
@@ -2140,8 +2654,17 @@
     }
 
     @keyframes hudDotPulse {
-      0%, 100% { opacity: 0.4; transform: scale(0.85); }
-      50% { opacity: 1; transform: scale(1.15); }
+
+      0%,
+      100% {
+        opacity: 0.4;
+        transform: scale(0.85);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.15);
+      }
     }
 
     .hud-stop-dist {
@@ -2314,6 +2837,7 @@
         opacity: 0;
         transform: scale(0.96);
       }
+
       to {
         opacity: 1;
         transform: scale(1);
@@ -2437,16 +2961,16 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
     }
 
-    .switch-toggle input:checked + .switch-slider {
+    .switch-toggle input:checked+.switch-slider {
       background-color: #3b82f6;
       border-color: #60a5fa;
     }
 
-    .switch-toggle input:checked + .switch-slider::before {
+    .switch-toggle input:checked+.switch-slider::before {
       transform: translateX(20px);
     }
 
-    .switch-toggle input:focus-visible + .switch-slider {
+    .switch-toggle input:focus-visible+.switch-slider {
       outline: 2px solid #60a5fa;
       outline-offset: 2px;
     }
@@ -2465,6 +2989,7 @@
       border: none !important;
       box-shadow: none !important;
     }
+
     body.hide-user-marker .user-waypoint-marker-icon,
     body.hide-user-marker .user-marker-halo,
     .hide-user-waypoint .user-waypoint-marker-icon,
@@ -2476,6 +3001,7 @@
       opacity: 0 !important;
       pointer-events: none !important;
     }
+
     .user-waypoint-wrap {
       position: relative;
       width: 36px;
@@ -2485,6 +3011,7 @@
       justify-content: center;
       cursor: pointer;
     }
+
     .user-waypoint-radar-ring {
       position: absolute;
       bottom: -2px;
@@ -2497,21 +3024,25 @@
       animation: userWaypointPulse 2.2s infinite ease-out;
       pointer-events: none;
     }
+
     @keyframes userWaypointPulse {
       0% {
         transform: translateX(-50%) scale(0.5);
         opacity: 0.9;
       }
+
       100% {
         transform: translateX(-50%) scale(2.4);
         opacity: 0;
       }
     }
+
     .user-waypoint-pin {
       transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
       transform-origin: 18px 42px;
       filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.55));
     }
+
     .user-waypoint-wrap:hover .user-waypoint-pin {
       transform: scale(1.12) translateY(-3px);
     }
@@ -2998,6 +3529,54 @@
       display: none;
     }
 
+    /* Fila destacada: posición actual del usuario dentro del timeline de planeación de ruta */
+    .transit-row-current .transit-stop-name-primary {
+      color: var(--brand-orange, #ff472e);
+    }
+
+    .transit-row-current .transit-stop-icon-badge {
+      background: var(--brand-orange-bg, rgba(255, 71, 46, 0.14));
+      border-color: var(--brand-orange-border, rgba(255, 71, 46, 0.45));
+      color: var(--brand-orange, #ff472e);
+    }
+
+    .transit-row-current .transit-stop-meta {
+      color: var(--brand-orange-light, #ff735c);
+      font-weight: 700;
+    }
+
+    /* Encabezado compacto de cada tramo dentro del timeline de planeación (rutas con trasbordo) */
+    .planeo-timeline-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 2px 6px 2px;
+    }
+
+    .planeo-timeline-header:first-child {
+      margin-top: 4px;
+    }
+
+    .planeo-timeline-badge {
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .planeo-timeline-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #f4f4f6;
+      letter-spacing: -0.2px;
+    }
+
     /* Estilos modernos para Guardar Lugar */
     .save-location-sheet {
       display: flex;
@@ -3374,889 +3953,1051 @@
       background: rgba(239, 68, 68, 0.15) !important;
       color: #ef4444 !important;
       transform: none !important;
-
+    }
 
     .dark-mode .bottom-sheet-content .fav-row .fav-main {
-      color: var(--text-primary, #e5e7eb);
-    }
-
-    .dark-mode .bottom-sheet-content .fav-row .fav-main:hover {
-      color: #60a5fa;
-    }
-
-    .dark-mode .bottom-sheet-content .fav-row .btn-eliminar-fav {
-      border-left-color: rgba(255, 255, 255, 0.1);
-      color: rgba(229, 231, 235, 0.6);
-    }
-
-    .dark-mode .bottom-sheet-content .fav-row .btn-eliminar-fav:hover {
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
-      border-left-color: rgba(239, 68, 68, 0.3);
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 12px;
-      padding: 0 16px 16px 16px;
-    }
-
-    .action-buttons button {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-    }
-
-    .btn-primary {
-      background: #007BFF;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #0056b3;
-    }
-
-    .btn-secondary {
-      background: #e0e0e0;
-      color: #333;
-    }
-
-    .btn-secondary:hover {
-      background: #d0d0d0;
-    }
-
-    #contenedor_paradas,
-    #favoritos {
-      display: none !important;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
+        color: var(--text-primary, #e5e7eb);
       }
 
-      to {
-        opacity: 1;
-      }
-    }
-
-    footer {
-      display: flex;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: auto;
-      background: transparent;
-      padding: 16px;
-      gap: 12px;
-      align-items: flex-end;
-      justify-content: space-between;
-      border-top: none;
-      box-shadow: none;
-      z-index: 1080;
-      flex-wrap: wrap;
-      pointer-events: none;
-    }
-
-    /* Escritorio: la barra de búsqueda + botones van arriba en fila */
-    @media (min-width: 900px) {
-      .btn-settings {
-        left: auto;
-        right: 16px;
-        top: 16px;
-        bottom: auto;
+      .dark-mode .bottom-sheet-content .fav-row .fav-main:hover {
+        color: #60a5fa;
       }
 
-      .sidepanel {
-        left: auto;
-        right: 0;
-        transform: translateX(100%);
-        box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
-        border-right: none;
-        border-left: 1px solid var(--glass-border);
+      .dark-mode .bottom-sheet-content .fav-row .btn-eliminar-fav {
+        border-left-color: rgba(255, 255, 255, 0.1);
+        color: rgba(229, 231, 235, 0.6);
+      }
+
+      .dark-mode .bottom-sheet-content .fav-row .btn-eliminar-fav:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #fca5a5;
+        border-left-color: rgba(239, 68, 68, 0.3);
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        padding: 0 16px 16px 16px;
+      }
+
+      .action-buttons button {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary {
+        background: #007BFF;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #0056b3;
+      }
+
+      .btn-secondary {
+        background: #e0e0e0;
+        color: #333;
+      }
+
+      .btn-secondary:hover {
+        background: #d0d0d0;
+      }
+
+      #contenedor_paradas,
+      #favoritos {
+        display: none !important;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
       }
 
       footer {
-        top: 16px;
-        bottom: auto;
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(980px, calc(100% - 220px));
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: auto;
+        background: transparent;
+        padding: 16px;
+        gap: 12px;
+        align-items: flex-end;
+        justify-content: space-between;
+        border-top: none;
+        box-shadow: none;
+        z-index: 1080;
+        flex-wrap: wrap;
+        pointer-events: none;
+      }
+
+      /* Escritorio: la barra de búsqueda + botones van arriba en fila */
+      /* NOTA: acotado a "hasta 1023px" a propósito — es un layout viejo/parcial
+         (habla de ".sidepanel"/"#btn-favs", que ya no existen) que reposicionaba
+         el footer arriba y a ancho completo. A partir de 1024px rige el layout
+         de escritorio con panel izquierdo fijo (ver el último @media al final
+         de esta hoja de estilos); dejar este bloque sin acotar hacía que las dos
+         reglas compitieran y el dock de navegación terminara solapando todo. */
+      @media (min-width: 900px) and (max-width: 1023px) {
+        .btn-settings {
+          left: auto;
+          right: 16px;
+          top: 16px;
+          bottom: auto;
+        }
+
+        .sidepanel {
+          left: auto;
+          right: 0;
+          transform: translateX(100%);
+          box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+          border-right: none;
+          border-left: 1px solid var(--glass-border);
+        }
+
+        footer {
+          top: 16px;
+          bottom: auto;
+          left: 50%;
+          transform: translateX(-50%);
+          width: min(980px, calc(100% - 220px));
+          align-items: center;
+          justify-content: center;
+          flex-wrap: nowrap;
+          gap: 16px;
+          padding: 12px 16px;
+          z-index: 1080;
+        }
+
+        .search-bar-container {
+          margin-bottom: 0;
+          flex: 0 0 72px;
+          width: 72px;
+          height: 72px;
+          min-width: 72px;
+          padding: 0 !important;
+        }
+
+        /* Dimensiones consistentes para todos los botones principales flotantes en escritorio */
+        #btn-centrar,
+        #btn-favs,
+        #btn-settings {
+          width: 72px !important;
+          height: 72px !important;
+          min-width: 72px !important;
+          min-height: 72px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border-radius: 999vw !important;
+          padding: 0 !important;
+          font-size: 26px !important;
+        }
+
+        /* Iconos dentro de los botones principales */
+        #btn-centrar .icon,
+        #btn-favs .icon,
+        #btn-settings .icon {
+          width: 36px !important;
+          height: 36px !important;
+        }
+
+        .footer-buttons {
+          flex-direction: row;
+          gap: 12px;
+          margin-bottom: 0;
+        }
+
+        /* (Reglas de bottom-sheet ahora aplicadas globalmente) */
+      }
+
+      @media (max-width: 899px) {
+        .btn-settings {
+          left: 16px;
+          right: auto;
+          top: auto;
+          bottom: 16px;
+        }
+
+        .search-bar-container {
+          position: fixed !important;
+          top: 16px !important;
+          left: 16px !important;
+          right: 16px !important;
+          width: 64px !important;
+          height: 64px !important;
+          min-width: 64px !important;
+          margin: 0 auto !important;
+          padding: 0 !important;
+          z-index: 1003;
+          transform: none !important;
+          transition: width 0.24s ease, height 0.24s ease, border-radius 0.24s ease, padding 0.24s ease, gap 0.24s ease !important;
+        }
+
+        .search-bar-container.is-open {
+          width: calc(100% - 32px) !important;
+          height: 64px !important;
+          min-width: 0 !important;
+          padding: 0 16px !important;
+        }
+
+        .search-modal-content {
+          position: fixed !important;
+          top: 88px !important;
+          left: 16px !important;
+          right: 16px !important;
+          width: auto !important;
+          max-width: none !important;
+          margin: 0 !important;
+          transform: none !important;
+          border-radius: 18px !important;
+          max-height: calc(100vh - 130px) !important;
+          border: 1px solid var(--glass-border) !important;
+        }
+
+
+        /* Dimensiones consistentes para todos los botones principales flotantes en móvil */
+        #btn-centrar,
+        #btn-favs,
+        #btn-settings {
+          width: 64px !important;
+          height: 64px !important;
+          min-width: 64px !important;
+          min-height: 64px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border-radius: 999vw !important;
+          padding: 0 !important;
+          font-size: 24px !important;
+        }
+
+        /* Iconos dentro de los botones principales */
+        #btn-centrar .icon,
+        #btn-favs .icon,
+        #btn-settings .icon {
+          width: 32px !important;
+          height: 32px !important;
+        }
+
+        .footer-buttons {
+          position: fixed;
+          right: 16px;
+          bottom: 16px;
+          margin-bottom: 0;
+          z-index: 1003;
+        }
+
+      }
+
+      footer>* {
+        pointer-events: auto;
+      }
+
+      .search-bar-container {
+        flex: 0 0 64px;
+        width: 64px;
+        min-width: 64px;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 16px;
+        background: var(--glass-bg-strong);
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+        padding: 8px;
+        border-radius: 999px;
+        box-shadow: var(--glass-shadow);
+        border: 1px solid var(--glass-border);
+        overflow: hidden;
+        transition: width 0.24s ease, flex-basis 0.24s ease, border-radius 0.24s ease, padding 0.24s ease, gap 0.24s ease;
+      }
+
+      /* Cuando el dropdown está abierto: que se vea como una extensión */
+      .search-bar-container.is-open {
+        flex: 1 1 420px;
+        width: auto;
+        min-width: 250px;
+        gap: 0;
+        padding: 12px;
+        border-radius: 34px;
+        border-bottom: none;
+      }
+
+      .search-toggle-btn {
+        display: flex;
+        flex: 220px;
         align-items: center;
         justify-content: center;
-        flex-wrap: nowrap;
-        gap: 16px;
-        padding: 12px 16px;
-        z-index: 1080;
+        width: 48px;
+        height: 48px;
+        border: none;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--glass-fg);
+        cursor: pointer;
+        transition: transform 0.18s ease, opacity 0.24s ease, width 0.24s ease, flex-basis 0.24s ease;
       }
 
-      .search-bar-container {
-        margin-bottom: 0;
-        flex: 0 0 72px;
-        width: 72px;
-        height: 72px;
-        min-width: 72px;
-        padding: 0 !important;
+      .search-toggle-btn:hover {
+        transform: scale(1.08);
       }
 
-      /* Dimensiones consistentes para todos los botones principales flotantes en escritorio */
-      #btn-centrar,
-      #btn-favs,
-      #btn-settings {
-        width: 72px !important;
-        height: 72px !important;
-        min-width: 72px !important;
-        min-height: 72px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        border-radius: 999vw !important;
-        padding: 0 !important;
-        font-size: 26px !important;
+      .search-toggle-btn:active {
+        transform: scale(0.92);
       }
 
-      /* Iconos dentro de los botones principales */
-      #btn-centrar .icon,
-      #btn-favs .icon,
-      #btn-settings .icon {
-        width: 36px !important;
-        height: 36px !important;
+      .search-bar-container.is-open .search-toggle-btn {
+        width: 0;
+        height: 0;
+        opacity: 0;
+        padding: 0;
+        margin: 0;
+        pointer-events: none;
+        overflow: hidden;
+        flex: 0 0 0;
       }
 
-      .footer-buttons {
-        flex-direction: row;
-        gap: 12px;
-        margin-bottom: 0;
+      .search-bar {
+        flex: 1;
+        min-width: 0;
+        width: 0;
+        height: 100%;
+        opacity: 0;
+        pointer-events: none;
+        padding: 0;
+        border: none;
+        border-radius: 20px;
+        font-size: 16px;
+        background: transparent;
+        box-shadow: none;
+        outline: none;
+        transition: opacity 0.18s ease, width 0.24s ease, padding 0.24s ease, background 0.18s ease;
+        color: var(--glass-fg);
+        text-align: center;
+        position: relative;
+        z-index: 2;
       }
 
-      /* (Reglas de bottom-sheet ahora aplicadas globalmente) */
-    }
-
-    @media (max-width: 899px) {
-      .btn-settings {
-        left: 16px;
-        right: auto;
-        top: auto;
-        bottom: 16px;
+      .search-bar-container.is-open .search-bar {
+        width: auto;
+        opacity: 1;
+        pointer-events: auto;
+        padding: 0 18px;
       }
 
-      .search-bar-container {
-        position: fixed !important;
-        top: 16px !important;
-        left: 16px !important;
-        right: 16px !important;
-        width: 64px !important;
-        height: 64px !important;
-        min-width: 64px !important;
-        margin: 0 auto !important;
-        padding: 0 !important;
-        z-index: 1003;
-        transform: none !important;
-        transition: width 0.24s ease, height 0.24s ease, border-radius 0.24s ease, padding 0.24s ease, gap 0.24s ease !important;
+      .search-bar:focus {
+        border: none;
+        box-shadow: none;
+        background: rgba(255, 255, 255, 0.1);
       }
 
-      .search-bar-container.is-open {
-        width: calc(100% - 32px) !important;
-        height: 64px !important;
-        min-width: 0 !important;
-        padding: 0 16px !important;
+      .search-bar::placeholder {
+        color: var(--text-secondary);
+      }
+
+
+
+      .search-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        z-index: 1050;
+        pointer-events: none;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding-bottom: 0;
+      }
+
+      .search-modal.active {
+        display: flex;
+        pointer-events: auto;
       }
 
       .search-modal-content {
-        position: fixed !important;
-        top: 88px !important;
-        left: 16px !important;
-        right: 16px !important;
-        width: auto !important;
-        max-width: none !important;
-        margin: 0 !important;
-        transform: none !important;
-        border-radius: 18px !important;
-        max-height: calc(100vh - 130px) !important;
-        border: 1px solid var(--glass-border) !important;
+        /* Usar el mismo nivel de translucencia común que la barra de búsqueda */
+        background: var(--glass-bg-strong);
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+        width: 90%;
+        max-width: 500px;
+        max-height: calc(70vh);
+        display: flex;
+        flex-direction: column;
+        border-radius: 18px;
+        box-shadow: var(--glass-shadow);
+        border: 1px solid var(--glass-border);
+        animation: slideDown 0.24s ease;
+        align-self: center;
+        margin: 0 auto;
+        pointer-events: auto;
       }
 
-
-      /* Dimensiones consistentes para todos los botones principales flotantes en móvil */
-      #btn-centrar,
-      #btn-favs,
-      #btn-settings {
-        width: 64px !important;
-        height: 64px !important;
-        min-width: 64px !important;
-        min-height: 64px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        border-radius: 999vw !important;
-        padding: 0 !important;
-        font-size: 24px !important;
+      .search-results {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 10px 10px 12px 10px;
       }
 
-      /* Iconos dentro de los botones principales */
-      #btn-centrar .icon,
-      #btn-favs .icon,
-      #btn-settings .icon {
-        width: 32px !important;
-        height: 32px !important;
+      .search-results-hint,
+      .search-results-loading {
+        color: #6b7280;
+        text-align: center;
+        padding: 20px;
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
       }
 
-      .footer-buttons {
-        position: fixed;
-        right: 16px;
-        bottom: 16px;
-        margin-bottom: 0;
-        z-index: 1003;
+      .search-results-error {
+        color: #c00;
+        text-align: center;
+        padding: 20px;
+        margin: 0;
+        font-size: 14px;
       }
 
-    }
-
-    footer>* {
-      pointer-events: auto;
-    }
-
-    .search-bar-container {
-      flex: 0 0 64px;
-      width: 64px;
-      min-width: 64px;
-      display: flex;
-      align-items: center;
-      gap: 0;
-      margin-bottom: 16px;
-      background: var(--glass-bg-strong);
-      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-      padding: 8px;
-      border-radius: 999px;
-      box-shadow: var(--glass-shadow);
-      border: 1px solid var(--glass-border);
-      overflow: hidden;
-      transition: width 0.24s ease, flex-basis 0.24s ease, border-radius 0.24s ease, padding 0.24s ease, gap 0.24s ease;
-    }
-
-    /* Cuando el dropdown está abierto: que se vea como una extensión */
-    .search-bar-container.is-open {
-      flex: 1 1 420px;
-      width: auto;
-      min-width: 250px;
-      gap: 0;
-      padding: 12px;
-      border-radius: 34px;
-      border-bottom: none;
-    }
-
-    .search-toggle-btn {
-      display: flex;
-      flex: 220px;
-      align-items: center;
-      justify-content: center;
-      width: 48px;
-      height: 48px;
-      border: none;
-      border-radius: 50%;
-      background: transparent;
-      color: var(--glass-fg);
-      cursor: pointer;
-      transition: transform 0.18s ease, opacity 0.24s ease, width 0.24s ease, flex-basis 0.24s ease;
-    }
-
-    .search-toggle-btn:hover {
-      transform: scale(1.08);
-    }
-
-    .search-toggle-btn:active {
-      transform: scale(0.92);
-    }
-
-    .search-bar-container.is-open .search-toggle-btn {
-      width: 0;
-      height: 0;
-      opacity: 0;
-      padding: 0;
-      margin: 0;
-      pointer-events: none;
-      overflow: hidden;
-      flex: 0 0 0;
-    }
-
-    .search-bar {
-      flex: 1;
-      min-width: 0;
-      width: 0;
-      height: 100%;
-      opacity: 0;
-      pointer-events: none;
-      padding: 0;
-      border: none;
-      border-radius: 20px;
-      font-size: 16px;
-      background: transparent;
-      box-shadow: none;
-      outline: none;
-      transition: opacity 0.18s ease, width 0.24s ease, padding 0.24s ease, background 0.18s ease;
-      color: var(--glass-fg);
-      text-align: center;
-      position: relative;
-      z-index: 2;
-    }
-
-    .search-bar-container.is-open .search-bar {
-      width: auto;
-      opacity: 1;
-      pointer-events: auto;
-      padding: 0 18px;
-    }
-
-    .search-bar:focus {
-      border: none;
-      box-shadow: none;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .search-bar::placeholder {
-      color: var(--text-secondary);
-    }
-
-
-
-    .search-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      z-index: 1050;
-      pointer-events: none;
-      flex-direction: column;
-      justify-content: flex-start;
-      padding-bottom: 0;
-    }
-
-    .search-modal.active {
-      display: flex;
-      pointer-events: auto;
-    }
-
-    .search-modal-content {
-      /* Usar el mismo nivel de translucencia común que la barra de búsqueda */
-      background: var(--glass-bg-strong);
-      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-      width: 90%;
-      max-width: 500px;
-      max-height: calc(70vh);
-      display: flex;
-      flex-direction: column;
-      border-radius: 18px;
-      box-shadow: var(--glass-shadow);
-      border: 1px solid var(--glass-border);
-      animation: slideDown 0.24s ease;
-      align-self: center;
-      margin: 0 auto;
-      pointer-events: auto;
-    }
-
-    .search-results {
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 10px 10px 12px 10px;
-    }
-
-    .search-results-hint,
-    .search-results-loading {
-      color: #6b7280;
-      text-align: center;
-      padding: 20px;
-      margin: 0;
-      font-size: 18px;
-      font-weight: 800;
-    }
-
-    .search-results-error {
-      color: #c00;
-      text-align: center;
-      padding: 20px;
-      margin: 0;
-      font-size: 14px;
-    }
-
-    .search-result-item {
-      width: 100%;
-      text-align: center;
-      padding: 14px 14px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 14px;
-      /* Menor translucidez: fondo casi opaco y blur reducido para legibilidad */
-      background: rgba(255, 255, 255, 0.562);
-      cursor: pointer;
-      margin: 10px 0;
-      backdrop-filter: blur(1px) saturate(var(--glass-saturate));
-      -webkit-backdrop-filter: blur(1px) saturate(var(--glass-saturate));
-      transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
-    }
-
-    .search-result-item.has-line-color {
-      background-color: var(--line-color) !important;
-      border-color: var(--line-color) !important;
-    }
-
-    .search-result-item.has-line-color .search-result-item-title,
-    .search-result-item.has-line-color .search-result-item-info {
-      color: var(--line-text, #ffffff) !important;
-    }
-
-    .search-result-item.has-line-color:hover {
-      filter: brightness(1.1);
-    }
-
-    .search-result-item:hover {
-      background: rgba(0, 123, 255, 0.08);
-      border-color: rgba(0, 123, 255, 0.45);
-      transform: translateY(-1px);
-    }
-
-    .search-results .search-result-item:last-child {
-      margin-bottom: 6px;
-    }
-
-    .search-result-item-title {
-      font-weight: 750;
-      font-size: 16px;
-      color: #111827;
-      letter-spacing: 0.2px;
-      text-align: center;
-    }
-
-    .search-result-item-info {
-      font-size: 12px;
-      color: #6b7280;
-      margin-top: 4px;
-    }
-
-    .dark-mode .search-results-hint,
-    .dark-mode .search-results-loading {
-      color: rgba(229, 231, 235, 0.70);
-    }
-
-    .dark-mode .search-result-item {
-      border-color: rgba(255, 255, 255, 0.08);
-      background: rgba(30, 30, 36, 0.95);
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
-    }
-
-    .dark-mode .search-result-item:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.18);
-    }
-
-    .dark-mode .search-result-item-title {
-      color: #f4f4f6;
-    }
-
-    /* Ajustes extra para modo sin transparencia: quita blur explícitamente */
-    .no-transparency .btn-settings,
-    .no-transparency footer .btn-floating,
-    .no-transparency .search-bar-container {
-      background: #fff !important;
-      border: 1px solid rgba(0, 0, 0, 0.08) !important;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.10) !important;
-    }
-
-    .no-transparency .search-toggle-btn {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      color: var(--glass-fg) !important;
-    }
-
-    .dark-mode.no-transparency .search-bar-container {
-      background: #16161a !important;
-      border: 1px solid rgba(255, 255, 255, 0.10) !important;
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55) !important;
-    }
-
-    .dark-mode.no-transparency .search-toggle-btn {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      color: var(--glass-fg) !important;
-    }
-
-    .dark-mode .search-toggle-btn {
-      background: transparent;
-      color: var(--glass-fg);
-      box-shadow: none;
-    }
-
-    .no-transparency .search-modal-content,
-    .no-transparency .bottom-sheet,
-    .no-transparency .sidepanel,
-    .no-transparency .sidepanel-header,
-    .no-transparency .toggle-row {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-    }
-
-    /* Fondo opaco para el modal de resultados cuando la transparencia está desactivada */
-    .no-transparency .search-modal-content {
-      background: #16161a !important;
-      border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
-    }
-
-    .dark-mode.no-transparency .search-modal-content {
-      background: #16161a !important;
-      border: 1px solid rgba(255, 255, 255, 0.10) !important;
-      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55) !important;
-    }
-
-    /* Resultados opacos cuando se desactiva la transparencia */
-    .no-transparency .search-result-item {
-      background: #1e1e24 !important;
-      color: #f4f4f6 !important;
-      border-color: rgba(255, 255, 255, 0.08) !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-    }
-
-    .dark-mode.no-transparency .search-result-item {
-      background: #1e1e24 !important;
-      color: #f4f4f6 !important;
-      border-color: rgba(255, 255, 255, 0.10) !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-    }
-
-    /* Restaurar estilo opaco/previo para botones cuando se desactiva la transparencia */
-    .no-transparency .btn-settings,
-    .no-transparency footer .btn-floating {
-      background: #16161a !important;
-      color: #f4f4f6 !important;
-      border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4) !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      border-radius: 50% !important;
-    }
-
-    /* Variante para modo oscuro cuando la transparencia está desactivada */
-    .dark-mode.no-transparency .btn-settings,
-    .dark-mode.no-transparency footer .btn-floating {
-      background: #16161a !important;
-      color: #f4f4f6 !important;
-      border: 1px solid rgba(255, 255, 255, 0.10) !important;
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55) !important;
-    }
-
-    /* Restaurar el color azul cuando el boton centrar esta activo, aun sin transparencia */
-    .no-transparency .btn-settings.is-realtime-active,
-    .no-transparency footer .btn-floating.is-realtime-active {
-      background: linear-gradient(135deg, #007BFF 0%, #0056cc 100%) !important;
-      border-color: #007BFF !important;
-      box-shadow: 0 4px 16px rgba(0, 123, 255, 0.4) !important;
-    }
-
-    .dark-mode.no-transparency .btn-settings.is-realtime-active,
-    .dark-mode.no-transparency footer .btn-floating.is-realtime-active {
-      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
-      border-color: #3b82f6 !important;
-      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4) !important;
-    }
-
-    .dark-mode .search-result-item-info {
-      color: rgba(229, 231, 235, 0.70);
-    }
-
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
+      .search-result-item {
+        width: 100%;
+        text-align: center;
+        padding: 14px 14px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 14px;
+        /* Menor translucidez: fondo casi opaco y blur reducido para legibilidad */
+        background: rgba(255, 255, 255, 0.562);
+        cursor: pointer;
+        margin: 10px 0;
+        backdrop-filter: blur(1px) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(1px) saturate(var(--glass-saturate));
+        transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
       }
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes pulse-halo-anim {
-      0% {
-        opacity: 1;
+      .search-result-item.has-line-color {
+        background-color: var(--line-color) !important;
+        border-color: var(--line-color) !important;
       }
 
-      50% {
-        opacity: 0.1;
+      .search-result-item.has-line-color .search-result-item-title,
+      .search-result-item.has-line-color .search-result-item-info {
+        color: var(--line-text, #ffffff) !important;
       }
 
-      100% {
-        opacity: 1;
+      .search-result-item.has-line-color:hover {
+        filter: brightness(1.1);
       }
-    }
 
-    .user-marker-halo.pulse-halo {
-      animation: pulse-halo-anim 1.5s infinite ease-in-out;
-    }
+      .search-result-item:hover {
+        background: rgba(0, 123, 255, 0.08);
+        border-color: rgba(0, 123, 255, 0.45);
+        transform: translateY(-1px);
+      }
 
-    /* ============================================================
+      .search-results .search-result-item:last-child {
+        margin-bottom: 6px;
+      }
+
+      .search-result-item-title {
+        font-weight: 750;
+        font-size: 16px;
+        color: #111827;
+        letter-spacing: 0.2px;
+        text-align: center;
+      }
+
+      .search-result-item-info {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 4px;
+      }
+
+      .dark-mode .search-results-hint,
+      .dark-mode .search-results-loading {
+        color: rgba(229, 231, 235, 0.70);
+      }
+
+      .dark-mode .search-result-item {
+        border-color: rgba(255, 255, 255, 0.08);
+        background: rgba(30, 30, 36, 0.95);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+
+      .dark-mode .search-result-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.18);
+      }
+
+      .dark-mode .search-result-item-title {
+        color: #f4f4f6;
+      }
+
+      /* Ajustes extra para modo sin transparencia: quita blur explícitamente */
+      .no-transparency .btn-settings,
+      .no-transparency footer .btn-floating,
+      .no-transparency .search-bar-container {
+        background: #fff !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.10) !important;
+      }
+
+      .no-transparency .search-toggle-btn {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: var(--glass-fg) !important;
+      }
+
+      .dark-mode.no-transparency .search-bar-container {
+        background: #16161a !important;
+        border: 1px solid rgba(255, 255, 255, 0.10) !important;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55) !important;
+      }
+
+      .dark-mode.no-transparency .search-toggle-btn {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: var(--glass-fg) !important;
+      }
+
+      .dark-mode .search-toggle-btn {
+        background: transparent;
+        color: var(--glass-fg);
+        box-shadow: none;
+      }
+
+      .no-transparency .search-modal-content,
+      .no-transparency .bottom-sheet,
+      .no-transparency .sidepanel,
+      .no-transparency .sidepanel-header,
+      .no-transparency .toggle-row {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+
+      /* Fondo opaco para el modal de resultados cuando la transparencia está desactivada */
+      .no-transparency .search-modal-content {
+        background: #16161a !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+      }
+
+      .dark-mode.no-transparency .search-modal-content {
+        background: #16161a !important;
+        border: 1px solid rgba(255, 255, 255, 0.10) !important;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55) !important;
+      }
+
+      /* Resultados opacos cuando se desactiva la transparencia */
+      .no-transparency .search-result-item {
+        background: #1e1e24 !important;
+        color: #f4f4f6 !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+
+      .dark-mode.no-transparency .search-result-item {
+        background: #1e1e24 !important;
+        color: #f4f4f6 !important;
+        border-color: rgba(255, 255, 255, 0.10) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+
+      /* Restaurar estilo opaco/previo para botones cuando se desactiva la transparencia */
+      .no-transparency .btn-settings,
+      .no-transparency footer .btn-floating {
+        background: #16161a !important;
+        color: #f4f4f6 !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-radius: 50% !important;
+      }
+
+      /* Variante para modo oscuro cuando la transparencia está desactivada */
+      .dark-mode.no-transparency .btn-settings,
+      .dark-mode.no-transparency footer .btn-floating {
+        background: #16161a !important;
+        color: #f4f4f6 !important;
+        border: 1px solid rgba(255, 255, 255, 0.10) !important;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55) !important;
+      }
+
+      /* Restaurar el color azul cuando el boton centrar esta activo, aun sin transparencia */
+      .no-transparency .btn-settings.is-realtime-active,
+      .no-transparency footer .btn-floating.is-realtime-active {
+        background: linear-gradient(135deg, #007BFF 0%, #0056cc 100%) !important;
+        border-color: #007BFF !important;
+        box-shadow: 0 4px 16px rgba(0, 123, 255, 0.4) !important;
+      }
+
+      .dark-mode.no-transparency .btn-settings.is-realtime-active,
+      .dark-mode.no-transparency footer .btn-floating.is-realtime-active {
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4) !important;
+      }
+
+      .dark-mode .search-result-item-info {
+        color: rgba(229, 231, 235, 0.70);
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pulse-halo-anim {
+        0% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0.1;
+        }
+
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .user-marker-halo.pulse-halo {
+        animation: pulse-halo-anim 1.5s infinite ease-in-out;
+      }
+
+      /* ============================================================
        MARCADOR DE PARADA DESTACADA EN MAPA (PULSO Y HALO LUMINOSO)
        ============================================================ */
-    .map-highlight-marker-wrap {
-      background: transparent !important;
-      border: none !important;
-    }
+      .map-highlight-marker-wrap {
+        background: transparent !important;
+        border: none !important;
+      }
 
-    .map-highlight-marker-wrap,
-    .map-highlight-marker,
-    .map-highlight-beacon,
-    .map-highlight-pin,
-    .map-highlight-tooltip-tag {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
+      .map-highlight-marker-wrap,
+      .map-highlight-marker,
+      .map-highlight-beacon,
+      .map-highlight-pin,
+      .map-highlight-tooltip-tag {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
 
-    .map-highlight-tooltip-tag::after {
-      content: '';
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      border-width: 5px;
-      border-style: solid;
-      border-color: rgba(26, 26, 32, 0.96) transparent transparent transparent;
-    }
+      .map-highlight-tooltip-tag::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 5px;
+        border-style: solid;
+        border-color: rgba(26, 26, 32, 0.96) transparent transparent transparent;
+      }
 
-    /* Selector y control de sentido de trayectos */
-    .route-direction-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 14px;
-      margin: 12px 0 16px 0;
-      background: rgba(255, 71, 46, 0.08);
-      border: 1px solid rgba(255, 71, 46, 0.28);
-      border-radius: 14px;
-    }
+      /* Selector y control de sentido de trayectos */
+      .route-direction-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 14px;
+        margin: 12px 0 16px 0;
+        background: rgba(255, 71, 46, 0.08);
+        border: 1px solid rgba(255, 71, 46, 0.28);
+        border-radius: 14px;
+      }
 
-    .route-direction-left {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-      flex: 1;
-    }
+      .route-direction-left {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        flex: 1;
+      }
 
-    .route-direction-badge {
-      font-size: 11px;
-      font-weight: 700;
-      color: #ff735c;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
+      .route-direction-badge {
+        font-size: 11px;
+        font-weight: 700;
+        color: #ff735c;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
 
-    .route-direction-text {
-      font-size: 13px;
-      font-weight: 600;
-      color: #ffffff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+      .route-direction-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
-    .btn-route-switch-dir {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 12px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #ff472e 0%, #e6351d 100%);
-      color: #ffffff;
-      border: 1px solid rgba(255, 115, 92, 0.4);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: transform 0.15s ease, background 0.15s ease;
-      box-shadow: 0 2px 8px rgba(255, 71, 46, 0.3);
-      -webkit-tap-highlight-color: transparent;
-    }
+      .btn-route-switch-dir {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #ff472e 0%, #e6351d 100%);
+        color: #ffffff;
+        border: 1px solid rgba(255, 115, 92, 0.4);
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: transform 0.15s ease, background 0.15s ease;
+        box-shadow: 0 2px 8px rgba(255, 71, 46, 0.3);
+        -webkit-tap-highlight-color: transparent;
+      }
 
-    .btn-route-switch-dir:hover {
-      background: linear-gradient(135deg, #ff5e47 0%, #ff472e 100%);
-      transform: translateY(-1px);
-    }
+      .btn-route-switch-dir:hover {
+        background: linear-gradient(135deg, #ff5e47 0%, #ff472e 100%);
+        transform: translateY(-1px);
+      }
 
-    .btn-route-switch-dir:active {
-      transform: scale(0.97);
-    }
+      .btn-route-switch-dir:active {
+        transform: scale(0.97);
+      }
 
-    /* ============================================================
+      /* ============================================================
        RESPONSIVIDAD MÓVIL (< 600px y < 420px)
        ============================================================ */
-    @media (max-width: 600px) {
-      .dashboard-scroll,
-      .guardados-scroll {
-        padding: 16px 12px 84px 12px;
-        gap: 16px;
+      @media (max-width: 600px) {
+
+        .dashboard-scroll,
+        .guardados-scroll {
+          padding: 16px 12px 84px 12px;
+          gap: 16px;
+        }
+
+        .guardados-header {
+          padding: 4px 2px;
+        }
+
+        .guardados-header h1 {
+          font-size: 22px;
+        }
+
+        .guardados-filters {
+          gap: 6px;
+          flex-shrink: 0;
+          min-height: 44px;
+          padding: 4px 2px 8px 2px;
+        }
+
+        .guardados-filter-btn {
+          padding: 7px 13px;
+          font-size: 12px;
+          min-height: 36px;
+          flex-shrink: 0;
+        }
+
+        .fav-card-item {
+          padding: 10px 12px;
+          gap: 10px;
+        }
+
+        .fav-card-title {
+          font-size: 14px;
+        }
+
+        .btn-fav-action {
+          padding: 7px 10px;
+          font-size: 12px;
+        }
+
+        /* Compactar timeline de recorrido en móviles para dejar espacio a la calle */
+        .transit-timeline-container {
+          padding: 6px 2px 20px 2px;
+        }
+
+        .transit-badge-col {
+          width: 32px;
+          min-width: 32px;
+        }
+
+        .transit-line-pill-badge {
+          width: 28px;
+          height: 28px;
+          font-size: 12px;
+        }
+
+        .transit-rail-col {
+          width: 22px;
+          min-width: 22px;
+        }
+
+        .transit-tube-seg {
+          width: 10px;
+        }
+
+        .transit-faint-dot {
+          margin-left: 42px;
+        }
+
+        .transit-stop-btn {
+          gap: 8px;
+          padding: 8px 10px;
+        }
+
+        .transit-stop-icon-badge {
+          width: 26px;
+          height: 26px;
+          border-radius: 7px;
+        }
+
+        .transit-stop-icon-badge svg {
+          width: 14px;
+          height: 14px;
+        }
+
+        .transit-stop-name {
+          font-size: 13px;
+        }
+
+        .transit-stop-name-primary {
+          font-size: 14px;
+        }
+
+        .transit-stop-meta {
+          font-size: 11px;
+        }
+
+        /* Cabecera del panel de detalle en móvil */
+        .panel-header {
+          padding: 10px 12px;
+          gap: 8px;
+        }
+
+        .panel-title {
+          font-size: 14px;
+          line-height: 1.25;
+          max-height: 2.6em;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .panel-header-icon {
+          padding: 4px 8px;
+          font-size: 11px;
+        }
       }
 
-      .guardados-header {
-        padding: 4px 2px;
+      @media (max-width: 380px) {
+        .fav-card-item {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 8px;
+        }
+
+        .fav-card-actions {
+          justify-content: flex-end;
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          padding-top: 6px;
+        }
+
+        .transit-badge-col {
+          width: 28px;
+          min-width: 28px;
+        }
+
+        .transit-rail-col {
+          width: 18px;
+          min-width: 18px;
+        }
+
+        .transit-tube-seg {
+          width: 8px;
+        }
+
+        .transit-faint-dot {
+          margin-left: 36px;
+        }
       }
 
-      .guardados-header h1 {
-        font-size: 22px;
-      }
+      /* ══════════════════════════════════════════════════════════════════
+         INTERFAZ DE PANTALLAS ANCHAS (escritorio): vista dividida.
+         Izquierda: los "menús" (Inicio / Guardados y el panel de detalle
+         cuando hay algo seleccionado). Derecha: el mapa a pantalla completa,
+         siempre visible, con todo lo que se dibuje sobre él (rutas, HUD,
+         paradas, barra GPS, etc).
+         ══════════════════════════════════════════════════════════════════ */
+      @media (min-width: 1024px) {
+        :root {
+          --desktop-sidebar-width: 420px;
+        }
 
-      .guardados-filters {
-        gap: 6px;
-        flex-shrink: 0;
-        min-height: 44px;
-        padding: 4px 2px 8px 2px;
-      }
+        /* El mapa deja de ser una "vista" que se oculta: siempre está presente
+           a pantalla completa; su mitad izquierda queda tapada por la columna
+           de menús / panel de detalle.
+           OJO: z-index acá tiene que ser MAYOR que el de #view-dashboard/#view-guardados
+           (10, ver ".app-view.active" más arriba en la hoja de estilos). "#view-map"
+           es contenedor de posicionamiento (position+z-index), así que TODOS sus hijos
+           —incluido ".map-detail-panel"— quedan atrapados en esta misma capa de apilamiento
+           sin importar el z-index que ellos mismos tengan. Si acá pusiéramos un z-index
+           menor a 10, el panel de detalle jamás podría dibujarse por encima del dashboard,
+           aunque tenga z-index alto. Como ".map-area" (la mitad derecha) no se superpone
+           en pantalla con el dashboard/guardados, subir este z-index no genera conflicto. */
+        /* pointer-events:none acá es clave: "#view-map" (inset:0) cubre TODA la
+           pantalla como caja, incluida la columna izquierda — si dejara
+           pointer-events:auto, esa caja (aunque no pinte nada ahí) intercepta
+           clicks/scroll/rueda del mouse sobre el dashboard/guardados que están
+           debajo en el mismo punto de la pantalla, aunque tengan menor z-index.
+           Se lo devolvemos explícitamente a ".map-area" (el mapa real) y al
+           panel de detalle cuando está abierto, que sí necesitan recibir eventos. */
+        #view-map {
+          position: fixed;
+          inset: 0;
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: none !important;
+          transform: none !important;
+          z-index: 20;
+        }
 
-      .guardados-filter-btn {
-        padding: 7px 13px;
-        font-size: 12px;
-        min-height: 36px;
-        flex-shrink: 0;
-      }
+        /* Columna izquierda fija: Inicio / Guardados (los "menús" de escritorio).
+           Importante: ".app-view" trae "inset:0" (o sea right:0 también) — hay que
+           anularlo explícitamente, si no compite con "width" y la columna termina
+           ocupando toda la pantalla como en mobile. También le damos fondo opaco
+           propio (antes dependía de que cada tarjeta interna tapara el mapa de atrás,
+           lo cual dejaba huecos entre tarjetas donde se veía lo de detrás). */
+        #view-dashboard,
+        #view-guardados {
+          position: fixed !important;
+          top: 0;
+          left: 0;
+          right: auto;
+          bottom: 0;
+          width: var(--desktop-sidebar-width) !important;
+          height: auto;
+          transform: none;
+          background: #101014;
+        }
 
-      .fav-card-item {
-        padding: 10px 12px;
-        gap: 10px;
-      }
+        /* Mitad derecha: el mapa en sí y todo lo dibujado sobre él */
+        .map-area {
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: var(--desktop-sidebar-width);
+          width: auto;
+          height: auto;
+          flex: none !important;
+          pointer-events: auto;
+        }
 
-      .fav-card-title {
-        font-size: 14px;
-      }
+        /* En escritorio el mapa nunca se achica al abrir un detalle: el panel
+           de detalle vive aparte, en la columna izquierda. */
+        #view-map.has-detail-open .map-area {
+          height: auto;
+          flex: none !important;
+          min-height: 0;
+        }
 
-      .btn-fav-action {
-        padding: 7px 10px;
-        font-size: 12px;
-      }
+        .leaflet-bottom,
+        #view-map.has-detail-open .leaflet-bottom {
+          bottom: 24px !important;
+        }
 
-      /* Compactar timeline de recorrido en móviles para dejar espacio a la calle */
-      .transit-timeline-container {
-        padding: 6px 2px 20px 2px;
-      }
+        /* Panel de detalle (bottom sheet): pasa a la columna izquierda, superpuesto
+           sobre Inicio/Guardados cuando hay una parada, línea o ruta seleccionada.
+           Por defecto (sin nada seleccionado) tiene que quedar totalmente invisible
+           y sin bloquear clicks, igual que en mobile — antes forzaba height:auto
+           siempre, así que el panel (vacío o con contenido viejo) quedaba ocupando
+           la columna entera aunque no hubiera nada que mostrar. */
+        .map-detail-panel {
+          position: fixed;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          width: var(--desktop-sidebar-width);
+          height: 0;
+          opacity: 0;
+          pointer-events: none;
+          flex: none !important;
+          border-radius: 0;
+          border-top: none;
+          border-right: 1px solid rgba(255, 255, 255, 0.1);
+          z-index: 1;
+        }
 
-      .transit-badge-col {
-        width: 32px;
-        min-width: 32px;
-      }
+        #view-map.has-detail-open .map-detail-panel {
+          height: auto;
+          opacity: 1;
+          pointer-events: auto;
+          flex: none !important;
+        }
 
-      .transit-line-pill-badge {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
-      }
+        /* Degradado superior del mapa: que no invada la columna de menús */
+        .page-shade {
+          left: var(--desktop-sidebar-width);
+          width: calc(100% - var(--desktop-sidebar-width));
+        }
 
-      .transit-rail-col {
-        width: 22px;
-        min-width: 22px;
-      }
+        /* Dock de navegación: centrado dentro de la columna izquierda, no del viewport */
+        .app-footer {
+          left: calc(var(--desktop-sidebar-width) / 2);
+          width: min(360px, calc(var(--desktop-sidebar-width) - 32px));
+        }
 
-      .transit-tube-seg {
-        width: 10px;
-      }
+        /* La pestaña "Mapa" deja de tener sentido: el mapa siempre está a la vista */
+        #tab-map {
+          display: none;
+        }
 
-      .transit-faint-dot {
-        margin-left: 42px;
-      }
+        /* Pedido explícito: en escritorio (SOLO acá, mobile queda igual) se saca el
+           toggle "Mostrarla en el mapa (GPS)" de la tarjeta de parada más cercana. */
+        #dashboard-nearest-stop-card .setting-toggle-row,
+        #dashboard-nearest-stop-card .nearest-stop-dash-divider {
+          display: none;
+        }
 
-      .transit-stop-btn {
-        gap: 8px;
-        padding: 8px 10px;
-      }
+        /* Pedido explícito: en escritorio (SOLO acá, mobile queda igual) la notificación
+           flotante de "parada más cercana / guía a pie" no debe aparecer sobre el mapa. */
+        #map-nearest-stop-hud {
+          display: none !important;
+        }
 
-      .transit-stop-icon-badge {
-        width: 26px;
-        height: 26px;
-        border-radius: 7px;
-      }
+        /* Pedido explícito: en escritorio (SOLO acá, mobile queda igual) se saca el
+           botón "Explorar mapa" — el mapa ya está siempre a la vista al costado. */
+        #btn-quick-map {
+          display: none;
+        }
 
-      .transit-stop-icon-badge svg {
-        width: 14px;
-        height: 14px;
+        .dashboard-quick-actions {
+          grid-template-columns: 1fr;
+        }
       }
-
-      .transit-stop-name {
-        font-size: 13px;
-      }
-
-      .transit-stop-name-primary {
-        font-size: 14px;
-      }
-
-      .transit-stop-meta {
-        font-size: 11px;
-      }
-
-      /* Cabecera del panel de detalle en móvil */
-      .panel-header {
-        padding: 10px 12px;
-        gap: 8px;
-      }
-
-      .panel-title {
-        font-size: 14px;
-        line-height: 1.25;
-        max-height: 2.6em;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .panel-header-icon {
-        padding: 4px 8px;
-        font-size: 11px;
-      }
-    }
-
-    @media (max-width: 380px) {
-      .fav-card-item {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-      }
-
-      .fav-card-actions {
-        justify-content: flex-end;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        padding-top: 6px;
-      }
-
-      .transit-badge-col {
-        width: 28px;
-        min-width: 28px;
-      }
-
-      .transit-rail-col {
-        width: 18px;
-        min-width: 18px;
-      }
-
-      .transit-tube-seg {
-        width: 8px;
-      }
-
-      .transit-faint-dot {
-        margin-left: 36px;
-      }
-    }
   </style>
   <link rel="manifest" href="manifest.json" />
 </head>
@@ -4269,10 +5010,18 @@
         <!-- Header con Logo, Nombre y Fondo Alternante de San Juan -->
         <header class="dashboard-hero">
           <div class="hero-bg-carousel" id="hero-bg-carousel" aria-hidden="true">
-            <div class="hero-bg-slide active" style="background-image: url('https://media-cdn.tripadvisor.com/media/photo-c/1280x250/11/1c/85/50/img-20171027-wa0056-largejpg.jpg');"></div>
-            <div class="hero-bg-slide" style="background-image: url('https://trayectoriasenviaje.com/wp-content/uploads/2019/10/Rodeo_san_juan-36.jpg');"></div>
-            <div class="hero-bg-slide" style="background-image: url('https://sanjuanturismoargentina.com/wp-content/uploads/2022/01/DJI_0343-768x576.jpg');"></div>
-            <div class="hero-bg-slide" style="background-image: url('https://sisanjuan.b-cdn.net/media/k2/items/cache/9032d69f4b59d829e0f8ee59e90ffb6e_L.jpg?t=20190923_174621');"></div>
+            <div class="hero-bg-slide active"
+              style="background-image: url('https://media-cdn.tripadvisor.com/media/photo-c/1280x250/11/1c/85/50/img-20171027-wa0056-largejpg.jpg');">
+            </div>
+            <div class="hero-bg-slide"
+              style="background-image: url('https://trayectoriasenviaje.com/wp-content/uploads/2019/10/Rodeo_san_juan-36.jpg');">
+            </div>
+            <div class="hero-bg-slide"
+              style="background-image: url('https://sanjuanturismoargentina.com/wp-content/uploads/2022/01/DJI_0343-768x576.jpg');">
+            </div>
+            <div class="hero-bg-slide"
+              style="background-image: url('https://sisanjuan.b-cdn.net/media/k2/items/cache/9032d69f4b59d829e0f8ee59e90ffb6e_L.jpg?t=20190923_174621');">
+            </div>
           </div>
           <div class="hero-bg-overlay" aria-hidden="true"></div>
           <div class="dashboard-hero-content">
@@ -4283,6 +5032,27 @@
             <p class="dashboard-tagline">Transporte Público de San Juan</p>
           </div>
         </header>
+
+        <!-- Accesos directos al Mapa y al Planificador de viaje -->
+        <div class="dashboard-quick-actions">
+          <button id="btn-quick-trip-planner" type="button" class="btn-quick-explore btn-quick-explore--primary"
+            onclick="mostrarPlanificadorViaje()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+            <span>Planificar viaje</span>
+          </button>
+          <button id="btn-quick-map" type="button" class="btn-quick-explore">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+              <line x1="9" x2="9" y1="3" y2="18"></line>
+              <line x1="15" x2="15" y1="6" y2="21"></line>
+            </svg>
+            <span>Explorar mapa</span>
+          </button>
+        </div>
 
         <!-- Barra de búsqueda principal integrada -->
         <div class="search-unified-wrapper">
@@ -4305,9 +5075,66 @@
               </svg>
             </button>
           </div>
+          <!-- Botones para personalizar qué tipo de resultado buscar (siempre visibles en la barra) -->
+          <div id="dash-search-filters" class="search-filter-row">
+            <button type="button" class="search-filter-chip" data-search-filter="linea" aria-pressed="false">
+              <span aria-hidden="true">🚌</span> Líneas
+            </button>
+            <button type="button" class="search-filter-chip" data-search-filter="calle" aria-pressed="false">
+              <span aria-hidden="true">📍</span> Lugares
+            </button>
+            <button type="button" class="search-filter-chip" data-search-filter="parada" aria-pressed="false">
+              <span aria-hidden="true">🚏</span> Paradas
+            </button>
+          </div>
           <!-- Dropdown con resultados en tiempo real -->
           <div id="dash-search-results" class="search-unified-dropdown" style="display: none;"></div>
         </div>
+
+        <!-- Accesos rápidos a favoritos (máximo 3) -->
+        <section id="quick-favs-section" class="quick-favs-section" style="display: none;">
+          <div class="quick-favs-row" id="quick-favs-row"></div>
+        </section>
+
+        <!-- Tarjeta combinada: Tu parada más cercana (GPS) + toggle para activarla/desactivarla en el mapa -->
+        <section id="dashboard-nearest-stop-card" class="dashboard-card nearest-stop-dash-card">
+          <div class="card-header-row">
+            <div class="card-header-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <h2>Tu parada más cercana</h2>
+            </div>
+          </div>
+          <div id="dashboard-nearest-stop-body" class="nearest-stop-dash-body" style="display: none;">
+            <div class="nearest-stop-dash-info">
+              <h3 id="dash-nearest-stop-name" class="nearest-stop-dash-name">Buscando tu ubicación...</h3>
+              <p id="dash-nearest-stop-dist" class="nearest-stop-dash-dist"></p>
+              <div id="dash-nearest-stop-lines" class="nearest-stop-dash-lines"></div>
+            </div>
+            <button type="button" id="dash-nearest-stop-btn" class="btn-nearest-stop-dash">
+              <span>Ver líneas</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 18 6-6-6-6"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="nearest-stop-dash-divider"></div>
+          <div class="setting-toggle-row">
+            <div class="setting-toggle-info">
+              <label for="toggle-nearest-stop-hud" class="setting-toggle-label">Mostrarla en el mapa (GPS)</label>
+              <p class="setting-toggle-desc">Activa la notificación flotante superior con la parada más próxima, líneas
+                y ruta sugerida a pie.</p>
+            </div>
+            <label class="switch-toggle" for="toggle-nearest-stop-hud">
+              <input type="checkbox" id="toggle-nearest-stop-hud" checked />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </section>
 
         <!-- Historial de Búsquedas Recientes -->
         <section class="dashboard-card recent-searches-card">
@@ -4327,42 +5154,6 @@
           </div>
         </section>
 
-        <!-- Acceso directo al Mapa -->
-        <div class="dashboard-quick-actions">
-          <button id="btn-quick-map" type="button" class="btn-quick-explore">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
-              <line x1="9" x2="9" y1="3" y2="18"></line>
-              <line x1="15" x2="15" y1="6" y2="21"></line>
-            </svg>
-            <span>Explorar mapa en vivo</span>
-          </button>
-        </div>
-
-        <!-- Preferencias de Navegación en Dashboard -->
-        <section class="dashboard-card nav-preferences-card">
-          <div class="card-header-row">
-            <div class="card-header-title">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-              </svg>
-              <h2>Indicaciones en el mapa</h2>
-            </div>
-          </div>
-          <div class="setting-toggle-row">
-            <div class="setting-toggle-info">
-              <label for="toggle-nearest-stop-hud" class="setting-toggle-label">Parada más cercana (GPS)</label>
-              <p class="setting-toggle-desc">Muestra la notificación flotante superior con la parada más próxima, líneas y ruta sugerida a pie.</p>
-            </div>
-            <label class="switch-toggle" for="toggle-nearest-stop-hud">
-              <input type="checkbox" id="toggle-nearest-stop-hud" checked />
-              <span class="switch-slider"></span>
-            </label>
-          </div>
-        </section>
-
         <!-- Créditos y Branding (reubicados de configuración) -->
         <section class="dashboard-card credits-card">
           <div class="credits-logo-row">
@@ -4379,10 +5170,12 @@
             <p>Créditos a <a href="https://redtulum.gob.ar" target="_blank" rel="noopener">RedTulum</a></p>
           </div>
           <div class="credits-dev-box">
-            <h4 class="credits-dev-title">Desarrollado por <a href="https://djsolutionss.lovable.app" target="_blank" rel="noopener" class="credits-company-link">D&J Solutions</a></h4>
+            <h4 class="credits-dev-title">Desarrollado por <a href="https://djsolutionss.lovable.app" target="_blank"
+                rel="noopener" class="credits-company-link">D&J Solutions</a></h4>
             <div class="credits-dev-members">
               <p class="credits-dev-member">
-                <a href="https://diegogarcia-dev.com.ar" target="_blank" rel="noopener" class="credits-member-link">Diego Jose Garcia</a>
+                <a href="https://diegogarcia-dev.com.ar" target="_blank" rel="noopener"
+                  class="credits-member-link">Diego Jose Garcia</a>
               </p>
               <p class="credits-dev-member">
                 <span class="credits-member-text">Juan Pablo Landa</span>
@@ -4401,7 +5194,8 @@
         <div class="page-shade top"></div>
 
         <!-- HUD Notificación GPS: Parada más cercana (Agrandado con Títulos y Subtítulos) -->
-        <div id="map-nearest-stop-hud" class="map-nearest-stop-hud" role="button" tabindex="0" aria-label="Indicación GPS hacia la parada más cercana">
+        <div id="map-nearest-stop-hud" class="map-nearest-stop-hud" role="button" tabindex="0"
+          aria-label="Indicación GPS hacia la parada más cercana">
           <!-- Pantalla / Overlay de carga animada al tocar para trazar ruta -->
           <div id="hud-loading-overlay" class="hud-loading-overlay" style="display: none;" aria-hidden="true">
             <div class="hud-loading-spinner-wrap">
@@ -4424,14 +5218,16 @@
           <!-- Fila principal: Ícono de navegación + Títulos y Subtítulos -->
           <div class="hud-main-row">
             <div class="hud-icon-badge" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 10 4 15 9 20"></polyline>
                 <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
               </svg>
             </div>
             <div class="hud-info-col">
               <h3 id="hud-stop-name" class="hud-stop-name">Cargando parada...</h3>
-              <p id="hud-stop-instruction" class="hud-stop-instruction">Caminá hacia esta parada para abordar tus colectivos. Tocá para trazar la ruta en el mapa.</p>
+              <p id="hud-stop-instruction" class="hud-stop-instruction">Caminá hacia esta parada para abordar tus
+                colectivos. Tocá para trazar la ruta en el mapa.</p>
             </div>
           </div>
 
@@ -4443,7 +5239,8 @@
             </div>
             <div class="hud-cta-badge">
               <span>Trazar ruta GPS</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="m9 18 6-6-6-6"></path>
               </svg>
             </div>
@@ -4454,7 +5251,8 @@
         <div id="map-active-gps-route-bar" class="map-active-gps-route-bar" role="status" aria-live="polite">
           <div class="active-gps-left">
             <div class="active-gps-icon-pill" aria-hidden="true">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
               </svg>
             </div>
@@ -4463,8 +5261,10 @@
               <span id="active-gps-target" class="active-gps-target">Ruta hacia la parada</span>
             </div>
           </div>
-          <button id="btn-active-gps-clear" type="button" class="btn-active-gps-clear" onclick="limpiarRutaGpsActiva()" title="Borrar ruta GPS del mapa">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <button id="btn-active-gps-clear" type="button" class="btn-active-gps-clear" onclick="limpiarRutaGpsActiva()"
+            title="Borrar ruta GPS del mapa">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -4490,11 +5290,17 @@
       <div id="confirm-close-route-overlay" class="confirm-overlay" aria-hidden="true">
         <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-close-route-title"
           onclick="event.stopPropagation()">
+          <div class="confirm-modal-icon icon-danger" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+              <line x1="4" y1="20" x2="10.5" y2="13.5"></line>
+            </svg>
+          </div>
           <h3 id="confirm-close-route-title">¿Cerrar ruta planeada?</h3>
-          <p id="confirm-close-route-message">Si cerrás, se limpiará el recorrido del mapa.</p>
+          <p id="confirm-close-route-message">Se va a limpiar el recorrido, las paradas y la ruta a pie del mapa.</p>
           <ul class="bs-nav-rows bs-nav-rows--two">
             <li><button id="confirm-close-route-cancel" type="button" class="btn-nav-row">Cancelar</button></li>
-            <li><button id="confirm-close-route-ok" type="button" class="btn-nav-row">Cerrar ruta</button></li>
+            <li><button id="confirm-close-route-ok" type="button" class="btn-nav-row btn-nav-row--danger">Cerrar ruta</button></li>
           </ul>
         </div>
       </div>
@@ -4502,13 +5308,21 @@
       <div id="confirm-realtime-center-overlay" class="confirm-overlay" aria-hidden="true">
         <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-realtime-center-title"
           onclick="event.stopPropagation()">
+          <div class="confirm-modal-icon icon-info" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" x2="12" y1="2" y2="5"></line>
+              <line x1="12" x2="12" y1="19" y2="22"></line>
+              <circle cx="12" cy="12" r="7"></circle>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </div>
           <h3 id="confirm-realtime-center-title">Activar centrado en tiempo real</h3>
           <p id="confirm-realtime-center-message">Cada 10 segundos se consultará tu ubicación para recentrar el mapa.
           </p>
           <p id="confirm-realtime-center-warning">Advertencia: este modo puede consumir más datos y batería.</p>
           <ul class="bs-nav-rows bs-nav-rows--two">
             <li><button id="confirm-realtime-center-cancel" type="button" class="btn-nav-row">Cancelar</button></li>
-            <li><button id="confirm-realtime-center-ok" type="button" class="btn-nav-row">Activar</button></li>
+            <li><button id="confirm-realtime-center-ok" type="button" class="btn-nav-row btn-nav-row--primary">Activar</button></li>
           </ul>
         </div>
       </div>
@@ -4516,12 +5330,18 @@
       <div id="confirm-close-arrivals-overlay" class="confirm-overlay" aria-hidden="true">
         <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-close-arrivals-title"
           onclick="event.stopPropagation()">
+          <div class="confirm-modal-icon icon-info" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
           <h3 id="confirm-close-arrivals-title">Consulta en curso</h3>
           <p id="confirm-close-arrivals-message">¿Querés cancelar la consulta y cerrar?</p>
           <ul class="bs-nav-rows bs-nav-rows--two">
             <li><button id="confirm-close-arrivals-cancel" type="button" class="btn-nav-row">Seguir esperando</button>
             </li>
-            <li><button id="confirm-close-arrivals-ok" type="button" class="btn-nav-row">Cerrar</button></li>
+            <li><button id="confirm-close-arrivals-ok" type="button" class="btn-nav-row btn-nav-row--danger">Cerrar</button></li>
           </ul>
         </div>
       </div>
