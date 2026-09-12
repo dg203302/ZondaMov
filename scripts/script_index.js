@@ -57,6 +57,18 @@ const MAX_PARADAS_MOSTRAR = 40;
 const MAX_PARADAS_MOSTRAR_EN_VISTA = 200;
 const EVENTO_PARADAS_DEBOUNCE_MS = 150;
 const ZOOM_CALLE = 18;
+// Zoom mínimo al que queda el mapa cuando se enfoca UN punto concreto (una parada, un
+// lugar guardado, un resultado de búsqueda). Antes estas navegaciones conservaban el
+// zoom que hubiera en ese momento, así que si venías de ver una línea entera —que se
+// aleja para que entre todo el recorrido— tocar una parada guardada te dejaba igual de
+// lejos y no se veía a qué esquina correspondía. Los encuadres que abarcan varias
+// coordenadas (recorrido completo, origen + destino del planificador) siguen usando
+// fitBounds y no pasan por acá.
+const ZOOM_PUNTO_ENFOCADO = ZOOM_CALLE;
+// Al elegir origen o destino conviene un zoom algo más abierto que el de calle: se ve
+// el pin recién puesto pero también las cuadras de alrededor, que es lo que hace falta
+// para darse cuenta de si el punto elegido es el correcto.
+const ZOOM_PLANEO_CONTEXTO = 16;
 const ZOOM_PARADAS_EN_VISTA = 16;
 const STORAGE_LINEAS_FAVS_KEY = 'transitsj_lineas_favs_v1';
 const STORAGE_PARADAS_FAVS_KEY = 'transitsj_paradas_favs_v1';
@@ -215,8 +227,6 @@ function crearIconoParadaDestacada(nombre = '') {
 let _userWaypointVisible = false;
 
 function destacarParadaEnMapa(lat, lng, nombre = '') {
-  // Ocultar cualquier waypoint de usuario y no desplegar marcador invasivo sobre la parada centrada
-  ocultarMarcadorUsuario();
   limpiarMarcadoresSeleccion();
 }
 
@@ -315,25 +325,10 @@ function limpiarMarcadorOrigen() {
   _origenMarcadorActivo = null;
 }
 
-function ocultarMarcadorUsuario() {
-  _userWaypointVisible = false;
-  document.body.classList.add('hide-user-marker');
-
-  if (userMarker && leafletMap) {
-    try {
-      leafletMap.removeLayer(userMarker);
-    } catch {}
-  }
-  if (userMarkerHalo && leafletMap) {
-    try {
-      leafletMap.removeLayer(userMarkerHalo);
-    } catch {}
-  }
-  document.querySelectorAll('.user-waypoint-marker-icon, .user-marker-halo').forEach((el) => {
-    el.style.display = 'none';
-  });
-}
-
+// Deja el marcador de "mi ubicación" fijo en el mapa. Una vez mostrado ya no se
+// vuelve a esconder: antes existía una ocultarMarcadorUsuario() que lo sacaba cada
+// vez que el mapa se centraba en otra cosa, y planificar un viaje terminaba sin
+// ninguna referencia visual de dónde estaba el usuario.
 function mostrarMarcadorUsuario() {
   _userWaypointVisible = true;
   document.body.classList.remove('hide-user-marker');
@@ -400,19 +395,15 @@ function asegurarMarcadorUsuario(lat, lng) {
       interactive: false,
       className: 'user-marker-halo',
     });
-    if (_userWaypointVisible) {
-      userMarkerHalo.addTo(leafletMap);
-    }
+    userMarkerHalo.addTo(leafletMap);
   } else {
     userMarkerHalo.setLatLng(latLng);
     if (typeof _realtimeCenterActive !== 'undefined' && _realtimeCenterActive) {
       const el = userMarkerHalo.getElement ? userMarkerHalo.getElement() : null;
       if (el) el.classList.add('pulse-halo');
     }
-    if (_userWaypointVisible && !leafletMap.hasLayer(userMarkerHalo)) {
+    if (!leafletMap.hasLayer(userMarkerHalo)) {
       userMarkerHalo.addTo(leafletMap);
-    } else if (!_userWaypointVisible && leafletMap.hasLayer(userMarkerHalo)) {
-      try { leafletMap.removeLayer(userMarkerHalo); } catch {}
     }
   }
 
@@ -421,15 +412,11 @@ function asegurarMarcadorUsuario(lat, lng) {
       icon: obtenerIconoUserWaypoint(),
       zIndexOffset: 1200,
     });
-    if (_userWaypointVisible) {
-      userMarker.addTo(leafletMap);
-    }
+    userMarker.addTo(leafletMap);
   } else {
     userMarker.setLatLng(latLng);
-    if (_userWaypointVisible && !leafletMap.hasLayer(userMarker)) {
+    if (!leafletMap.hasLayer(userMarker)) {
       userMarker.addTo(leafletMap);
-    } else if (!_userWaypointVisible && leafletMap.hasLayer(userMarker)) {
-      try { leafletMap.removeLayer(userMarker); } catch {}
     }
   }
 }
@@ -482,9 +469,6 @@ function centrarMapaEnPunto(lat, lng, zoom = ZOOM_CALLE) {
   const safeLat = Number(lat);
   const safeLng = Number(lng);
   if (!Number.isFinite(safeLat) || !Number.isFinite(safeLng)) return;
-
-  // Ocultar cualquier waypoint de usuario al centrar el mapa en un punto específico
-  ocultarMarcadorUsuario();
 
   const z = Number.isFinite(Number(zoom)) ? Number(zoom) : ZOOM_CALLE;
   establecerVistaMapaPunto(safeLat, safeLng, z);
@@ -602,6 +586,18 @@ function deberiaMostrarBotonRegresarPlanearRuta(titulo) {
   const t = String(titulo || '').trim().toLowerCase();
   if (t === 'opciones de ruta') return false;
   return true;
+}
+
+// Fila "← Volver a líneas de la parada". Devuelve '' cuando no corresponde.
+//
+// Dentro de un viaje ya planificado esta fila sobra: ahí la navegación es
+// planificador → paradas del tramo → línea, y inyectarFilasNavegacionBottomSheet()
+// ya pone "← Volver a paradas", que es el paso real hacia atrás. Mostrar las dos
+// juntas daba dos botones de volver apilados que llevaban a lugares distintos.
+function htmlFilaVolverALineasDeParada(corresponde = true) {
+  if (!corresponde) return '';
+  if (recorridoActivo?.planned) return '';
+  return '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>';
 }
 
 function inyectarFilasNavegacionBottomSheet(titulo, tipo, contenidoHtml) {
@@ -1313,7 +1309,7 @@ function etiquetaDiaRelativoHorarios(dayOffset) {
 
 function renderArribosAproximadosHtml(items, lineaRef, paradaNombre, opts = {}) {
   const titulo = lineaRef ? `Línea ${escapeHtml(lineaRef)}` : 'Línea';
-  const volverHtml = '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>';
+  const volverHtml = htmlFilaVolverALineasDeParada();
   const paradaInfoHtml = paradaNombre
     ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted, #777);">Parada: ${escapeHtml(paradaNombre)}</p>`
     : '';
@@ -1605,9 +1601,7 @@ async function Centrar(esRecentradoManual = false) {
     console.log(`Ubicación: ${ubicacion.lat}, ${ubicacion.lng}`);
     cargarLF(ubicacion, ZOOM_CALLE);
     asegurarMarcadorUsuario(ubicacion.lat, ubicacion.lng);
-    if (esRecentradoManual || !document.body.classList.contains('hide-user-marker')) {
-      mostrarMarcadorUsuario();
-    }
+    mostrarMarcadorUsuario();
     await dibujarParadasCercanas(ubicacion);
     void actualizarHudParadaMasCercana();
   } catch (error) {
@@ -2053,8 +2047,8 @@ const THEME_COLOR_OSCURO = '#141419';
 /**
  * Alterna entre el tema claro (por defecto) y un modo oscuro real: agrega/quita
  * la clase zm-theme-dark en <html> (paleta oscura definida en el CSS), y con
- * ella el mapa deja de aplicar el filtro que lo oscurece "gratis" (ver CSS de
- * #map .leaflet-tile-pane) — en modo oscuro se ve con las tiles de OSM tal cual.
+ * ella el mapa aplica el filtro que lo oscurece "gratis" (ver CSS de
+ * #map .leaflet-tile-pane). En modo claro las tiles de OSM van sin filtro.
  */
 function aplicarPreferenciaTemaOscuro(activo) {
   const esOscuro = Boolean(activo);
@@ -2132,9 +2126,168 @@ function cambiarVista(vistaId) {
   }
 }
 
+// ─── Ir al mapa deslizando en horizontal ───────────────────────────────────
+// Sigue el orden de los tabs (Inicio · Mapa · Guardados): desde Inicio el mapa está a
+// la derecha, así que se llega deslizando hacia la izquierda; desde Guardados está a
+// la izquierda y se llega deslizando hacia la derecha.
+//
+// A propósito NO se engancha en la vista del mapa: ahí el arrastre horizontal es para
+// mover el mapa, y un gesto que además cambiara de pantalla lo haría inusable.
+const SWIPE_NAV_UMBRAL_PX = 64;
+const SWIPE_NAV_ARRASTRE_MAX_PX = 120;
+
+// Momento del último cambio de vista por gesto. Un arrastre que termina encima de un
+// botón dispara igual su click: se descarta el que llegue justo después de navegar.
+let _swipeNavUltimaNavegacion = 0;
+
+function swipeNavHabilitado() {
+  // En escritorio el mapa ya ocupa de forma permanente la mitad derecha y la pestaña
+  // "Mapa" ni siquiera se muestra, así que el gesto no tendría a dónde llevar.
+  return window.matchMedia('(max-width: 1023px)').matches;
+}
+
+// Scroller horizontal bajo el dedo al que todavía le queda recorrido hacia ese lado
+// (la fila de accesos rápidos del inicio, la de filtros de guardados). Si lo hay, el
+// gesto le pertenece a él y no tiene que cambiar de pantalla.
+function scrollerHorizontalConRecorrido(target, dx) {
+  let el = target instanceof Element ? target : null;
+  while (el && el !== document.body) {
+    const max = el.scrollWidth - el.clientWidth;
+    if (max > 1) {
+      if (dx > 0 && el.scrollLeft > 1) return el;
+      if (dx < 0 && el.scrollLeft < max - 1) return el;
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
+
+// Desplaza a mano una de esas filas. Hace falta porque el contenedor declara
+// touch-action: pan-y para poder quedarse con el gesto horizontal, y eso le saca a
+// sus hijos el panning horizontal nativo.
+function arrastrarScrollerHorizontal(el, scrollInicial, dx) {
+  if (!el) return;
+  const max = el.scrollWidth - el.clientWidth;
+  el.scrollLeft = Math.max(0, Math.min(max, scrollInicial - dx));
+}
+
+function setupNavegacionPorDeslizamiento() {
+  const vistas = [
+    // direccion: hacia qué lado hay que deslizar para llegar al mapa.
+    { el: document.getElementById('view-dashboard'), direccion: -1 },
+    { el: document.getElementById('view-guardados'), direccion: 1 },
+  ];
+
+  for (const { el, direccion } of vistas) {
+    if (!el) continue;
+
+    let inicioX = 0;
+    let inicioY = 0;
+    let siguiendo = false;
+    let esHorizontal = false;
+    // Fila horizontal que el gesto está moviendo, si arrancó sobre una.
+    let scrollerArrastrado = null;
+    let scrollerInicial = 0;
+
+    const soltar = () => {
+      siguiendo = false;
+      esHorizontal = false;
+      scrollerArrastrado = null;
+      el.classList.remove('is-swiping');
+      document.body.classList.remove('is-swiping-to-map');
+      // Se limpian los estilos en línea para que vuelva a mandar el CSS de .app-view.
+      el.style.transform = '';
+    };
+
+    el.addEventListener('pointerdown', (ev) => {
+      if (!swipeNavHabilitado()) return;
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      siguiendo = true;
+      esHorizontal = false;
+      inicioX = ev.clientX;
+      inicioY = ev.clientY;
+    });
+
+    el.addEventListener('pointermove', (ev) => {
+      if (!siguiendo) return;
+      const dx = ev.clientX - inicioX;
+      const dy = ev.clientY - inicioY;
+
+      // Si el gesto es de una fila horizontal, se la desplaza y no se navega.
+      if (scrollerArrastrado) {
+        arrastrarScrollerHorizontal(scrollerArrastrado, scrollerInicial, dx);
+        return;
+      }
+
+      // El eje se decide una sola vez, apenas el gesto se define.
+      if (!esHorizontal) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        // Gesto vertical: es scroll de la lista, se lo deja al navegador.
+        if (Math.abs(dx) <= Math.abs(dy) * 1.2) {
+          siguiendo = false;
+          return;
+        }
+        const fila = scrollerHorizontalConRecorrido(ev.target, dx);
+        if (fila) {
+          scrollerArrastrado = fila;
+          scrollerInicial = fila.scrollLeft;
+          arrastrarScrollerHorizontal(fila, scrollerInicial, dx);
+          return;
+        }
+        esHorizontal = true;
+        el.classList.add('is-swiping');
+        // Deja ver el mapa por detrás mientras se arrastra: sin esto el hueco que va
+        // quedando muestra el fondo pelado y no se entiende a dónde lleva el gesto.
+        document.body.classList.add('is-swiping-to-map');
+      }
+
+      // Hacia el lado del mapa la vista sigue al dedo; hacia el otro no hay nada, así
+      // que apenas se mueve (resistencia) para que se note que ahí no hay camino.
+      // Sin tocar la opacidad: la vista se mueve opaca, como una tarjeta que se corre
+      // y destapa el mapa. Si se la va transparentando, las dos capas se superponen a
+      // media transición y no se lee ni una ni la otra.
+      const avance = dx * direccion > 0 ? dx : dx * 0.18;
+      const limitado = Math.max(-SWIPE_NAV_ARRASTRE_MAX_PX, Math.min(SWIPE_NAV_ARRASTRE_MAX_PX, avance));
+      el.style.transform = `translateX(${limitado}px)`;
+    });
+
+    const terminarGestoVista = (ev) => {
+      if (!siguiendo) {
+        soltar();
+        return;
+      }
+      const dx = ev.clientX - inicioX;
+      const llegaAlMapa = esHorizontal
+        && dx * direccion > 0
+        && Math.abs(dx) >= SWIPE_NAV_UMBRAL_PX;
+
+      soltar();
+
+      if (llegaAlMapa) {
+        _swipeNavUltimaNavegacion = Date.now();
+        cambiarVista('view-map');
+      }
+    };
+
+    el.addEventListener('pointerup', terminarGestoVista);
+    // pointercancel llega cuando el navegador se queda con el gesto para hacer scroll:
+    // ahí no hay nada que decidir, solo volver la vista a su lugar.
+    el.addEventListener('pointercancel', soltar);
+  }
+
+  // Un arrastre que termina sobre una tarjeta o un botón dispara su click igual. Se
+  // descarta en fase de captura el click inmediatamente posterior a haber navegado.
+  document.addEventListener('click', (ev) => {
+    if (Date.now() - _swipeNavUltimaNavegacion > 350) return;
+    ev.stopPropagation();
+    ev.preventDefault();
+  }, true);
+}
+
 function setupNavegacion() {
   setupNearestStopHud();
   setupMapPickingBanner();
+  setupNavegacionPorDeslizamiento();
 
   const tabs = document.querySelectorAll('.nav-tab[data-view]');
   tabs.forEach((tab) => {
@@ -3080,7 +3233,11 @@ if (bsContent) {
 
       try {
         if (leafletMap && Number.isFinite(info.lat) && Number.isFinite(info.lng)) {
-          leafletMap.setView([info.lat, info.lng], leafletMap.getZoom());
+          // El recorrido planificado se ve entero y por lo tanto lejos; para mirar una
+          // parada concreta hay que acercarse a ella. Volver a la lista de paradas
+          // restaura el encuadre del viaje completo.
+          const zoomActual = typeof leafletMap.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_PUNTO_ENFOCADO;
+          centrarMapaEnPunto(info.lat, info.lng, Math.max(zoomActual, ZOOM_PUNTO_ENFOCADO));
         }
       } catch {
         // noop
@@ -3227,7 +3384,8 @@ if (bsContent) {
       if (Array.isArray(paradasRecorrido)) {
         const found = paradasRecorrido.find((p) => (p.paradaId || obtenerIdParada(p.feature)) === paradaId);
         if (found) {
-          leafletMap?.setView([found.lat, found.lng], leafletMap.getZoom());
+          const zoomActualLista = typeof leafletMap?.getZoom === 'function' ? leafletMap.getZoom() : ZOOM_PUNTO_ENFOCADO;
+          leafletMap?.setView([found.lat, found.lng], Math.max(zoomActualLista, ZOOM_PUNTO_ENFOCADO));
           mostrarLineasEnContenedorParadas(found.feature);
         }
       }
@@ -3240,11 +3398,12 @@ if (bsContent) {
     const name = btn.dataset.lineaName || '';
     if (!ref && !name) return;
 
-    // Marcar si esta línea se abrió desde una parada (para mostrar botón volver)
+    // Marcar si esta línea se abrió desde una parada (para mostrar botón volver y
+    // para mantener esa parada a la vista en vez de encuadrar todo el recorrido).
     const currentTipo = document.getElementById('bs-fav-btn')?.dataset?.tipo || '';
-    window._lineaDesdeParadaFeature = currentTipo === 'parada' ? (window._currentFeature || null) : null;
+    const paradaDeOrigen = currentTipo === 'parada' ? (window._currentFeature || null) : null;
 
-    void mostrarRecorridoDeLinea(ref, name);
+    void mostrarRecorridoDeLinea(ref, name, null, false, paradaDeOrigen);
   });
 }
 
@@ -3261,7 +3420,6 @@ async function centrarEnLugarGuardado({ nombre, lat, lng }) {
   if (!leafletMap || typeof L === 'undefined') return;
 
   limpiarRecorrido();
-  ocultarMarcadorUsuario();
 
   const z = typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : ZOOM_CALLE;
   const zoomTarget = Number.isFinite(z) ? Math.min(z, 18) : ZOOM_CALLE;
@@ -3361,10 +3519,9 @@ async function centrarEnParadaGuardada(parada) {
   if (!leafletMap || typeof L === 'undefined') return;
 
   limpiarRecorrido();
-  ocultarMarcadorUsuario();
 
   if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-    const z = Math.min(typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : 18, 18);
+    const z = Math.min(typeof leafletMap.getMaxZoom === 'function' ? leafletMap.getMaxZoom() : 18, ZOOM_PUNTO_ENFOCADO);
     establecerVistaMapaPunto(latNum, lngNum, z);
     if (typeof leafletMap.flyTo === 'function') {
       leafletMap.flyTo([latNum, lngNum], z, { duration: 0.8 });
@@ -4688,9 +4845,7 @@ function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0,
   const mensajeApi = typeof opts?.mensajeApi === 'string' ? opts.mensajeApi.trim() : '';
   const horarioEstimado = typeof opts?.horarioEstimado === 'string' ? opts.horarioEstimado.trim() : '';
 
-  const volverHtml = mostrarVolverParada
-    ? '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>'
-    : '';
+  const volverHtml = htmlFilaVolverALineasDeParada(mostrarVolverParada);
 
   const paradaInfoHtml = opts?.paradaConsultada
     ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted, #777);">Parada: ${escapeHtml(opts.paradaConsultada)}</p>`
@@ -5338,14 +5493,18 @@ function dibujarFeatureRecorridoConFlechas(layer, feature, colorLinea, invertido
   dibujarTrazoRecorridoConFlechas(layer, latLngs, colorLinea);
 }
 
-async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, invertido = false) {
+// paradaOrigenFeature: la parada desde la que se abrió la línea, o null si se llegó
+// por el buscador / favoritos / lista de líneas. Es un parámetro explícito (y ya no un
+// flag global que cada punto de entrada tenía que acordarse de limpiar) porque si
+// quedaba pegado de una navegación anterior, abrir una línea completa seguía centrando
+// el mapa en una parada vieja en vez de encuadrar todo el recorrido.
+async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, invertido = false, paradaOrigenFeature = null) {
   if (!leafletMap || typeof L === 'undefined') return;
 
-  // Ocultar el waypoint del usuario al centrar una línea en el mapa
-  ocultarMarcadorUsuario();
-
-  // Verificar si venimos desde una parada seleccionada
-  const paradaOrigen = window._lineaDesdeParadaFeature || null;
+  // De dónde se abrió la línea: se guarda tambien en el global porque el boton
+  // "volver a la parada" del panel lo lee despues, desde otro manejador.
+  window._lineaDesdeParadaFeature = paradaOrigenFeature || null;
+  const paradaOrigen = window._lineaDesdeParadaFeature;
 
   limpiarMarcadoresSeleccion();
 
@@ -5452,9 +5611,7 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
   const tituloLinea = ref ? `Línea ${escapeHtml(ref)}` : escapeHtml(nombreVariante);
   const listaParadasHtml = renderListaParadasRecorrido({ mostrarTodas: true });
 
-  const volverHtml = paradaOrigen
-    ? '<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-volver-parada="1">← Volver a líneas de la parada</button></li></ul>'
-    : '';
+  const volverHtml = htmlFilaVolverALineasDeParada(Boolean(paradaOrigen));
 
   let infoArribosHtml = '';
   if (paradaOrigen) {
@@ -5545,20 +5702,22 @@ window.cambiarSentidoRecorrido = (ref, nextIdx, isInverted = false) => {
   const rutas = obtenerRutasDeLinea(data, ref);
   const nextRuta = rutas[nextIdx] || rutas[0];
   const nextName = nextRuta?.properties?.name || '';
-  void mostrarRecorridoDeLinea(ref, nextName, nextIdx, isInverted);
+  // Cambiar de sentido/variante no cambia de dónde se abrió la línea: se conserva.
+  void mostrarRecorridoDeLinea(ref, nextName, nextIdx, isInverted, window._lineaDesdeParadaFeature || null);
 };
 
 function mostrarLineasEnContenedorParadas(feature, opts = {}) {
-  // Asegurar que no quede ningún waypoint de usuario sobre la parada
-  ocultarMarcadorUsuario();
-
   if (leafletMap && feature?.geometry?.coordinates) {
     const coords = feature.geometry.coordinates;
     if (Array.isArray(coords) && coords.length >= 2) {
       const lat = Number(coords[1]);
       const lng = Number(coords[0]);
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        const z = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
+        // Math.max: si ya estabas más cerca que el zoom de calle se respeta ese
+        // acercamiento; si estabas más lejos (por ejemplo viendo una línea completa),
+        // se acerca hasta la parada en vez de dejar el mapa alejado.
+        const zoomActual = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
+        const z = Math.max(zoomActual, ZOOM_PUNTO_ENFOCADO);
         establecerVistaMapaPunto(lat, lng, z);
         if (!opts?.gpsWalk) {
           centrarMapaEnPunto(lat, lng, z);
@@ -5669,6 +5828,64 @@ function asegurarParadasLayer() {
   return paradasLayer;
 }
 
+// Enganche opcional para seguir la descarga del GeoJSON de paradas: recibe una
+// fracción de 0 a 1. Lo usa la pantalla de carga durante el arranque; el resto del
+// tiempo queda en null y cargarParadasGeojson() no reporta nada.
+let _onProgresoDescargaParadas = null;
+
+// Dónde se recuerda cuánto pesó el GeoJSON ya descomprimido en la visita anterior.
+// Hace falta porque el Content-Length viene en bytes COMPRIMIDOS mientras que el
+// stream entrega bytes descomprimidos: usar el header como denominador haría que el
+// avance se dispare al principio y después se quede clavado en el tope. La primera
+// visita usa el header igual (queda optimista, pero nunca retrocede) y a partir de la
+// segunda el tamaño real ya se conoce.
+const STORAGE_TAMANO_PARADAS_KEY = 'zondamov_tamano_paradas_bytes';
+
+// Lee el cuerpo de una respuesta JSON informando el avance de la descarga. Si el
+// navegador no expone streams o no hay ningún tamaño de referencia, cae al camino
+// simple (resp.json()) y no reporta nada.
+async function leerJsonConProgreso(resp, onProgreso) {
+  const totalHeader = Number(resp.headers.get('content-length')) || 0;
+  let totalPrevio = 0;
+  try {
+    totalPrevio = Number(localStorage.getItem(STORAGE_TAMANO_PARADAS_KEY)) || 0;
+  } catch {
+    // almacenamiento bloqueado
+  }
+  const total = totalPrevio || totalHeader;
+
+  if (typeof onProgreso !== 'function' || !total || !resp.body || typeof resp.body.getReader !== 'function') {
+    return resp.json();
+  }
+
+  const reader = resp.body.getReader();
+  const trozos = [];
+  let recibido = 0;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    trozos.push(value);
+    recibido += value.length;
+    onProgreso(Math.min(1, recibido / total));
+  }
+
+  try {
+    localStorage.setItem(STORAGE_TAMANO_PARADAS_KEY, String(recibido));
+  } catch {
+    // almacenamiento bloqueado
+  }
+
+  const buffer = new Uint8Array(recibido);
+  let offset = 0;
+  for (const trozo of trozos) {
+    buffer.set(trozo, offset);
+    offset += trozo.length;
+  }
+  onProgreso(1);
+  return JSON.parse(new TextDecoder('utf-8').decode(buffer));
+}
+
 async function cargarParadasGeojson() {
   if (paradasGeojson) return paradasGeojson;
 
@@ -5677,7 +5894,7 @@ async function cargarParadasGeojson() {
     if (!resp.ok) {
       throw new Error(`No se pudo cargar ${PARADAS_GEOJSON_URL} (HTTP ${resp.status}).`);
     }
-    const data = await resp.json();
+    const data = await leerJsonConProgreso(resp, _onProgresoDescargaParadas);
     if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
       throw new Error('El GeoJSON no tiene el formato esperado (FeatureCollection).');
     }
@@ -5984,14 +6201,20 @@ async function actualizarHudParadaMasCercana() {
     }
   }
 
+  // A partir de acá la isla ya se puede mostrar: aunque no haya una parada cerca,
+  // los paneles de planificar viaje y favoritos siguen siendo útiles. Antes, cualquiera
+  // de estos cortes escondía todo el contenedor.
+  hud.style.display = '';
+  hud.classList.add('visible');
+
   if (!Number.isFinite(refLat) || !Number.isFinite(refLng)) {
-    hud.classList.remove('visible');
+    marcarIslaSinParada('Activá la ubicación o movete por el mapa para ver la parada más cercana.');
     return;
   }
 
   const puntos = await cargarParadasPuntos();
   if (!Array.isArray(puntos) || puntos.length === 0) {
-    hud.classList.remove('visible');
+    marcarIslaSinParada('Todavía se están cargando las paradas. Probá de nuevo en unos segundos.');
     return;
   }
 
@@ -6007,9 +6230,10 @@ async function actualizarHudParadaMasCercana() {
     }
   }
 
-  // Si no hay paradas o la más cercana está a más de 3000 metros, ocultar el HUD
+  // Si no hay paradas o la más cercana está a más de 3000 metros, el panel de parada
+  // pasa a su estado vacío (la isla sigue visible por los otros dos paneles).
   if (!mejor || !mejor.feature || minDist > 3000) {
-    hud.classList.remove('visible');
+    marcarIslaSinParada('No hay paradas a menos de 3 km de acá. Movete por el mapa para buscar una.');
     return;
   }
 
@@ -6056,6 +6280,7 @@ async function actualizarHudParadaMasCercana() {
 
   hud.style.display = '';
   hud.classList.add('visible');
+  ajustarAlturaIsla();
 }
 
 let _dashNearestStopParada = null;
@@ -6446,16 +6671,411 @@ async function trazarCaminataHaciaPrimeraParadaPlaneada(origenLat, origenLng, pa
   mostrarBarraRutaGpsActiva(distTexto, minPie, nombreParada);
 }
 
-function setupNearestStopHud() {
-  const hud = document.getElementById('map-nearest-stop-hud');
-  if (!hud) return;
+// ─── Isla dinámica del mapa ────────────────────────────────────────────────
+// Un solo contenedor flotante con tres paneles superpuestos: parada más cercana en
+// vivo, acceso directo a planificar viaje y favoritos. Se alternan deslizando en
+// vertical (touch o rueda del mouse), tocando los puntos indicadores o con las
+// flechas del teclado. Solo el panel activo recibe clicks; la altura del contenedor
+// se anima hasta la del panel activo, que es lo que da la sensación de "isla" que se
+// re-forma en lugar de tres tarjetas distintas.
+const DI_PANELES = ['parada', 'planear', 'favoritos'];
+// La lista de favoritos tiene scroll propio, así que puede mostrar bastantes más de
+// los que entran a la vista sin estirar la isla.
+const DI_MAX_FAVORITOS = 12;
+const DI_HINT_STORAGE_KEY = 'zondamov_isla_hint_visto';
+const DI_UMBRAL_SWIPE_PX = 26;
 
-  hud.onclick = (ev) => {
-    ev.stopPropagation();
-    if (!_nearestStopHudParada || !_nearestStopHudParada.feature) return;
+let _diIndice = 0;
+let _diSetupHecho = false;
+let _diGestoMovido = false;
+let _diUltimoWheel = 0;
 
-    void trazarRutaGpsAParadaCercana(_nearestStopHudParada);
+function diRefs() {
+  return {
+    hud: document.getElementById('map-nearest-stop-hud'),
+    viewport: document.getElementById('di-viewport'),
+    panes: Array.from(document.querySelectorAll('#di-viewport .di-pane')),
+    dots: Array.from(document.querySelectorAll('#di-dots .di-dot')),
   };
+}
+
+// La altura no puede salir del flujo normal: los paneles están posicionados en
+// absoluto (superpuestos), así que el viewport mediría 0. Se fija a mano con la
+// altura real del panel activo y la transición CSS hace el resto.
+function ajustarAlturaIsla() {
+  const { viewport, panes } = diRefs();
+  if (!viewport) return;
+  const activo = panes[_diIndice];
+  if (!activo) return;
+  viewport.style.height = `${activo.offsetHeight}px`;
+}
+
+function marcarHintIslaVisto() {
+  const { hud } = diRefs();
+  if (hud) hud.classList.add('di-hint-off');
+  try {
+    localStorage.setItem(DI_HINT_STORAGE_KEY, 'true');
+  } catch {
+    // noop: modo privado / almacenamiento bloqueado
+  }
+}
+
+function irAPanelIsla(indice, { silencioso = false } = {}) {
+  const { hud, panes, dots } = diRefs();
+  if (!hud || panes.length === 0) return;
+
+  const total = panes.length;
+  const destino = ((Number(indice) % total) + total) % total;
+  const anterior = _diIndice;
+
+  // El panel que se va sale en la dirección del gesto: si avanzamos, se va por arriba.
+  const avanzando = destino > anterior || (anterior === total - 1 && destino === 0);
+
+  panes.forEach((pane, i) => {
+    const esActivo = i === destino;
+    pane.classList.toggle('is-active', esActivo);
+    pane.classList.toggle('is-exit-up', !esActivo && avanzando);
+    pane.setAttribute('aria-hidden', esActivo ? 'false' : 'true');
+  });
+
+  dots.forEach((dot, i) => {
+    const esActivo = i === destino;
+    dot.classList.toggle('is-active', esActivo);
+    dot.setAttribute('aria-selected', esActivo ? 'true' : 'false');
+  });
+
+  _diIndice = destino;
+
+  // Los favoritos se re-leen al entrar al panel: pueden haber cambiado desde la
+  // última vez (se guardó una parada, se borró un lugar) sin pasar por acá.
+  if (DI_PANELES[destino] === 'favoritos') renderFavoritosIsla();
+
+  ajustarAlturaIsla();
+
+  if (!silencioso && destino !== anterior) {
+    marcarHintIslaVisto();
+    hud.classList.add('di-morphing');
+    window.setTimeout(() => hud.classList.remove('di-morphing'), 220);
+  }
+}
+
+// Favoritos (lugares, líneas y paradas guardadas) resumidos dentro de la isla.
+function renderFavoritosIsla() {
+  const cont = document.getElementById('di-favs-list');
+  if (!cont) return;
+
+  const lugares = typeof obtenerLugaresFavs === 'function' ? obtenerLugaresFavs() : [];
+  const lineas = typeof obtenerLineasFavs === 'function' ? obtenerLineasFavs() : [];
+  const paradas = typeof obtenerParadasFavs === 'function' ? obtenerParadasFavs() : [];
+
+  const items = [
+    ...(Array.isArray(lugares) ? lugares : []).map((l) => ({ tipo: 'lugar', data: l })),
+    ...(Array.isArray(lineas) ? lineas : []).map((l) => ({ tipo: 'linea', data: l })),
+    ...(Array.isArray(paradas) ? paradas : []).map((x) => ({ tipo: 'parada', data: x })),
+  ].slice(0, DI_MAX_FAVORITOS);
+
+  cont.innerHTML = '';
+
+  if (items.length === 0) {
+    const vacio = document.createElement('p');
+    vacio.className = 'di-favs-empty';
+    vacio.textContent = 'Todavía no guardaste nada. Tocá el corazón en una línea, parada o lugar y va a aparecer acá.';
+    cont.appendChild(vacio);
+    return;
+  }
+
+  for (const item of items) {
+    const fila = document.createElement('button');
+    fila.type = 'button';
+    fila.className = 'di-fav-row';
+    // Arrastrar la lista termina en un "click" sobre la fila donde estaba el dedo:
+    // si hubo movimiento, el gesto era para scrollear, no para abrir el favorito.
+    fila.addEventListener('click', (ev) => {
+      if (!_diGestoMovido) return;
+      ev.stopImmediatePropagation();
+      ev.preventDefault();
+    });
+
+    if (item.tipo === 'linea') {
+      const ref = String(item.data.ref || item.data.linea || '').trim();
+      const nombre = String(item.data.name || item.data.nombre || `Línea ${ref}`).trim();
+      const bg = getColorForLinea(ref);
+      const fg = getTextColorForBg(bg);
+      fila.innerHTML = `
+        <span class="di-fav-icon" style="background-color: ${bg}; color: ${fg};">${escapeHtml(formatBadgeLinea(ref))}</span>
+        <span class="di-fav-text">
+          <span class="di-fav-name">${escapeHtml(nombre)}</span>
+          <span class="di-fav-kind">Línea guardada</span>
+        </span>
+      `;
+      fila.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        void mostrarRecorridoDeLinea(ref, nombre);
+      });
+    } else if (item.tipo === 'parada') {
+      const nombre = String(item.data.nombre || item.data.label || 'Parada').trim();
+      fila.innerHTML = `
+        <span class="di-fav-icon">🚏</span>
+        <span class="di-fav-text">
+          <span class="di-fav-name">${escapeHtml(nombre)}</span>
+          <span class="di-fav-kind">Parada guardada</span>
+        </span>
+      `;
+      fila.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        void centrarEnParadaGuardada(item.data);
+      });
+    } else {
+      const nombre = String(item.data.nombre || 'Lugar').trim();
+      const lat = Number(item.data.lat);
+      const lng = Number(item.data.lng);
+      fila.innerHTML = `
+        <span class="di-fav-icon">📌</span>
+        <span class="di-fav-text">
+          <span class="di-fav-name">${escapeHtml(nombre)}</span>
+          <span class="di-fav-kind">Lugar guardado</span>
+        </span>
+      `;
+      fila.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        centrarEnLugar(lat, lng, nombre);
+      });
+    }
+
+    cont.appendChild(fila);
+  }
+
+  actualizarSombrasScrollFavoritosIsla();
+}
+
+// Muestra los degradados de recorte solo del lado donde realmente queda contenido
+// fuera de la vista, para que se note que la lista sigue.
+function actualizarSombrasScrollFavoritosIsla() {
+  const lista = document.getElementById('di-favs-list');
+  const scroller = document.getElementById('di-favs-scroller');
+  if (!lista || !scroller) return;
+  const hayScroll = lista.scrollHeight - lista.clientHeight > 1;
+  scroller.classList.toggle('has-more-above', hayScroll && lista.scrollTop > 1);
+  scroller.classList.toggle(
+    'has-more-below',
+    hayScroll && lista.scrollTop < lista.scrollHeight - lista.clientHeight - 1,
+  );
+}
+
+// La lista de favoritos scrolleable que contiene al elemento tocado, o null si el
+// gesto no empezó dentro de una.
+function listaFavoritosScrolleableDesde(target) {
+  if (!(target instanceof Element)) return null;
+  const lista = target.closest('#di-favs-list');
+  if (!lista) return null;
+  return lista.scrollHeight - lista.clientHeight > 1 ? lista : null;
+}
+
+// True si a la lista todavía le queda recorrido en la dirección del gesto. Se usa con
+// la rueda del mouse: mientras quede, la rueda scrollea; al llegar al tope, cambia de
+// panel.
+function listaFavoritosPuedeScrollear(lista, delta) {
+  if (!lista) return false;
+  const maxScroll = lista.scrollHeight - lista.clientHeight;
+  if (delta > 0) return lista.scrollTop > 0;
+  if (delta < 0) return lista.scrollTop < maxScroll - 1;
+  return false;
+}
+
+function setupNearestStopHud() {
+  const { hud } = diRefs();
+  if (!hud || _diSetupHecho) return;
+  _diSetupHecho = true;
+
+  // La isla flota sobre el mapa: sin esto, arrastrar o girar la rueda encima de ella
+  // termina moviendo/zoomeando el mapa de abajo en vez de cambiar de panel.
+  if (typeof L !== 'undefined' && L.DomEvent) {
+    try {
+      L.DomEvent.disableClickPropagation(hud);
+      L.DomEvent.disableScrollPropagation(hud);
+    } catch {
+      // noop
+    }
+  }
+
+  // ── Panel 1: tocar la tarjeta traza la ruta a pie hasta la parada ──
+  const trigger = document.getElementById('hud-parada-trigger');
+  if (trigger) {
+    const trazar = (ev) => {
+      ev.stopPropagation();
+      // Un deslizamiento termina en "click": si el dedo se movió, no era un toque.
+      if (_diGestoMovido) return;
+      if (!_nearestStopHudParada || !_nearestStopHudParada.feature) return;
+      void trazarRutaGpsAParadaCercana(_nearestStopHudParada);
+    };
+    trigger.addEventListener('click', trazar);
+    trigger.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      ev.preventDefault();
+      trazar(ev);
+    });
+  }
+
+  // ── Panel 2: accesos al planificador ──
+  document.getElementById('di-plan-btn')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    mostrarPlanificadorViaje();
+  });
+
+  document.getElementById('di-plan-from-stop-btn')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    mostrarPlanificadorViaje();
+    if (typeof mostrarSelectorUbicacionRuta === 'function') mostrarSelectorUbicacionRuta('destino');
+  });
+
+  // ── Panel 3: ver todos los guardados ──
+  document.getElementById('di-favs-all-btn')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    cambiarVista('view-guardados');
+  });
+
+  // ── Puntos indicadores ──
+  for (const dot of diRefs().dots) {
+    dot.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      irAPanelIsla(Number(dot.dataset.diGoto || 0));
+    });
+  }
+
+  // ── Gesto vertical (dedo o mouse) ──
+  let inicioY = 0;
+  let inicioX = 0;
+  let arrastrando = false;
+  // Lista de favoritos bajo el dedo (si el gesto arrancó ahí) y su scroll inicial,
+  // para poder calcular cuánto del arrastre absorbió ella y cuánto sobró.
+  let listaArrastre = null;
+  let listaScrollInicial = 0;
+
+  hud.addEventListener('pointerdown', (ev) => {
+    // Los botones internos manejan su propio click; no arrancamos gesto sobre ellos.
+    // Las filas de favoritos SÍ son botones, pero también tienen que poder arrastrarse,
+    // así que se las exceptúa (el click se descarta después si hubo movimiento).
+    const sobreBoton = ev.target instanceof Element && ev.target.closest('button');
+    const sobreFila = ev.target instanceof Element && ev.target.closest('.di-fav-row');
+    if (sobreBoton && !sobreFila) return;
+
+    arrastrando = true;
+    _diGestoMovido = false;
+    inicioY = ev.clientY;
+    inicioX = ev.clientX;
+    listaArrastre = listaFavoritosScrolleableDesde(ev.target);
+    listaScrollInicial = listaArrastre ? listaArrastre.scrollTop : 0;
+
+    // Con captura, el gesto sigue llegando aunque el dedo se salga de la isla.
+    try { hud.setPointerCapture(ev.pointerId); } catch { /* noop */ }
+  });
+
+  hud.addEventListener('pointermove', (ev) => {
+    if (!arrastrando) return;
+    const dy = ev.clientY - inicioY;
+    if (Math.abs(dy) > 8) _diGestoMovido = true;
+
+    // Arrastre dentro de la lista: la movemos nosotros. El navegador no lo hace
+    // porque la lista tiene touch-action: none.
+    if (listaArrastre) {
+      listaArrastre.scrollTop = listaScrollInicial - dy;
+      actualizarSombrasScrollFavoritosIsla();
+    }
+  });
+
+  const terminarGesto = (ev) => {
+    if (!arrastrando) return;
+    arrastrando = false;
+    try { hud.releasePointerCapture(ev.pointerId); } catch { /* noop */ }
+
+    const dy = ev.clientY - inicioY;
+    const dx = ev.clientX - inicioX;
+    // Solo cuenta como cambio de panel si el movimiento fue claramente vertical.
+    if (Math.abs(dy) <= Math.abs(dx)) return;
+
+    // Dentro de la lista, lo que decide es el SOBRANTE: el tramo del arrastre que la
+    // lista no pudo absorber porque ya estaba en el tope. Así, deslizar en el medio de
+    // los favoritos los recorre, y seguir deslizando cuando ya no queda más cambia de
+    // panel — sin tener que sacar el dedo de la lista primero.
+    const absorbido = listaArrastre ? Math.abs(listaArrastre.scrollTop - listaScrollInicial) : 0;
+    listaArrastre = null;
+
+    const sobrante = Math.abs(dy) - absorbido;
+    if (sobrante < DI_UMBRAL_SWIPE_PX) return;
+
+    // Deslizar hacia arriba muestra el panel siguiente (como pasar de página).
+    irAPanelIsla(_diIndice + (dy < 0 ? 1 : -1));
+  };
+
+  hud.addEventListener('pointerup', terminarGesto);
+  hud.addEventListener('pointercancel', () => {
+    arrastrando = false;
+    listaArrastre = null;
+  });
+
+  // Rueda del mouse: un panel por gesto, con una pausa para que un scroll largo
+  // no atraviese los tres paneles de golpe.
+  hud.addEventListener('wheel', (ev) => {
+    if (Math.abs(ev.deltaY) < Math.abs(ev.deltaX)) return;
+    // Dentro de la lista de favoritos la rueda la scrollea a ella (mientras le quede
+    // recorrido); recién al llegar al tope vuelve a cambiar de panel.
+    const listaRueda = listaFavoritosScrolleableDesde(ev.target);
+    if (listaFavoritosPuedeScrollear(listaRueda, -ev.deltaY)) {
+      ev.stopPropagation();
+      return;
+    }
+    ev.preventDefault();
+    ev.stopPropagation();
+    const ahora = Date.now();
+    if (ahora - _diUltimoWheel < 380) return;
+    _diUltimoWheel = ahora;
+    irAPanelIsla(_diIndice + (ev.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+
+  hud.addEventListener('keydown', (ev) => {
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      irAPanelIsla(_diIndice + 1);
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      irAPanelIsla(_diIndice - 1);
+    }
+  });
+
+  // La pista "deslizá para cambiar" solo se muestra hasta que el usuario lo hace una vez.
+  try {
+    if (localStorage.getItem(DI_HINT_STORAGE_KEY) === 'true') hud.classList.add('di-hint-off');
+  } catch {
+    // noop
+  }
+
+  // Si cambia el tamaño de la ventana, el panel activo puede pasar a ocupar más o
+  // menos líneas de texto; hay que volver a medirlo.
+  window.addEventListener('resize', ajustarAlturaIsla);
+
+  document.getElementById('di-favs-list')
+    ?.addEventListener('scroll', actualizarSombrasScrollFavoritosIsla, { passive: true });
+
+  renderFavoritosIsla();
+  irAPanelIsla(0, { silencioso: true });
+}
+
+// Estado del panel 1 cuando no hay ninguna parada cerca (o todavía no hay GPS): la
+// isla sigue a la vista porque los otros dos paneles siguen siendo útiles.
+function marcarIslaSinParada(motivo) {
+  _nearestStopHudParada = null;
+
+  const nameEl = document.getElementById('hud-stop-name');
+  const distEl = document.getElementById('hud-stop-dist');
+  const instrEl = document.getElementById('hud-stop-instruction');
+  const linesRow = document.getElementById('hud-lines-row');
+
+  if (nameEl) nameEl.textContent = 'Sin parada cerca';
+  if (distEl) distEl.textContent = '--';
+  if (instrEl) instrEl.textContent = motivo;
+  if (linesRow) linesRow.innerHTML = '';
+
+  ajustarAlturaIsla();
 }
 
 
@@ -6535,7 +7155,6 @@ function setupLongPressGuardarUbicacionEnMapa() {
     const safeLng = Number(latlng.lng);
     const currentZoom = (leafletMap && typeof leafletMap.getZoom === 'function') ? leafletMap.getZoom() : ZOOM_CALLE;
 
-    ocultarMarcadorUsuario();
     try {
       const layerSel = asegurarSeleccionParadaLayer();
       if (layerSel && typeof L !== 'undefined') {
@@ -7451,7 +8070,6 @@ async function centrarEnLugar(lat, lng, nombreLugar) {
   establecerVistaMapaPunto(safeLat, safeLng, ZOOM_CALLE);
 
   limpiarRecorrido();
-  ocultarMarcadorUsuario();
 
   destacarParadaEnMapa(safeLat, safeLng, nombreLugar);
   centrarMapaEnPunto(safeLat, safeLng, ZOOM_CALLE);
@@ -7801,6 +8419,7 @@ function establecerOrigenPlaneo(lat, lng, nombre) {
   if (!Number.isFinite(latN) || !Number.isFinite(lngN)) return;
   _routePlanOrigin = { lat: latN, lng: lngN, nombre: String(nombre || 'Punto de partida').trim() || 'Punto de partida' };
   mostrarMarcadorOrigen(latN, lngN, _routePlanOrigin.nombre);
+  enfocarSeleccionDePlaneo();
   refrescarPlaneoTrasElegirOrigen();
 }
 
@@ -7809,6 +8428,7 @@ function usarMiUbicacionComoOrigenPlaneo() {
   // El GPS ya se muestra con su propio marcador ("tu ubicación"); si había un pin de
   // origen elegido a mano, se saca para no dejarlo confundiendo sobre el mapa.
   limpiarMarcadorOrigen();
+  enfocarSeleccionDePlaneo();
   refrescarPlaneoTrasElegirOrigen();
 }
 
@@ -7824,6 +8444,10 @@ function establecerDestinoPlaneo(lat, lng, nombre, feature = null) {
     stopId: feature ? obtenerIdParada(feature) : null,
   };
   mostrarMarcadorDestino(latN, lngN, _routePlanTarget.nombre);
+  // Encuadre inmediato: mostrarOpcionesRutaParaTarget() vuelve a encuadrar al final,
+  // pero antes tiene que resolver el GPS y cargar los datasets, y mientras tanto el
+  // pin recién puesto se quedaría fuera de pantalla varios segundos.
+  enfocarSeleccionDePlaneo();
   void mostrarOpcionesRutaParaTarget(true);
 }
 
@@ -8045,7 +8669,6 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
     // noop
   }
 
-  ocultarMarcadorUsuario();
   // Marcadores origen/destino y conexión directa (opcional) en una capa separada.
   const layerSel = asegurarSeleccionParadaLayer();
   if (layerSel) {
@@ -8060,6 +8683,7 @@ async function verLineaMasCercanaDesdeActualHastaDestino(latDestino, lngDestino,
     if (recBounds && recBounds.isValid && recBounds.isValid()) bounds.extend(recBounds);
     leafletMap.fitBounds(bounds, { padding: [20, 20] });
     establecerVistaMapaBounds(bounds, { padding: [20, 20] });
+    recordarEncuadreRecorridoPlaneado(bounds, { padding: [20, 20] });
   } catch {
     // noop
   }
@@ -8272,6 +8896,8 @@ function mostrarParadasPlaneoActualEnBottomSheet({ ref, name } = {}) {
   const stops = normalizarParadasSeleccionParaLista(seleccion, lineaRef, lineaName);
   setPlaneoParadasIndex(stops);
 
+  reencuadrarRecorridoPlaneadoCompleto();
+
   const subtitulo = lineaRef ? `Línea ${lineaRef}${lineaName ? ` — ${lineaName}` : ''}` : '';
   const html = stops.length
     ? `${renderListaParadasPlaneoTimeline({ legs: [{ ref: lineaRef, name: lineaName, stops }] })}
@@ -8283,6 +8909,8 @@ function mostrarParadasPlaneoActualEnBottomSheet({ ref, name } = {}) {
 
 function mostrarParadasPlaneadasEnBottomSheet() {
   if (!recorridoActivo || !recorridoActivo.planned) return;
+
+  reencuadrarRecorridoPlaneadoCompleto();
 
   if (recorridoActivo.mode === 'transfer' && Array.isArray(recorridoActivo.legs) && recorridoActivo.legs.length >= 2) {
     const leg1 = recorridoActivo.legs[0] || {};
@@ -8449,7 +9077,6 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
     { ref: bRef, name: tramo2.mejor?.name || '', relIds: relIds2, origen: { lat: tLat, lng: tLng }, destino: { lat: dLat, lng: dLng }, nearbyStops: sel2 || [], startIndex: tramoInfo2?.startIndex ?? null, endIndex: tramoInfo2?.endIndex ?? null },
   ];
 
-  ocultarMarcadorUsuario();
   const layerSel = asegurarSeleccionParadaLayer();
   if (layerSel) {
     layerSel.clearLayers();
@@ -8465,6 +9092,7 @@ async function planearRutaConTrasbordo({ lineaA, lineaB, transfer, destino }) {
     if (recBounds && recBounds.isValid && recBounds.isValid()) bounds.extend(recBounds);
     leafletMap.fitBounds(bounds, { padding: [20, 20] });
     establecerVistaMapaBounds(bounds, { padding: [20, 20] });
+    recordarEncuadreRecorridoPlaneado(bounds, { padding: [20, 20] });
   } catch {
     // noop
   }
@@ -8650,6 +9278,104 @@ function iniciarPlaneoRutaHastaParadaSeleccionada(featureParada) {
   void mostrarOpcionesRutaParaTarget(true);
 }
 
+// Ajusta el mapa para que origen y destino entren juntos en pantalla. Si los dos
+// puntos están prácticamente encima (mismo lugar), fitBounds daría un encuadre
+// degenerado con zoom máximo, así que en ese caso se centra en el punto.
+// Guarda el encuadre del recorrido planificado para poder recuperarlo después de
+// haber enfocado una parada suelta.
+function recordarEncuadreRecorridoPlaneado(bounds, fitOpts) {
+  if (!recorridoActivo || !bounds) return;
+  recorridoActivo.viewBounds = bounds;
+  recorridoActivo.viewFitOpts = fitOpts || { padding: [20, 20] };
+}
+
+// Vuelve a mostrar el recorrido planificado entero. Se usa al regresar a la lista de
+// paradas: ahí el usuario quiere ver el viaje completo otra vez, no la última parada
+// que estuvo mirando de cerca.
+function reencuadrarRecorridoPlaneadoCompleto() {
+  if (!leafletMap || !recorridoActivo?.planned) return;
+  const bounds = recorridoActivo.viewBounds;
+  if (!bounds || typeof bounds.isValid !== 'function' || !bounds.isValid()) return;
+  const fitOpts = recorridoActivo.viewFitOpts || { padding: [20, 20] };
+  try {
+    leafletMap.fitBounds(bounds, fitOpts);
+    establecerVistaMapaBounds(bounds, fitOpts);
+  } catch {
+    // noop
+  }
+}
+
+// Acomoda el mapa a lo que el usuario lleva elegido del viaje:
+//  · origen y destino puestos  → encuadra los dos juntos;
+//  · uno solo                  → centra en ese, para que su marcador se vea.
+//
+// Se llama apenas se elige cada extremo. Antes no se llamaba nada hasta que estaban
+// los dos y se habían calculado las opciones de ruta: elegir un punto de partida
+// distinto del actual no movía el mapa, así que el pin nuevo quedaba fuera de pantalla
+// y parecía que no se había puesto nada.
+function enfocarSeleccionDePlaneo() {
+  if (!leafletMap) return;
+
+  const destinoOk = _routePlanTarget
+    && Number.isFinite(_routePlanTarget.lat)
+    && Number.isFinite(_routePlanTarget.lng);
+
+  // Origen efectivo: el elegido a mano o, si no hay, el GPS (que es el que se usa
+  // como punto de partida por defecto).
+  const origenElegido = _routePlanOrigin
+    && Number.isFinite(_routePlanOrigin.lat)
+    && Number.isFinite(_routePlanOrigin.lng)
+    ? _routePlanOrigin
+    : null;
+  const origenGps = ubicacion && Number.isFinite(ubicacion.lat) && Number.isFinite(ubicacion.lng)
+    ? ubicacion
+    : null;
+  const origen = origenElegido || origenGps;
+
+  if (destinoOk && origen) {
+    encuadrarOrigenYDestinoPlaneo(origen.lat, origen.lng, _routePlanTarget.lat, _routePlanTarget.lng);
+    return;
+  }
+  if (destinoOk) {
+    centrarMapaEnPunto(_routePlanTarget.lat, _routePlanTarget.lng, ZOOM_PLANEO_CONTEXTO);
+    return;
+  }
+  if (origenElegido) {
+    centrarMapaEnPunto(origenElegido.lat, origenElegido.lng, ZOOM_PLANEO_CONTEXTO);
+    return;
+  }
+  if (origenGps) {
+    centrarMapaEnPunto(origenGps.lat, origenGps.lng, ZOOM_PLANEO_CONTEXTO);
+  }
+}
+
+function encuadrarOrigenYDestinoPlaneo(latOrigen, lngOrigen, latDestino, lngDestino) {
+  if (!leafletMap || typeof L === 'undefined') return;
+  if (![latOrigen, lngOrigen, latDestino, lngDestino].every((n) => Number.isFinite(Number(n)))) return;
+
+  try {
+    const separados = Math.abs(latOrigen - latDestino) > 0.0002 || Math.abs(lngOrigen - lngDestino) > 0.0002;
+    if (!separados) {
+      centrarMapaEnPunto(Number(latDestino), Number(lngDestino), ZOOM_CALLE);
+      return;
+    }
+
+    const bounds = L.latLngBounds([
+      [Number(latOrigen), Number(lngOrigen)],
+      [Number(latDestino), Number(lngDestino)],
+    ]);
+    if (!bounds.isValid()) return;
+
+    // El panel de opciones tapa la mitad inferior (mobile) o la columna izquierda
+    // (escritorio), así que hace falta bastante aire alrededor de los dos pines.
+    const fitOpts = { padding: [56, 56], maxZoom: ZOOM_CALLE };
+    leafletMap.fitBounds(bounds, fitOpts);
+    establecerVistaMapaBounds(bounds, fitOpts);
+  } catch {
+    // noop
+  }
+}
+
 async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
   limpiarRecorrido();
   const layerParadas = asegurarParadasLayer();
@@ -8688,6 +9414,11 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
   }
   const latO = origen.lat;
   const lngO = origen.lng;
+
+  // Encuadre inicial del viaje: con origen y destino ya resueltos, se ajusta la vista
+  // para que entren los dos puntos. Antes el mapa se quedaba donde estuviera (a menudo
+  // sobre uno solo de los extremos) y había que alejar a mano para ver el viaje entero.
+  encuadrarOrigenYDestinoPlaneo(latO, lngO, _routePlanTarget.lat, _routePlanTarget.lng);
 
   await obtenerIndiceParadasPuntosPorId();
   await obtenerStopsIndexPorLinea();
@@ -8998,7 +9729,21 @@ function mostrarSelectorUbicacionRuta(modo) {
 function mostrarPlanificadorViaje() {
   _routePlanTarget = null;
   _routePlanOrigin = null;
+
+  // Abrir el planificador arranca un viaje nuevo, así que el mapa tiene que arrancar
+  // limpio también: sin el recorrido de la línea que se estuviera mirando y sin los
+  // pines de origen/destino de un planeo anterior.
+  limpiarRecorrido();
+  limpiarMarcadoresSeleccion();
+
+  // Y sobre todo hay que soltar la vista guardada: cambiarVista('view-map') reaplica
+  // window._activeMapView, así que si venías de centrar una parada, un lugar guardado
+  // o una línea entera, el planificador se abría mostrando eso en vez del lugar desde
+  // el que vas a salir.
+  window._activeMapView = null;
+
   cambiarVista('view-map');
+  enfocarSeleccionDePlaneo();
   renderPlanificadorViajeSheet();
 }
 
@@ -9164,11 +9909,155 @@ function renderLugaresFavs() {
   }
 }
 
+// ─── Pantalla de carga inicial ─────────────────────────────────────────────
+// El overlay ya viene pintado en el HTML (así se ve desde el primer frame, sin esperar
+// a que corra este script). Acá solo se va contando en qué paso está el arranque y se
+// lo saca cuando el mapa ya tiene tiles dibujadas.
+let _pantallaCargaOculta = false;
+
+function actualizarPasoPantallaCarga(texto) {
+  const el = document.getElementById('app-loading-step');
+  if (el) el.textContent = texto;
+}
+
+// Cuánto del ícono está lleno, de 0 a 100. Nunca retrocede: los pasos del arranque
+// no siempre terminan en orden (las tiles pueden llegar antes que el GPS) y ver el
+// ícono vaciarse se leería como un error.
+let _progresoPantallaCarga = 0;
+
+function actualizarProgresoPantallaCarga(porcentaje) {
+  const overlay = document.getElementById('app-loading-screen');
+  if (!overlay) return;
+  const pct = Math.max(0, Math.min(100, Number(porcentaje) || 0));
+  if (pct <= _progresoPantallaCarga) return;
+  _progresoPantallaCarga = pct;
+  overlay.style.setProperty('--app-loading-restante', `${100 - pct}%`);
+}
+
+function ocultarPantallaCargaApp() {
+  if (_pantallaCargaOculta) return;
+  _pantallaCargaOculta = true;
+  const overlay = document.getElementById('app-loading-screen');
+  if (!overlay) return;
+  overlay.classList.add('is-hidden');
+  // Se saca del DOM recién al terminar el fundido para que no quede capturando
+  // clicks sobre el mapa mientras se desvanece.
+  window.setTimeout(() => overlay.remove(), 420);
+}
+
+// Llena el ícono en proporción a las tiles del mapa que ya llegaron, y resuelve
+// cuando la capa termina su primera tanda.
+//
+// Se engancha apenas la capa existe en vez de esperar a que Centrar() termine: el
+// mapa se crea a mitad de Centrar(), que además descarga el GeoJSON de paradas. Si
+// se esperaba a que todo eso terminara para recién empezar a medir, el ícono se
+// quedaba clavado varios segundos y después saltaba de golpe — justo lo contrario de
+// mostrar cómo va cargando.
+//
+// Si el mapa nunca llega a crearse (sin permiso de ubicación, sin red), resuelve
+// igual por tiempo: la pantalla de carga nunca debe dejar al usuario encerrado.
+function seguirCargaDelMapa(desde = 15, hasta = 88) {
+  return new Promise((resolve) => {
+    let listo = false;
+    let enganchado = false;
+    let pedidas = 0;
+    let llegadas = 0;
+
+    const terminar = () => {
+      if (listo) return;
+      listo = true;
+      actualizarProgresoPantallaCarga(hasta);
+      resolve();
+    };
+
+    const contarTile = () => {
+      llegadas += 1;
+      if (pedidas > 0) {
+        actualizarProgresoPantallaCarga(desde + ((hasta - desde) * Math.min(1, llegadas / pedidas)));
+      }
+    };
+
+    const intentarEnganchar = () => {
+      if (listo || enganchado || !leafletMap) return;
+      leafletMap.eachLayer((capa) => {
+        if (!capa || typeof capa.on !== 'function' || !capa._url) return;
+        enganchado = true;
+        capa.on('tileloadstart', () => { pedidas += 1; });
+        // 'tileerror' también cuenta: una tile que falló no va a llegar nunca y sin
+        // contarla el llenado se quedaría esperándola para siempre.
+        capa.on('tileload', contarTile);
+        capa.on('tileerror', contarTile);
+        capa.once('load', terminar);
+      });
+      // Que el mapa ya exista es en sí un avance: la ubicación se resolvió.
+      if (enganchado) actualizarProgresoPantallaCarga(desde);
+    };
+
+    const esperarAlMapa = () => {
+      if (listo || enganchado) return;
+      intentarEnganchar();
+      if (!enganchado) window.setTimeout(esperarAlMapa, 100);
+    };
+
+    esperarAlMapa();
+    window.setTimeout(terminar, 7000);
+  });
+}
+
 window.onload = async () => {
   try {
-    await Centrar();
+    actualizarPasoPantallaCarga('Buscando tu ubicación...');
+    actualizarProgresoPantallaCarga(8);
+
+    // Los dos arrancan juntos a propósito: el seguimiento de tiles queda esperando a
+    // que Centrar() cree el mapa y desde ese momento el ícono se llena solo, mientras
+    // Centrar() sigue ocupado bajando las paradas.
+    // Dos fuentes reales de avance corriendo a la vez; como el progreso nunca
+    // retrocede, manda en cada momento la que va más adelante:
+    //  · las tiles del mapa cubren el arranque (12 → 38);
+    //  · la descarga del GeoJSON de paradas —decenas de MB, lo que de verdad se está
+    //    esperando— cubre el grueso (38 → 95).
+    const cargaDelMapa = seguirCargaDelMapa(12, 38);
+
+    // El tramo del GeoJSON arranca justo donde terminan las tiles (38) en vez de
+    // solaparse desde abajo: si empezara en 15, su primer tercio quedaba por debajo
+    // de lo que ya marcaban las tiles y el ícono se veía detenido un buen rato.
+    _onProgresoDescargaParadas = (fraccion) => {
+      actualizarPasoPantallaCarga('Descargando paradas y recorridos...');
+      actualizarProgresoPantallaCarga(38 + (57 * fraccion));
+    };
+
+    const centrado = Centrar();
+
+    // Tener el mapa dibujado es lo que sí hay que esperar antes de mostrar la app.
+    await cargaDelMapa;
+
+    // A las paradas se les da una ventana acotada para que se vea su avance real. Si
+    // la conexión es lenta y tardan más, la app se abre igual y el dataset termina de
+    // bajar de fondo: la pantalla de carga no puede quedarse rehén de 50 MB.
+    await Promise.race([
+      centrado,
+      new Promise((r) => window.setTimeout(r, 9000)),
+    ]);
+
+    actualizarPasoPantallaCarga('Preparando tus guardados...');
     cargarFavos();
+    actualizarProgresoPantallaCarga(100);
   } catch (error) {
     console.error('Error al obtener la ubicación inicial:', error.message ?? error);
+    actualizarProgresoPantallaCarga(100);
+  } finally {
+    // Fuera del arranque, cargarParadasGeojson() no tiene que reportar nada.
+    _onProgresoDescargaParadas = null;
+    // Un respiro para que se vea el ícono completarse antes del fundido; si no, el
+    // último tramo del llenado queda tapado por la salida.
+    window.setTimeout(ocultarPantallaCargaApp, 340);
   }
 };
+
+// Red de seguridad: si algo del arranque queda colgado (geolocalización que nunca
+// responde, tiles que no cargan), la pantalla se va igual a los 9 segundos.
+window.setTimeout(() => {
+  actualizarProgresoPantallaCarga(100);
+  window.setTimeout(ocultarPantallaCargaApp, 200);
+}, 16000);
