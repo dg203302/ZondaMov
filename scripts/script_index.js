@@ -49,6 +49,9 @@ const PARADAS_POR_LINEA_URL = encodeURI('Datos/paradas_por_linea.json' + JSON_VE
 const URLS_POR_LINEA_URL = encodeURI('Datos/urls_por_linea.json' + JSON_VERSION);
 const CORRESPONDENCIA_PARADAS_URL = encodeURI('Datos/correspondencia_paradas.json' + JSON_VERSION);
 const HORARIOS_APROXIMADOS_URL = encodeURI('Datos/redtulum_lineas_horarios_aproximados.json' + JSON_VERSION);
+const NOTICIAS_URL = encodeURI('Datos/noticias_redtulum.json' + JSON_VERSION);
+// Cuántas noticias se muestran antes de tocar "Ver más noticias".
+const NOTICIAS_VISIBLES_INICIAL = 3;
 const ARRIVALS_API_URL = '/api/arrivals';
 const ARRIVALS_TIMEOUT_MS = 30000;
 const ARRIVALS_MAX_INTENTOS_PARADA = 3; // cuando hay paradas duplicadas por sufijos, probar varias variantes
@@ -755,6 +758,51 @@ let _realtimeCenterSuppressNextClick = false;
 let _realtimeCenterActive = false;
 let _arrivalsAbortController = null; // AbortController activo mientras se consulta la API de arribos
 
+// Deja el diálogo listo para "nacer" desde el elemento que lo abrió: se mide dónde
+// está ese elemento y cuánto más chico es que el diálogo ya ubicado, y el
+// desplazamiento y la escala resultantes viajan a la animación por variables CSS.
+function prepararMorphDialogo(modal, origen) {
+  if (!modal) return;
+  modal.classList.remove('is-morphing', 'is-morphing-out');
+  if (!(origen instanceof Element)) return;
+
+  const desde = origen.getBoundingClientRect();
+  const hasta = modal.getBoundingClientRect();
+  if (!desde.width || !hasta.width) return;
+
+  const dx = (desde.left + (desde.width / 2)) - (hasta.left + (hasta.width / 2));
+  const dy = (desde.top + (desde.height / 2)) - (hasta.top + (hasta.height / 2));
+  modal.style.setProperty('--morph-x', `${Math.round(dx)}px`);
+  modal.style.setProperty('--morph-y', `${Math.round(dy)}px`);
+  modal.style.setProperty('--morph-sx', (desde.width / hasta.width).toFixed(3));
+  modal.style.setProperty('--morph-sy', (desde.height / hasta.height).toFixed(3));
+  modal.classList.add('is-morphing');
+}
+
+// Cierra un diálogo devolviéndolo, si nació con morph, al lugar del que salió.
+function cerrarDialogoConMorph(overlay, alOcultar = null) {
+  if (!overlay || !overlay.classList.contains('active')) return;
+  const modal = overlay.querySelector('.confirm-modal');
+
+  const ocultar = () => {
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    modal?.classList.remove('is-morphing', 'is-morphing-out');
+    if (typeof alOcultar === 'function') alOcultar();
+  };
+
+  if (!modal?.classList.contains('is-morphing')) {
+    ocultar();
+    return;
+  }
+
+  modal.classList.remove('is-morphing');
+  modal.classList.add('is-morphing-out');
+  modal.addEventListener('animationend', ocultar, { once: true });
+  // Red de seguridad por si la animación no corre (reduced motion, pestaña oculta).
+  window.setTimeout(ocultar, 320);
+}
+
 function ocultarModalConfirmCerrarRuta() {
   const overlay = document.getElementById('confirm-close-route-overlay');
   if (!overlay) return;
@@ -862,11 +910,9 @@ function mostrarModalConfirmCerrarArribos(onConfirm) {
 }
 
 function ocultarModalConfirmCentradoTiempoReal() {
-  const overlay = document.getElementById('confirm-realtime-center-overlay');
-  if (!overlay) return;
-  overlay.classList.remove('active');
-  overlay.setAttribute('aria-hidden', 'true');
-  _confirmRealtimeCenterOnConfirm = null;
+  cerrarDialogoConMorph(document.getElementById('confirm-realtime-center-overlay'), () => {
+    _confirmRealtimeCenterOnConfirm = null;
+  });
 }
 
 function actualizarModalConfirmCentradoTiempoReal(activando) {
@@ -889,7 +935,9 @@ function actualizarModalConfirmCentradoTiempoReal(activando) {
   }
 }
 
-function mostrarModalConfirmCentradoTiempoReal(onConfirm, activando) {
+// `origen` es el botón de centrar que se mantuvo apretado: el diálogo se abre
+// expandiéndose desde él.
+function mostrarModalConfirmCentradoTiempoReal(onConfirm, activando, origen = null) {
   const overlay = document.getElementById('confirm-realtime-center-overlay');
   const okBtn = document.getElementById('confirm-realtime-center-ok');
   if (!overlay || !okBtn) {
@@ -906,6 +954,8 @@ function mostrarModalConfirmCentradoTiempoReal(onConfirm, activando) {
   _confirmRealtimeCenterOnConfirm = typeof onConfirm === 'function' ? onConfirm : null;
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
+  // Se mide con el diálogo ya en pantalla: antes de esto no tiene tamaño.
+  prepararMorphDialogo(overlay.querySelector('.confirm-modal'), origen);
 
   const cancelBtn = document.getElementById('confirm-realtime-center-cancel');
   setTimeout(() => {
@@ -1029,7 +1079,7 @@ function setupBotonCentrarTiempoReal() {
           } else {
             desactivarModoCentradoTiempoReal();
           }
-        }, activando);
+        }, activando, btn);
       }, REALTIME_CENTER_LONG_PRESS_MS);
     };
 
@@ -1527,6 +1577,86 @@ function setupBottomSheetDrag() {
   // Purged: No se requieren controladores de arrastre en la vista dividida
 }
 
+// ─── Header flotante del inicio ────────────────────────────────────────────
+// Barra siempre a la vista con un salto directo a cada sección del inicio. El botón
+// de la sección que se está mirando queda resaltado mientras se hace scroll.
+
+// Alto libre que se deja arriba al saltar, para que el header no tape el encabezado
+// de la sección a la que se va.
+const DASH_HEADER_OFFSET_PX = 74;
+
+function refsHeaderFlotante() {
+  const header = document.getElementById('dashboard-float-header');
+  const scroller = document.querySelector('#view-dashboard .dashboard-scroll');
+  if (!header || !scroller) return null;
+  return { header, scroller, botones: Array.from(header.querySelectorAll('[data-dash-goto]')) };
+}
+
+function actualizarHeaderFlotanteDashboard() {
+  const refs = refsHeaderFlotante();
+  if (!refs) return;
+  const { scroller, botones } = refs;
+
+  // Sección activa: la última cuyo tope ya pasó la línea del header.
+  const topeScroller = scroller.getBoundingClientRect().top;
+  let activa = null;
+  for (const boton of botones) {
+    const seccion = document.getElementById(boton.dataset.dashGoto);
+    if (!seccion) continue;
+    if (seccion.getBoundingClientRect().top - topeScroller <= DASH_HEADER_OFFSET_PX + 12) {
+      activa = boton.dataset.dashGoto;
+    }
+  }
+
+  marcarSeccionActivaDashboard(activa);
+}
+
+function marcarSeccionActivaDashboard(id) {
+  const refs = refsHeaderFlotante();
+  if (!refs) return;
+  for (const boton of refs.botones) {
+    const esActiva = boton.dataset.dashGoto === id;
+    boton.classList.toggle('is-active', esActiva);
+    boton.setAttribute('aria-current', esActiva ? 'true' : 'false');
+  }
+}
+
+function irASeccionDashboard(id) {
+  const refs = refsHeaderFlotante();
+  const seccion = document.getElementById(id);
+  if (!refs || !seccion) return;
+
+  const { scroller } = refs;
+  const destino = scroller.scrollTop
+    + (seccion.getBoundingClientRect().top - scroller.getBoundingClientRect().top)
+    - DASH_HEADER_OFFSET_PX;
+
+  scroller.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
+
+  // El resaltado no puede quedar esperando a los eventos de scroll del desplazamiento
+  // suave: se marca la sección elegida en el acto y se revisa de nuevo al terminar.
+  marcarSeccionActivaDashboard(id);
+  window.setTimeout(actualizarHeaderFlotanteDashboard, 600);
+}
+
+function setupHeaderFlotanteDashboard() {
+  const refs = refsHeaderFlotante();
+  if (!refs) return;
+  const { header, scroller } = refs;
+
+  header.addEventListener('click', (ev) => {
+    const boton = ev.target instanceof Element ? ev.target.closest('[data-dash-goto]') : null;
+    if (!boton) return;
+    irASeccionDashboard(boton.dataset.dashGoto);
+  });
+
+  scroller.addEventListener('scroll', actualizarHeaderFlotanteDashboard, { passive: true });
+  // El alto del hero y de las secciones cambia con el ancho de la ventana.
+  window.addEventListener('resize', actualizarHeaderFlotanteDashboard);
+
+  actualizarHeaderFlotanteDashboard();
+}
+
 function iniciarCarruselHeroDashboard() {
   const slides = document.querySelectorAll('.hero-bg-slide');
   if (!slides || slides.length <= 1) return;
@@ -1550,13 +1680,15 @@ if (document.readyState === 'loading') {
     setupDashboardSearch();
     setupGuardadosSearch();
     setupPreferenciaHudParada();
-    setupTarjetaParadaCercanaDashboard();
     setupToggleTemaOscuro();
     renderHistorialDashboard();
     renderSeccionGuardados();
-    renderAccesosRapidosDashboard();
-    void actualizarTarjetaParadaCercanaDashboard();
+    void actualizarParadaCercanaDesdeInicio();
     iniciarCarruselHeroDashboard();
+    setupHeaderFlotanteDashboard();
+    void cargarNoticiasDashboard();
+    renderActividadEnVivo();
+    setupDialogosActividad();
   });
 } else {
   setupBottomSheetDrag();
@@ -1567,13 +1699,15 @@ if (document.readyState === 'loading') {
   setupDashboardSearch();
   setupGuardadosSearch();
   setupPreferenciaHudParada();
-  setupTarjetaParadaCercanaDashboard();
   setupToggleTemaOscuro();
   renderHistorialDashboard();
   renderSeccionGuardados();
-  renderAccesosRapidosDashboard();
-  void actualizarTarjetaParadaCercanaDashboard();
+  void actualizarParadaCercanaDesdeInicio();
   iniciarCarruselHeroDashboard();
+  setupHeaderFlotanteDashboard();
+  void cargarNoticiasDashboard();
+  renderActividadEnVivo();
+  setupDialogosActividad();
 }
 
 function obtenerPosicionActual() {
@@ -2055,24 +2189,24 @@ function aplicarPreferenciaTemaOscuro(activo) {
   document.documentElement.classList.toggle('zm-theme-dark', esOscuro);
   document.head.querySelector('meta[name="theme-color"]')?.setAttribute('content', esOscuro ? THEME_COLOR_OSCURO : THEME_COLOR_CLARO);
 
-  const btn = document.getElementById('btn-theme-toggle');
-  if (btn) {
+  const label = esOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+  for (const btn of document.querySelectorAll('.theme-toggle-btn')) {
     btn.setAttribute('aria-pressed', esOscuro ? 'true' : 'false');
-    const label = esOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
     btn.setAttribute('aria-label', label);
     btn.title = label;
   }
 }
 
 function setupToggleTemaOscuro() {
-  const btn = document.getElementById('btn-theme-toggle');
   aplicarPreferenciaTemaOscuro(leerBoolLocalStorage(STORAGE_DARK_MODE_KEY, false));
 
-  btn?.addEventListener('click', () => {
-    const esOscuro = !document.documentElement.classList.contains('zm-theme-dark');
-    aplicarPreferenciaTemaOscuro(esOscuro);
-    guardarBoolLocalStorage(STORAGE_DARK_MODE_KEY, esOscuro);
-  });
+  for (const btn of document.querySelectorAll('.theme-toggle-btn')) {
+    btn.addEventListener('click', () => {
+      const esOscuro = !document.documentElement.classList.contains('zm-theme-dark');
+      aplicarPreferenciaTemaOscuro(esOscuro);
+      guardarBoolLocalStorage(STORAGE_DARK_MODE_KEY, esOscuro);
+    });
+  }
 }
 
 function cambiarVista(vistaId) {
@@ -2120,16 +2254,18 @@ function cambiarVista(vistaId) {
       // Volver al dashboard cierra la sesión de planeo: la próxima ruta arranca de nuevo desde el GPS.
       _routePlanOrigin = null;
       renderHistorialDashboard();
-      renderAccesosRapidosDashboard();
-      void actualizarTarjetaParadaCercanaDashboard();
+      void actualizarParadaCercanaDesdeInicio();
     }
   }
 }
 
-// ─── Ir al mapa deslizando en horizontal ───────────────────────────────────
-// Sigue el orden de los tabs (Inicio · Mapa · Guardados): desde Inicio el mapa está a
-// la derecha, así que se llega deslizando hacia la izquierda; desde Guardados está a
-// la izquierda y se llega deslizando hacia la derecha.
+// ─── Cambiar de vista deslizando en horizontal ─────────────────────────────
+// Las tres vistas forman un anillo en el orden de los tabs (Inicio · Mapa ·
+// Guardados): desde Inicio el mapa está a la derecha y se llega deslizando hacia la
+// izquierda; desde Guardados está a la izquierda y se llega deslizando hacia la
+// derecha. Y hacia el lado donde antes no había nada, el gesto cierra el círculo:
+// deslizar Inicio hacia la derecha lleva a Guardados, y Guardados hacia la izquierda
+// vuelve a Inicio.
 //
 // A propósito NO se engancha en la vista del mapa: ahí el arrastre horizontal es para
 // mover el mapa, y un gesto que además cambiara de pantalla lo haría inusable.
@@ -2174,11 +2310,12 @@ function arrastrarScrollerHorizontal(el, scrollInicial, dx) {
 function setupNavegacionPorDeslizamiento() {
   const vistas = [
     // direccion: hacia qué lado hay que deslizar para llegar al mapa.
-    { el: document.getElementById('view-dashboard'), direccion: -1 },
-    { el: document.getElementById('view-guardados'), direccion: 1 },
+    // circular: la vista del otro extremo, a la que lleva el lado contrario.
+    { el: document.getElementById('view-dashboard'), direccion: -1, circular: 'view-guardados' },
+    { el: document.getElementById('view-guardados'), direccion: 1, circular: 'view-dashboard' },
   ];
 
-  for (const { el, direccion } of vistas) {
+  for (const { el, direccion, circular } of vistas) {
     if (!el) continue;
 
     let inicioX = 0;
@@ -2189,12 +2326,20 @@ function setupNavegacionPorDeslizamiento() {
     let scrollerArrastrado = null;
     let scrollerInicial = 0;
 
+    // Destapa por detrás la vista a la que lleva el gesto según hacia dónde va: el
+    // mapa, o la del otro extremo del anillo.
+    const mostrarDestino = (modo) => {
+      document.body.classList.toggle('is-swiping-to-map', modo === 'mapa');
+      document.getElementById(circular)
+        ?.classList.toggle('is-swipe-peek', modo === 'circular');
+    };
+
     const soltar = () => {
       siguiendo = false;
       esHorizontal = false;
       scrollerArrastrado = null;
       el.classList.remove('is-swiping');
-      document.body.classList.remove('is-swiping-to-map');
+      mostrarDestino(null);
       // Se limpian los estilos en línea para que vuelva a mandar el CSS de .app-view.
       el.style.transform = '';
     };
@@ -2236,18 +2381,15 @@ function setupNavegacionPorDeslizamiento() {
         }
         esHorizontal = true;
         el.classList.add('is-swiping');
-        // Deja ver el mapa por detrás mientras se arrastra: sin esto el hueco que va
-        // quedando muestra el fondo pelado y no se entiende a dónde lleva el gesto.
-        document.body.classList.add('is-swiping-to-map');
       }
 
-      // Hacia el lado del mapa la vista sigue al dedo; hacia el otro no hay nada, así
-      // que apenas se mueve (resistencia) para que se note que ahí no hay camino.
-      // Sin tocar la opacidad: la vista se mueve opaca, como una tarjeta que se corre
-      // y destapa el mapa. Si se la va transparentando, las dos capas se superponen a
-      // media transición y no se lee ni una ni la otra.
-      const avance = dx * direccion > 0 ? dx : dx * 0.18;
-      const limitado = Math.max(-SWIPE_NAV_ARRASTRE_MAX_PX, Math.min(SWIPE_NAV_ARRASTRE_MAX_PX, avance));
+      // Los dos lados llevan a algún lado (mapa o el otro extremo), así que la vista
+      // sigue al dedo en ambos. Sin tocar la opacidad: se mueve opaca, como una
+      // tarjeta que se corre y destapa lo que hay detrás. Si se la va transparentando,
+      // las dos capas se superponen a media transición y no se lee ni una ni la otra.
+      mostrarDestino(dx * direccion > 0 ? 'mapa' : 'circular');
+
+      const limitado = Math.max(-SWIPE_NAV_ARRASTRE_MAX_PX, Math.min(SWIPE_NAV_ARRASTRE_MAX_PX, dx));
       el.style.transform = `translateX(${limitado}px)`;
     });
 
@@ -2257,15 +2399,14 @@ function setupNavegacionPorDeslizamiento() {
         return;
       }
       const dx = ev.clientX - inicioX;
-      const llegaAlMapa = esHorizontal
-        && dx * direccion > 0
-        && Math.abs(dx) >= SWIPE_NAV_UMBRAL_PX;
+      const alcanza = esHorizontal && Math.abs(dx) >= SWIPE_NAV_UMBRAL_PX;
+      const destino = alcanza ? (dx * direccion > 0 ? 'view-map' : circular) : null;
 
       soltar();
 
-      if (llegaAlMapa) {
+      if (destino) {
         _swipeNavUltimaNavegacion = Date.now();
-        cambiarVista('view-map');
+        cambiarVista(destino);
       }
     };
 
@@ -2999,7 +3140,7 @@ function obtenerLineasFavs() {
 function guardarLineasFavs(arr) {
   guardarJsonLocalStorage(STORAGE_LINEAS_FAVS_KEY, arr);
   if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
-  if (typeof renderAccesosRapidosDashboard === 'function') renderAccesosRapidosDashboard();
+  if (typeof renderFavoritosActividad === 'function') renderFavoritosActividad();
 }
 
 function obtenerParadasFavs() {
@@ -3029,7 +3170,7 @@ function obtenerParadasFavs() {
 function guardarParadasFavs(arr) {
   guardarJsonLocalStorage(STORAGE_PARADAS_FAVS_KEY, arr);
   if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
-  if (typeof renderAccesosRapidosDashboard === 'function') renderAccesosRapidosDashboard();
+  if (typeof renderFavoritosActividad === 'function') renderFavoritosActividad();
 }
 
 function renderLineasFavs() {
@@ -6230,69 +6371,26 @@ async function actualizarHudParadaMasCercana() {
     }
   }
 
-  // Si no hay paradas o la más cercana está a más de 3000 metros, el panel de parada
-  // pasa a su estado vacío (la isla sigue visible por los otros dos paneles).
+  // Si no hay paradas o la más cercana está a más de 3 km, la sección de parada pasa
+  // a su estado vacío (la píldora sigue visible por las otras secciones).
   if (!mejor || !mejor.feature || minDist > 3000) {
     marcarIslaSinParada('No hay paradas a menos de 3 km de acá. Movete por el mapa para buscar una.');
     return;
   }
 
-  _nearestStopHudParada = mejor;
-
-  const nombreParada = mejor.feature.properties?.name || mejor.feature.properties?.['name:es'] || 'Parada cercana';
-  const minPie = Math.max(1, Math.round(minDist / 75));
-  const distTexto = minDist < 1000 ? `${Math.round(minDist)} m` : `${(minDist / 1000).toFixed(1)} km`;
-
-  const nameEl = document.getElementById('hud-stop-name');
-  const distEl = document.getElementById('hud-stop-dist');
-  const instrEl = document.getElementById('hud-stop-instruction');
-  const linesRow = document.getElementById('hud-lines-row');
-
-  if (nameEl) nameEl.textContent = nombreParada;
-  if (distEl) distEl.textContent = `${distTexto} • ~${minPie} min a pie`;
-  if (instrEl) {
-    instrEl.textContent = `Caminá hacia ${nombreParada} (~${minPie} min). Tocá acá para trazar la ruta GPS a pie en el mapa.`;
-  }
-
-  if (linesRow) {
-    const lineas = obtenerLineasDetalleDesdeRelations(mejor.feature);
-    if (lineas.length === 0) {
-      linesRow.innerHTML = '<span style="font-size: 11px; color: #94a3b8; font-weight: 500;">Parada sin líneas registradas</span>';
-    } else {
-      const maxShow = 6;
-      const shown = lineas.slice(0, maxShow);
-      const remaining = lineas.length - maxShow;
-
-      const pillsHtml = shown
-        .map((l) => {
-          const rawRef = String(l.ref || l.name || '').trim();
-          const cleanRef = formatBadgeLinea(rawRef);
-          const c = getColorForLinea(rawRef);
-          const tc = getTextColorForBg(c);
-          return `<span class="hud-line-pill" style="background-color: ${c}; color: ${tc};">${escapeHtml(cleanRef)}</span>`;
-        })
-        .join('');
-
-      const moreHtml = remaining > 0 ? `<span class="hud-line-more">+${remaining}</span>` : '';
-      linesRow.innerHTML = pillsHtml + moreHtml;
-    }
-  }
+  // El pintado lo hace el módulo de actividad en vivo, que escribe a la vez en la
+  // píldora y en la tarjeta de Inicio.
+  establecerParadaCercanaActividad(mejor, minDist);
 
   hud.style.display = '';
   hud.classList.add('visible');
-  ajustarAlturaIsla();
 }
 
-let _dashNearestStopParada = null;
-
-// Tarjeta "Tu parada más cercana" en el Dashboard: ahorra tener que entrar al mapa
-// para saber a qué parada ir y qué líneas pasan por ahí.
-async function actualizarTarjetaParadaCercanaDashboard() {
-  // La tarjeta (contenedor) siempre queda visible porque también aloja el toggle de
-  // preferencia; solo se oculta/muestra el bloque de datos de la parada en sí.
-  const body = document.getElementById('dashboard-nearest-stop-body');
-  if (!body) return;
-
+// Parada más cercana calculada desde Inicio, con el GPS del usuario (en el mapa la
+// calcula actualizarHudParadaMasCercana, que además puede caer al centro del mapa).
+// Acá no se dibuja nada: el resultado va al estado compartido de actividad en vivo,
+// que es el que pinta la sección en Inicio y en la píldora.
+async function actualizarParadaCercanaDesdeInicio() {
   let refLat = null;
   let refLng = null;
 
@@ -6306,14 +6404,14 @@ async function actualizarTarjetaParadaCercanaDashboard() {
       refLng = position.coords.longitude;
       ubicacion = { lat: refLat, lng: refLng };
     } catch {
-      body.style.display = 'none';
+      marcarActividadSinParada('Activá la ubicación para ver la parada más cercana.');
       return;
     }
   }
 
   const puntos = await cargarParadasPuntos();
   if (!Array.isArray(puntos) || puntos.length === 0) {
-    body.style.display = 'none';
+    marcarActividadSinParada('Todavía se están cargando las paradas. Probá de nuevo en unos segundos.');
     return;
   }
 
@@ -6329,128 +6427,136 @@ async function actualizarTarjetaParadaCercanaDashboard() {
   }
 
   if (!mejor || !mejor.feature || minDist > 3000) {
-    body.style.display = 'none';
+    marcarActividadSinParada('No hay paradas a menos de 3 km de acá.');
     return;
   }
 
-  _dashNearestStopParada = mejor;
+  establecerParadaCercanaActividad(mejor, minDist);
+}
 
-  const nombreParada = typeof obtenerNombreParadaCompleto === 'function'
-    ? obtenerNombreParadaCompleto(mejor.feature)
-    : (mejor.feature.properties?.name || 'Parada cercana');
-  const distTexto = minDist < 1000 ? `${Math.round(minDist)} m` : `${(minDist / 1000).toFixed(1)} km`;
+// ─── Noticias oficiales de RedTulum ────────────────────────────────────────
+// Se leen de Datos/noticias_redtulum.json, el snapshot que arma
+// scripts/actualizar_noticias.mjs con las novedades de redtulum.gob.ar y del
+// Servicio Informativo del Gobierno de San Juan. Es un archivo propio y no un
+// pedido a esos sitios porque ninguno manda cabeceras CORS; de paso la sección
+// abre al instante y sigue estando cuando no hay conexión.
 
-  const nameEl = document.getElementById('dash-nearest-stop-name');
-  const distEl = document.getElementById('dash-nearest-stop-dist');
-  const linesEl = document.getElementById('dash-nearest-stop-lines');
+let _noticiasRedTulum = [];
+let _noticiasFuentes = [];
+let _noticiasExpandidas = false;
 
-  if (nameEl) nameEl.textContent = nombreParada;
-  if (distEl) distEl.textContent = `A ${distTexto} de tu ubicación`;
+function fechaRelativaNoticia(iso) {
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return '';
 
-  if (linesEl) {
-    const lineas = obtenerLineasDetalleDesdeRelations(mejor.feature);
-    if (lineas.length === 0) {
-      linesEl.innerHTML = '<span style="font-size: 12px; color: #71717a; font-weight: 500;">Sin líneas registradas</span>';
-    } else {
-      const maxShow = 6;
-      const shown = lineas.slice(0, maxShow);
-      const remaining = lineas.length - maxShow;
-
-      const pillsHtml = shown
-        .map((l) => {
-          const rawRef = String(l.ref || l.name || '').trim();
-          const cleanRef = formatBadgeLinea(rawRef);
-          const c = getColorForLinea(rawRef);
-          const tc = getTextColorForBg(c);
-          return `<span class="hud-line-pill" style="background-color: ${c}; color: ${tc};">${escapeHtml(cleanRef)}</span>`;
-        })
-        .join('');
-
-      const moreHtml = remaining > 0 ? `<span class="hud-line-more">+${remaining}</span>` : '';
-      linesEl.innerHTML = pillsHtml + moreHtml;
-    }
+  const dias = Math.floor((Date.now() - fecha.getTime()) / 86400000);
+  if (dias <= 0) return 'Hoy';
+  if (dias === 1) return 'Ayer';
+  if (dias < 7) return `Hace ${dias} días`;
+  if (dias < 30) {
+    const semanas = Math.floor(dias / 7);
+    return semanas === 1 ? 'Hace 1 semana' : `Hace ${semanas} semanas`;
   }
-
-  body.style.display = '';
+  // De un mes para atrás la fecha exacta dice más que "hace 7 meses".
+  return fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function setupTarjetaParadaCercanaDashboard() {
-  const btn = document.getElementById('dash-nearest-stop-btn');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    if (!_dashNearestStopParada || !_dashNearestStopParada.feature) return;
-    cambiarVista('view-map');
-    mostrarLineasEnContenedorParadas(_dashNearestStopParada.feature);
-  });
+function htmlNoticiaDashboard(noticia) {
+  const titulo = String(noticia.titulo ?? '').trim();
+  const resumen = String(noticia.resumen ?? '').trim();
+  const url = String(noticia.url ?? '').trim();
+  const fuente = String(noticia.fuente ?? '').trim();
+  const imagen = String(noticia.imagen ?? '').trim();
+  const fecha = fechaRelativaNoticia(noticia.fecha);
+
+  // Si la miniatura no carga (la publica un CDN externo), se saca sola en vez de
+  // dejar el ícono de imagen rota.
+  const thumb = imagen
+    ? `<img class="noticia-thumb" src="${escapeHtml(imagen)}" alt="" loading="lazy" decoding="async"
+        onerror="this.remove()" />`
+    : '';
+
+  return `
+    <a class="noticia-item" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+      ${thumb}
+      <span class="noticia-body">
+        <span class="noticia-meta">
+          ${fuente ? `<span class="noticia-fuente">${escapeHtml(fuente)}</span>` : ''}
+          ${fecha ? `<span class="noticia-fecha">${escapeHtml(fecha)}</span>` : ''}
+        </span>
+        <span class="noticia-titulo">${escapeHtml(titulo)}</span>
+        ${resumen ? `<span class="noticia-resumen">${escapeHtml(resumen)}</span>` : ''}
+      </span>
+    </a>
+  `;
 }
 
-// Accesos rápidos a favoritos (lugares/líneas/paradas guardados) debajo del buscador.
-function renderAccesosRapidosDashboard() {
-  const section = document.getElementById('quick-favs-section');
-  const row = document.getElementById('quick-favs-row');
-  if (!section || !row) return;
+function renderNotaFuentesNoticias() {
+  const nota = document.getElementById('noticias-fuente-nota');
+  if (!nota || _noticiasFuentes.length === 0) return;
 
-  const lugares = obtenerLugaresFavs();
-  const lineas = obtenerLineasFavs();
-  const paradas = obtenerParadasFavs();
+  const enlaces = _noticiasFuentes
+    .filter((f) => f?.nombre && f?.url)
+    .map((f) => `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener">${escapeHtml(f.nombre)}</a>`);
+  if (enlaces.length > 0) nota.innerHTML = `Publicaciones oficiales de ${enlaces.join(' y ')}.`;
+}
 
-  const items = [
-    ...lugares.map((l) => ({ tipo: 'lugar', data: l })),
-    ...lineas.map((l) => ({ tipo: 'linea', data: l })),
-    ...paradas.map((p) => ({ tipo: 'parada', data: p })),
-  ].slice(0, 3);
+function renderNoticiasDashboard() {
+  const lista = document.getElementById('noticias-list');
+  const btnMas = document.getElementById('btn-noticias-mas');
+  if (!lista) return;
 
-  if (items.length === 0) {
-    section.style.display = 'none';
-    row.innerHTML = '';
+  lista.setAttribute('aria-busy', 'false');
+
+  if (_noticiasRedTulum.length === 0) {
+    lista.innerHTML = `
+      <p class="noticias-empty">No pudimos cargar las novedades. Podés verlas en
+        <a href="https://www.redtulum.gob.ar/novedades" target="_blank" rel="noopener">redtulum.gob.ar</a>.</p>
+    `;
+    if (btnMas) btnMas.style.display = 'none';
     return;
   }
 
-  row.innerHTML = '';
-  for (const item of items) {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'quick-fav-chip';
+  const visibles = _noticiasExpandidas
+    ? _noticiasRedTulum
+    : _noticiasRedTulum.slice(0, NOTICIAS_VISIBLES_INICIAL);
+  lista.innerHTML = visibles.map(htmlNoticiaDashboard).join('');
 
-    if (item.tipo === 'linea') {
-      const ref = String(item.data.ref || item.data.linea || '').trim();
-      const name = String(item.data.name || item.data.nombre || `Línea ${ref}`).trim();
-      const c = getColorForLinea(ref);
-      const tc = getTextColorForBg(c);
-      chip.innerHTML = `
-        <span class="quick-fav-chip-icon" style="background-color: ${c}; color: ${tc};">${escapeHtml(formatBadgeLinea(ref))}</span>
-        <span class="quick-fav-chip-label">${escapeHtml(name)}</span>
-      `;
-      chip.addEventListener('click', () => {
-        cambiarVista('view-map');
-        void mostrarRecorridoDeLinea(ref, name);
-      });
-    } else if (item.tipo === 'parada') {
-      const nombre = String(item.data.nombre || item.data.label || 'Parada').trim();
-      chip.innerHTML = `
-        <span class="quick-fav-chip-icon">🚏</span>
-        <span class="quick-fav-chip-label">${escapeHtml(nombre)}</span>
-      `;
-      chip.addEventListener('click', () => {
-        void centrarEnParadaGuardada(item.data);
-      });
-    } else {
-      const nombre = String(item.data.nombre || 'Lugar').trim();
-      const lat = Number(item.data.lat);
-      const lng = Number(item.data.lng);
-      chip.innerHTML = `
-        <span class="quick-fav-chip-icon">📌</span>
-        <span class="quick-fav-chip-label">${escapeHtml(nombre)}</span>
-      `;
-      chip.addEventListener('click', () => {
-        centrarEnLugar(lat, lng, nombre);
-      });
-    }
+  if (btnMas) {
+    const hayMas = _noticiasRedTulum.length > NOTICIAS_VISIBLES_INICIAL;
+    btnMas.style.display = hayMas ? '' : 'none';
+    btnMas.textContent = _noticiasExpandidas ? 'Ver menos' : 'Ver más noticias';
+  }
+}
 
-    row.appendChild(chip);
+async function cargarNoticiasDashboard() {
+  const lista = document.getElementById('noticias-list');
+  if (!lista) return;
+
+  const btnMas = document.getElementById('btn-noticias-mas');
+  if (btnMas && !btnMas.dataset.listo) {
+    btnMas.dataset.listo = '1';
+    btnMas.addEventListener('click', () => {
+      _noticiasExpandidas = !_noticiasExpandidas;
+      renderNoticiasDashboard();
+    });
   }
 
-  section.style.display = '';
+  try {
+    // no-cache y no force-cache: el snapshot se actualiza cada tanto en el repo y
+    // son pocos KB, así que conviene revalidarlo en cada arranque.
+    const resp = await fetch(NOTICIAS_URL, { cache: 'no-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    _noticiasRedTulum = Array.isArray(data?.noticias) ? data.noticias.filter((n) => n?.titulo && n?.url) : [];
+    _noticiasFuentes = Array.isArray(data?.fuentes) ? data.fuentes : [];
+  } catch (error) {
+    console.warn('No se pudieron cargar las noticias de RedTulum:', error.message ?? error);
+    _noticiasRedTulum = [];
+  }
+
+  renderNoticiasDashboard();
+  renderNotaFuentesNoticias();
 }
 
 async function trazarRutaGpsAParadaCercana(paradaItem) {
@@ -6671,24 +6777,1206 @@ async function trazarCaminataHaciaPrimeraParadaPlaneada(origenLat, origenLng, pa
   mostrarBarraRutaGpsActiva(distTexto, minPie, nombreParada);
 }
 
-// ─── Isla dinámica del mapa ────────────────────────────────────────────────
-// Un solo contenedor flotante con tres paneles superpuestos: parada más cercana en
-// vivo, acceso directo a planificar viaje y favoritos. Se alternan deslizando en
-// vertical (touch o rueda del mouse), tocando los puntos indicadores o con las
-// flechas del teclado. Solo el panel activo recibe clicks; la altura del contenedor
-// se anima hasta la del panel activo, que es lo que da la sensación de "isla" que se
-// re-forma en lugar de tres tarjetas distintas.
-const DI_PANELES = ['parada', 'planear', 'favoritos'];
-// La lista de favoritos tiene scroll propio, así que puede mostrar bastantes más de
-// los que entran a la vista sin estirar la isla.
-const DI_MAX_FAVORITOS = 12;
+// ─── Actividad en vivo ─────────────────────────────────────────────────────
+// Un único modelo de secciones alimenta los dos lugares donde se muestra lo que
+// está pasando ahora: la tarjeta de Inicio (secciones apiladas) y la píldora que
+// flota sobre el mapa (de a una, se alternan deslizando en vertical). Las
+// plantillas, los datos y la configuración son los mismos objetos, así que
+// ocultar una sección, reordenarlas o elegir otra parada se ve en los dos lados
+// sin ningún trabajo de sincronización extra.
+//
+// Cada host es un contenedor con data-av-host; dentro, los nodos que cambian con
+// los datos se marcan con data-av="<hook>" y se escriben en todos los hosts a la
+// vez (avEscribirTexto/avEscribirHtml). Los botones se resuelven por delegación
+// con data-av-action, así que volver a pintar una sección no deja listeners
+// colgados.
+
+const AV_SECCIONES = [
+  {
+    id: 'parada',
+    nombre: 'Parada más cercana',
+    desc: 'La parada más cercana a tu ubicación, con sus líneas y cuándo llega cada una.',
+  },
+  {
+    id: 'arribos',
+    nombre: 'Llegadas en una parada',
+    desc: 'Una parada que elijas, con los próximos horarios de todas sus líneas.',
+  },
+  {
+    id: 'planear',
+    nombre: 'Planificar viaje',
+    desc: 'Accesos directos para armar un viaje en colectivo.',
+  },
+  {
+    id: 'favoritos',
+    nombre: 'Tus favoritos',
+    desc: 'Las líneas, paradas y lugares que guardaste.',
+  },
+];
+
+const AV_CONFIG_KEY = 'zondamov_actividad_vivo_secciones';
+const AV_PARADA_ARRIBOS_KEY = 'zondamov_actividad_vivo_parada';
+// La lista de favoritos tiene scroll propio, así que puede mostrar bastantes más
+// de los que entran a la vista sin estirar la píldora.
+const AV_MAX_FAVORITOS = 12;
+const AV_MAX_LINEAS_PARADA = 6;
+const AV_MAX_LINEAS_ARRIBOS = 8;
+// Los horarios son estimados a partir de la frecuencia publicada: recalcularlos
+// cada minuto alcanza para que los "en N min" no queden viejos.
+const AV_REFRESCO_MS = 60000;
 const DI_HINT_STORAGE_KEY = 'zondamov_isla_hint_visto';
 const DI_UMBRAL_SWIPE_PX = 26;
+// Cuánto hay que mantener apretada la píldora para que abra la edición de secciones.
+const DI_PULSACION_LARGA_MS = 500;
+
+let _avConfig = null;
+let _avParadaCercana = null; // { item: {feature, lat, lng}, dist }
+let _avParadaCercanaMotivo = 'Activá la ubicación o movete por el mapa para ver la parada más cercana.';
+let _avParadaArribosPunto = null; // punto resuelto (con feature) de la parada elegida
+let _avSeqParada = 0;
+let _avSeqArribos = 0;
+let _avTimerRefresco = null;
+let _avConfigListo = false;
 
 let _diIndice = 0;
 let _diSetupHecho = false;
 let _diGestoMovido = false;
 let _diUltimoWheel = 0;
+
+// ── Configuración de secciones (orden + visibilidad) ──
+
+function obtenerConfigActividad() {
+  if (_avConfig) return _avConfig;
+
+  const guardado = leerJsonLocalStorage(AV_CONFIG_KEY, null);
+  const lista = [];
+  const vistos = new Set();
+
+  if (Array.isArray(guardado)) {
+    for (const item of guardado) {
+      const def = AV_SECCIONES.find((s) => s.id === item?.id);
+      if (!def || vistos.has(def.id)) continue;
+      vistos.add(def.id);
+      lista.push({ id: def.id, visible: item?.visible !== false });
+    }
+  }
+
+  // Lo que falte (config vieja, o una sección agregada en una versión nueva) se
+  // suma al final y visible, para que aparezca sola sin tener que configurar nada.
+  for (const def of AV_SECCIONES) {
+    if (vistos.has(def.id)) continue;
+    lista.push({ id: def.id, visible: true });
+  }
+
+  _avConfig = lista;
+  return _avConfig;
+}
+
+function guardarConfigActividad(lista) {
+  _avConfig = lista.map((item) => ({ id: item.id, visible: item.visible !== false }));
+  guardarJsonLocalStorage(AV_CONFIG_KEY, _avConfig);
+  renderActividadEnVivo();
+  renderConfigActividad();
+}
+
+function seccionesActividadVisibles() {
+  return obtenerConfigActividad().filter((s) => s.visible).map((s) => s.id);
+}
+
+function definicionSeccionActividad(id) {
+  return AV_SECCIONES.find((s) => s.id === id) || { id, nombre: id, desc: '' };
+}
+
+function moverSeccionActividad(id, delta) {
+  const lista = obtenerConfigActividad().slice();
+  const i = lista.findIndex((s) => s.id === id);
+  const destino = i + delta;
+  if (i < 0 || destino < 0 || destino >= lista.length) return;
+  [lista[i], lista[destino]] = [lista[destino], lista[i]];
+  guardarConfigActividad(lista);
+}
+
+function setVisibilidadSeccionActividad(id, visible) {
+  const lista = obtenerConfigActividad().map((s) => (s.id === id ? { ...s, visible } : s));
+  guardarConfigActividad(lista);
+}
+
+// ── Parada elegida para la sección de llegadas ──
+
+function obtenerParadaArribos() {
+  const guardada = leerJsonLocalStorage(AV_PARADA_ARRIBOS_KEY, null);
+  if (!guardada || typeof guardada !== 'object') return null;
+  const lat = Number(guardada.lat);
+  const lng = Number(guardada.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { id: String(guardada.id || ''), nombre: String(guardada.nombre || 'Parada'), lat, lng };
+}
+
+function guardarParadaArribos(parada) {
+  guardarJsonLocalStorage(AV_PARADA_ARRIBOS_KEY, parada);
+  _avParadaArribosPunto = null;
+  // Elegir una parada es pedir ver esa sección: si estaba oculta, se vuelve a mostrar.
+  const cfg = obtenerConfigActividad();
+  const arribos = cfg.find((s) => s.id === 'arribos');
+  if (arribos && !arribos.visible) {
+    setVisibilidadSeccionActividad('arribos', true);
+  } else {
+    renderActividadEnVivo();
+  }
+}
+
+// El dataset de paradas no se guarda en localStorage (es enorme): de la parada
+// elegida se guardan nombre y coordenadas, y la feature se vuelve a encontrar
+// acá por id o por cercanía.
+async function resolverPuntoParadaArribos() {
+  const elegida = obtenerParadaArribos();
+  if (!elegida) return null;
+  if (_avParadaArribosPunto) return _avParadaArribosPunto;
+
+  const puntos = await cargarParadasPuntos();
+  if (!Array.isArray(puntos)) return null;
+
+  let encontrado = null;
+  if (elegida.id) {
+    encontrado = puntos.find((p) => p.feature && obtenerIdParada(p.feature) === elegida.id) || null;
+  }
+  if (!encontrado) {
+    let minDist = Infinity;
+    for (const p of puntos) {
+      const d = calcularDistancia(elegida.lat, elegida.lng, p.lat, p.lng);
+      if (d < 40 && d < minDist) {
+        minDist = d;
+        encontrado = p;
+      }
+    }
+  }
+
+  _avParadaArribosPunto = encontrado;
+  return encontrado;
+}
+
+// ── Horarios de llegada por línea (estimados) ──
+
+// Devuelve, para cada línea que pasa por la parada, su próxima salida estimada.
+// Sale del dataset aproximado que ya usa el resto de la app: es local, así que se
+// puede pedir para todas las líneas de la parada sin pegarle a ninguna API.
+async function llegadasPorLineaEnParada(feature, maxLineas = AV_MAX_LINEAS_PARADA) {
+  const lineas = obtenerLineasDetalleDesdeRelations(feature);
+  if (lineas.length === 0) return { items: [], total: 0 };
+
+  const seleccion = lineas.slice(0, maxLineas);
+  let mapaHorarios = null;
+  try {
+    mapaHorarios = await cargarHorariosAproximados();
+  } catch {
+    mapaHorarios = null;
+  }
+
+  const nombreBase = typeof obtenerNombreParadaBase === 'function' ? obtenerNombreParadaBase(feature) : '';
+  const candidatos = typeof obtenerCandidatosNombreParada === 'function'
+    ? obtenerCandidatosNombreParada(feature, nombreBase)
+    : [nombreBase];
+  const ahora = new Date();
+
+  const items = seleccion.map((l) => {
+    const ref = String(l.ref || l.name || '').trim();
+    const base = { ref, nombre: String(l.name || '').trim(), proxima: null };
+    const entry = mapaHorarios ? buscarLineaEnHorariosAproximados(mapaHorarios, ref) : null;
+    if (!entry) return base;
+
+    const stopMatch = buscarParadaEnLineaAproximada(entry, candidatos);
+    const offsetMin = Number(stopMatch?.est_offset_min) || 0;
+    const proximas = generarProximasLlegadasAproximadas(entry, offsetMin, ahora, 1);
+    return { ...base, proxima: proximas[0] || null };
+  });
+
+  // Primero las que llegan antes; las que no tienen horario cargado, al final.
+  items.sort((a, b) => {
+    const ma = a.proxima ? a.proxima.minutosDesdeAhora : Infinity;
+    const mb = b.proxima ? b.proxima.minutosDesdeAhora : Infinity;
+    return ma - mb;
+  });
+
+  return { items, total: lineas.length };
+}
+
+function textoEsperaLlegada(proxima) {
+  if (!proxima) return 'sin horario';
+  const min = Math.round(proxima.minutosDesdeAhora);
+  // Más allá de hora y media (o si ya es de otro día) el horario dice más que la espera.
+  if (proxima.dayOffset > 0 || min > 90) return `${etiquetaDiaRelativoHorarios(proxima.dayOffset)}${proxima.horaTexto}`;
+  if (min <= 0) return 'llegando';
+  if (min === 1) return '1 min';
+  return `${min} min`;
+}
+
+function htmlLineaConLlegada(item) {
+  const ref = String(item.ref || '').trim();
+  const bg = getColorForLinea(ref);
+  const fg = getTextColorForBg(bg);
+  const espera = textoEsperaLlegada(item.proxima);
+  const claseEta = item.proxima ? 'hud-line-eta' : 'hud-line-eta sin-dato';
+  return `
+    <span class="hud-line-item">
+      <span class="hud-line-pill" style="background-color: ${bg}; color: ${fg};">${escapeHtml(formatBadgeLinea(ref))}</span>
+      <span class="${claseEta}">${escapeHtml(espera)}</span>
+    </span>
+  `;
+}
+
+function htmlLineasConLlegadas({ items, total }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return '<span class="hud-line-more">Parada sin líneas registradas</span>';
+  }
+  const restantes = total - items.length;
+  const extra = restantes > 0 ? `<span class="hud-line-more">+${restantes}</span>` : '';
+  return items.map(htmlLineaConLlegada).join('') + extra;
+}
+
+function htmlListaArribos({ items, total }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return '<p class="av-secciones-vacio">Esta parada no tiene líneas registradas.</p>';
+  }
+
+  const filas = items.map((item) => {
+    const ref = String(item.ref || '').trim();
+    const bg = getColorForLinea(ref);
+    const fg = getTextColorForBg(bg);
+    const espera = textoEsperaLlegada(item.proxima);
+    const claseEta = item.proxima ? 'hud-line-eta' : 'hud-line-eta sin-dato';
+    // Solo el número de línea y cuándo llega: el nombre del recorrido es largo, se
+    // corta igual en pantalla y acá lo que se viene a mirar es el horario.
+    return `
+      <div class="av-arribo-row">
+        <span class="hud-line-pill" style="background-color: ${bg}; color: ${fg};"
+          title="${escapeHtml(item.nombre || `Línea ${ref}`)}">${escapeHtml(formatBadgeLinea(ref))}</span>
+        <span class="${claseEta}">${escapeHtml(espera)}</span>
+      </div>
+    `;
+  }).join('');
+
+  const restantes = total - items.length;
+  const nota = restantes > 0
+    ? `<p class="av-nota">Y ${restantes} línea${restantes === 1 ? '' : 's'} más en esta parada.</p>`
+    : '';
+  return filas + nota;
+}
+
+// ── Plantillas de cada sección (idénticas en los dos hosts) ──
+
+function avPlantillaSeccion(id) {
+  if (id === 'parada') {
+    return `
+      <div class="hud-top-bar">
+        <div class="hud-tag-pill">
+          <span class="hud-tag-dot" aria-hidden="true"></span>
+          <span>PARADA MÁS CERCANA • EN VIVO</span>
+        </div>
+        <div class="hud-stop-dist" data-av="parada-dist">Calculando...</div>
+      </div>
+
+      <div class="hud-main-row">
+        <div class="hud-icon-badge" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 10 4 15 9 20"></polyline>
+            <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
+          </svg>
+        </div>
+        <div class="hud-info-col">
+          <h3 class="hud-stop-name" data-av="parada-nombre">Cargando parada...</h3>
+          <p class="hud-stop-instruction" data-av="parada-instruccion">Caminá hacia esta parada para abordar tus
+            colectivos. Tocá para trazar la ruta en el mapa.</p>
+        </div>
+      </div>
+
+      <div class="hud-bottom-row">
+        <div class="hud-lines-wrapper">
+          <span class="hud-lines-caption">Líneas:</span>
+          <div class="hud-lines-row" data-av="parada-lineas"></div>
+        </div>
+        <div class="hud-cta-badge">
+          <span>Trazar ruta GPS</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6"></path>
+          </svg>
+        </div>
+      </div>
+    `;
+  }
+
+  if (id === 'arribos') {
+    return `
+      <div class="hud-top-bar">
+        <div class="hud-tag-pill di-tag-arribos">
+          <span class="hud-tag-dot" aria-hidden="true"></span>
+          <span>LLEGADAS EN UNA PARADA</span>
+        </div>
+        <button type="button" class="di-link-btn" data-av-action="elegir-parada">Cambiar parada</button>
+      </div>
+
+      <div class="hud-main-row">
+        <div class="hud-icon-badge di-icon-arribos" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="hud-info-col">
+          <h3 class="hud-stop-name" data-av="arribos-nombre">Elegí una parada</h3>
+          <p class="hud-stop-instruction" data-av="arribos-sub">Te mostramos cuándo pasa cada línea por la parada que
+            elijas.</p>
+        </div>
+      </div>
+
+      <div class="av-arribos-lista" data-av="arribos-lista"></div>
+
+      <!-- Atajos a las paradas guardadas: son las candidatas de siempre (casa, trabajo). -->
+      <div class="av-parada-chips" data-av="arribos-favs"></div>
+
+      <div class="di-actions" data-av="arribos-acciones">
+        <button type="button" class="di-action-btn di-action-btn--primary" data-av-action="elegir-parada">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>Elegir parada</span>
+        </button>
+      </div>
+
+      <p class="av-nota" data-av="arribos-nota">Horarios estimados con la frecuencia publicada de cada línea, no son
+        datos en tiempo real.</p>
+    `;
+  }
+
+  if (id === 'planear') {
+    return `
+      <div class="hud-top-bar">
+        <div class="hud-tag-pill di-tag-plan">
+          <span class="hud-tag-dot" aria-hidden="true"></span>
+          <span>PLANIFICAR VIAJE</span>
+        </div>
+      </div>
+
+      <div class="hud-main-row">
+        <div class="hud-icon-badge di-icon-plan" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+          </svg>
+        </div>
+        <div class="hud-info-col">
+          <h3 class="hud-stop-name">¿A dónde querés ir?</h3>
+          <p class="hud-stop-instruction">Elegí origen y destino y te armamos el viaje en colectivo, con combinaciones y
+            paradas.</p>
+        </div>
+      </div>
+
+      <div class="di-actions">
+        <button type="button" class="di-action-btn di-action-btn--primary" data-av-action="planear">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+          </svg>
+          <span>Planificar viaje</span>
+        </button>
+        <button type="button" class="di-action-btn" data-av-action="planear-destino">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>Elegir destino</span>
+        </button>
+      </div>
+    `;
+  }
+
+  if (id === 'favoritos') {
+    return `
+      <div class="hud-top-bar">
+        <div class="hud-tag-pill di-tag-fav">
+          <span class="hud-tag-dot" aria-hidden="true"></span>
+          <span>TUS FAVORITOS</span>
+        </div>
+        <button type="button" class="di-link-btn" data-av-action="ver-guardados">Ver todos</button>
+      </div>
+
+      <div class="di-favs-scroller" data-av="favs-scroller">
+        <div class="di-favs-list" data-av="favs-lista"></div>
+      </div>
+    `;
+  }
+
+  return '';
+}
+
+// ── Pintado de los dos hosts ──
+
+function avNodos(hook) {
+  return Array.from(document.querySelectorAll(`[data-av-host] [data-av="${hook}"]`));
+}
+
+function avEscribirTexto(hook, texto) {
+  for (const nodo of avNodos(hook)) nodo.textContent = texto;
+}
+
+function avEscribirHtml(hook, html) {
+  for (const nodo of avNodos(hook)) nodo.innerHTML = html;
+}
+
+// La sección de parada se toca entera para trazar la ruta a pie: lleva rol de
+// botón y la acción en el envoltorio, no en un botón interno.
+function avAtributosEnvoltorio(id) {
+  if (id !== 'parada') return '';
+  return ' role="button" tabindex="0" data-av-action="trazar-ruta"'
+    + ' aria-label="Trazar la ruta a pie hasta la parada más cercana"';
+}
+
+function renderActividadEnPildora(visibles) {
+  const viewport = document.getElementById('di-viewport');
+  const dots = document.getElementById('di-dots');
+  if (!viewport) return;
+
+  viewport.innerHTML = visibles.map((id) => {
+    const def = definicionSeccionActividad(id);
+    return `
+      <section class="di-pane" data-di-pane="${escapeHtml(id)}" role="tabpanel" aria-label="${escapeHtml(def.nombre)}">
+        <div class="di-pane-inner"${avAtributosEnvoltorio(id)}>${avPlantillaSeccion(id)}</div>
+      </section>
+    `;
+  }).join('');
+
+  if (dots) {
+    dots.innerHTML = visibles.map((id, i) => {
+      const def = definicionSeccionActividad(id);
+      return `<button type="button" class="di-dot" role="tab" data-di-goto="${i}" aria-selected="false"
+        aria-label="${escapeHtml(def.nombre)}"></button>`;
+    }).join('');
+  }
+
+  if (_diIndice >= visibles.length) _diIndice = 0;
+  irAPanelIsla(_diIndice, { silencioso: true });
+}
+
+function renderActividadEnInicio(visibles) {
+  const cont = document.getElementById('actividad-vivo-secciones');
+  if (!cont) return;
+
+  if (visibles.length === 0) {
+    cont.innerHTML = '<p class="av-secciones-vacio">No hay secciones visibles. Tocá "Configurar" para volver a '
+      + 'mostrar alguna.</p>';
+    return;
+  }
+
+  cont.innerHTML = visibles.map((id) => {
+    const def = definicionSeccionActividad(id);
+    return `
+      <section class="av-seccion" data-av-seccion="${escapeHtml(id)}" aria-label="${escapeHtml(def.nombre)}">
+        <div class="di-pane-inner"${avAtributosEnvoltorio(id)}>${avPlantillaSeccion(id)}</div>
+      </section>
+    `;
+  }).join('');
+}
+
+function renderActividadEnVivo() {
+  const visibles = seccionesActividadVisibles();
+  renderActividadEnPildora(visibles);
+  renderActividadEnInicio(visibles);
+
+  for (const host of document.querySelectorAll('[data-av-host]')) setupDelegacionActividad(host);
+
+  avActualizarSeccionParada();
+  void avActualizarSeccionArribos();
+  renderFavoritosActividad();
+}
+
+// ── Acciones (delegadas, así volver a pintar no deja listeners colgados) ──
+
+// El gesto de deslizar solo existe en la píldora: el flag de "hubo arrastre" no
+// puede frenar los clicks de la tarjeta de Inicio, que nunca lo resetea.
+function esEventoEnPildora(ev) {
+  const nodo = ev?.target instanceof Element ? ev.target : null;
+  return nodo?.closest('[data-av-host]')?.dataset.avHost === 'pildora';
+}
+
+function ejecutarAccionActividad(accion, ev) {
+  // Un deslizamiento termina en "click": si el dedo se movió, no era un toque.
+  if (_diGestoMovido && esEventoEnPildora(ev)) return;
+  ev?.stopPropagation();
+
+  if (accion === 'trazar-ruta') {
+    const item = _avParadaCercana?.item;
+    if (!item || !item.feature) return;
+    // Desde Inicio hay que ir al mapa primero: la ruta se dibuja allá.
+    if (!esEventoEnPildora(ev)) cambiarVista('view-map');
+    void trazarRutaGpsAParadaCercana(item);
+    return;
+  }
+
+  if (accion === 'planear') {
+    mostrarPlanificadorViaje();
+    return;
+  }
+
+  if (accion === 'planear-destino') {
+    mostrarPlanificadorViaje();
+    if (typeof mostrarSelectorUbicacionRuta === 'function') mostrarSelectorUbicacionRuta('destino');
+    return;
+  }
+
+  if (accion === 'ver-guardados') {
+    cambiarVista('view-guardados');
+    return;
+  }
+
+  if (accion === 'elegir-parada') {
+    abrirSelectorParadaActividad();
+    return;
+  }
+
+  if (accion === 'usar-parada') {
+    const chip = ev?.target instanceof Element ? ev.target.closest('[data-av-parada]') : null;
+    if (!chip) return;
+    try {
+      guardarParadaArribos(JSON.parse(chip.dataset.avParada));
+    } catch {
+      // noop: el dato quedó mal armado, no se cambia nada
+    }
+    return;
+  }
+
+  if (accion === 'ver-parada-arribos') {
+    void abrirParadaArribosEnMapa();
+  }
+}
+
+function setupDelegacionActividad(host) {
+  if (!host || host.dataset.avListo === '1') return;
+  host.dataset.avListo = '1';
+
+  host.addEventListener('click', (ev) => {
+    const disparador = ev.target instanceof Element ? ev.target.closest('[data-av-action]') : null;
+    if (!disparador || !host.contains(disparador)) return;
+    ejecutarAccionActividad(disparador.dataset.avAction, ev);
+  });
+
+  host.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    const disparador = ev.target instanceof Element ? ev.target.closest('[data-av-action]') : null;
+    if (!disparador || !host.contains(disparador)) return;
+    // Los <button> ya disparan click solos con Enter/Espacio.
+    if (disparador.tagName === 'BUTTON') return;
+    ev.preventDefault();
+    ejecutarAccionActividad(disparador.dataset.avAction, ev);
+  });
+}
+
+async function abrirParadaArribosEnMapa() {
+  const punto = await resolverPuntoParadaArribos();
+  if (!punto || !punto.feature) return;
+  cambiarVista('view-map');
+  mostrarLineasEnContenedorParadas(punto.feature);
+}
+
+// ── Datos de cada sección ──
+
+// Estado compartido de la parada más cercana: lo escriben tanto el recálculo del
+// mapa como el de Inicio, y de acá lo leen las dos vistas.
+function establecerParadaCercanaActividad(item, dist) {
+  _avParadaCercana = item && item.feature ? { item, dist } : null;
+  _nearestStopHudParada = _avParadaCercana ? item : null;
+  avActualizarSeccionParada();
+}
+
+function marcarActividadSinParada(motivo) {
+  _avParadaCercanaMotivo = motivo || _avParadaCercanaMotivo;
+  _avParadaCercana = null;
+  _nearestStopHudParada = null;
+  avActualizarSeccionParada();
+}
+
+function avActualizarSeccionParada() {
+  const seq = ++_avSeqParada;
+
+  if (!_avParadaCercana) {
+    avEscribirTexto('parada-nombre', 'Sin parada cerca');
+    avEscribirTexto('parada-dist', '--');
+    avEscribirTexto('parada-instruccion', _avParadaCercanaMotivo);
+    avEscribirHtml('parada-lineas', '');
+    ajustarAlturaIsla();
+    return;
+  }
+
+  const { item, dist } = _avParadaCercana;
+  const feature = item.feature;
+  const nombre = typeof obtenerNombreParadaCompleto === 'function'
+    ? obtenerNombreParadaCompleto(feature)
+    : (feature.properties?.name || 'Parada cercana');
+  const minPie = Math.max(1, Math.round(dist / 75));
+  const distTexto = dist < 1000 ? `${Math.round(dist)} m` : `${(dist / 1000).toFixed(1)} km`;
+
+  avEscribirTexto('parada-nombre', nombre);
+  avEscribirTexto('parada-dist', `${distTexto} • ~${minPie} min a pie`);
+  avEscribirTexto(
+    'parada-instruccion',
+    `Caminá hacia ${nombre} (~${minPie} min). Tocá acá para trazar la ruta GPS a pie en el mapa.`,
+  );
+  ajustarAlturaIsla();
+
+  // Los horarios necesitan el dataset aproximado (se baja una sola vez): mientras
+  // llega, la sección ya muestra el resto.
+  void llegadasPorLineaEnParada(feature, AV_MAX_LINEAS_PARADA).then((llegadas) => {
+    if (seq !== _avSeqParada) return;
+    avEscribirHtml('parada-lineas', htmlLineasConLlegadas(llegadas));
+    ajustarAlturaIsla();
+  });
+}
+
+async function avActualizarSeccionArribos() {
+  const seq = ++_avSeqArribos;
+  const elegida = obtenerParadaArribos();
+
+  const mostrarAcciones = (visible) => {
+    for (const nodo of avNodos('arribos-acciones')) nodo.style.display = visible ? '' : 'none';
+  };
+
+  // Con una parada ya elegida los atajos estorban: la sección pasa a ser la lista.
+  const guardadas = paradasGuardadasParaActividad();
+  avEscribirHtml('arribos-favs', !elegida && guardadas.length > 0 ? htmlChipsParadasGuardadas(guardadas) : '');
+
+  if (!elegida) {
+    avEscribirTexto('arribos-nombre', 'Elegí una parada');
+    avEscribirTexto(
+      'arribos-sub',
+      guardadas.length > 0
+        ? 'Tocá una de tus paradas guardadas o buscá otra.'
+        : 'Te mostramos cuándo pasa cada línea por la parada que elijas.',
+    );
+    avEscribirHtml('arribos-lista', '');
+    mostrarAcciones(true);
+    ajustarAlturaIsla();
+    return;
+  }
+
+  avEscribirTexto('arribos-nombre', elegida.nombre);
+  avEscribirTexto('arribos-sub', 'Próximas llegadas estimadas en esta parada.');
+  mostrarAcciones(false);
+
+  const punto = await resolverPuntoParadaArribos();
+  if (seq !== _avSeqArribos) return;
+
+  if (!punto || !punto.feature) {
+    avEscribirHtml(
+      'arribos-lista',
+      '<p class="av-secciones-vacio">No pudimos encontrar esta parada en los datos. Probá elegir otra.</p>',
+    );
+    mostrarAcciones(true);
+    ajustarAlturaIsla();
+    return;
+  }
+
+  const llegadas = await llegadasPorLineaEnParada(punto.feature, AV_MAX_LINEAS_ARRIBOS);
+  if (seq !== _avSeqArribos) return;
+
+  avEscribirHtml('arribos-lista', htmlListaArribos(llegadas));
+  ajustarAlturaIsla();
+}
+
+// Favoritos (lugares, líneas y paradas guardadas) resumidos en la sección.
+function renderFavoritosActividad() {
+  const contenedores = avNodos('favs-lista');
+  if (contenedores.length === 0) return;
+
+  const lugares = typeof obtenerLugaresFavs === 'function' ? obtenerLugaresFavs() : [];
+  const lineas = typeof obtenerLineasFavs === 'function' ? obtenerLineasFavs() : [];
+  const paradas = typeof obtenerParadasFavs === 'function' ? obtenerParadasFavs() : [];
+
+  const items = [
+    ...(Array.isArray(lugares) ? lugares : []).map((l) => ({ tipo: 'lugar', data: l })),
+    ...(Array.isArray(lineas) ? lineas : []).map((l) => ({ tipo: 'linea', data: l })),
+    ...(Array.isArray(paradas) ? paradas : []).map((x) => ({ tipo: 'parada', data: x })),
+  ].slice(0, AV_MAX_FAVORITOS);
+
+  for (const cont of contenedores) {
+    cont.innerHTML = '';
+
+    if (items.length === 0) {
+      const vacio = document.createElement('p');
+      vacio.className = 'di-favs-empty';
+      vacio.textContent = 'Todavía no guardaste nada. Tocá el corazón en una línea, parada o lugar y va a aparecer acá.';
+      cont.appendChild(vacio);
+      continue;
+    }
+
+    for (const item of items) {
+      cont.appendChild(crearFilaFavoritoActividad(item));
+    }
+  }
+
+  actualizarSombrasScrollFavoritosIsla();
+}
+
+function crearFilaFavoritoActividad(item) {
+  const fila = document.createElement('button');
+  fila.type = 'button';
+  fila.className = 'di-fav-row';
+
+  // Arrastrar la lista termina en un "click" sobre la fila donde estaba el dedo:
+  // si hubo movimiento, el gesto era para scrollear, no para abrir el favorito.
+  fila.addEventListener('click', (ev) => {
+    if (!_diGestoMovido || !esEventoEnPildora(ev)) return;
+    ev.stopImmediatePropagation();
+    ev.preventDefault();
+  });
+
+  if (item.tipo === 'linea') {
+    const ref = String(item.data.ref || item.data.linea || '').trim();
+    const nombre = String(item.data.name || item.data.nombre || `Línea ${ref}`).trim();
+    const bg = getColorForLinea(ref);
+    const fg = getTextColorForBg(bg);
+    fila.innerHTML = `
+      <span class="di-fav-icon" style="background-color: ${bg}; color: ${fg};">${escapeHtml(formatBadgeLinea(ref))}</span>
+      <span class="di-fav-text">
+        <span class="di-fav-name">${escapeHtml(nombre)}</span>
+        <span class="di-fav-kind">Línea guardada</span>
+      </span>
+    `;
+    fila.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      void mostrarRecorridoDeLinea(ref, nombre);
+    });
+  } else if (item.tipo === 'parada') {
+    const nombre = String(item.data.nombre || item.data.label || 'Parada').trim();
+    fila.innerHTML = `
+      <span class="di-fav-icon">🚏</span>
+      <span class="di-fav-text">
+        <span class="di-fav-name">${escapeHtml(nombre)}</span>
+        <span class="di-fav-kind">Parada guardada</span>
+      </span>
+    `;
+    fila.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      void centrarEnParadaGuardada(item.data);
+    });
+  } else {
+    const nombre = String(item.data.nombre || 'Lugar').trim();
+    const lat = Number(item.data.lat);
+    const lng = Number(item.data.lng);
+    fila.innerHTML = `
+      <span class="di-fav-icon">📌</span>
+      <span class="di-fav-text">
+        <span class="di-fav-name">${escapeHtml(nombre)}</span>
+        <span class="di-fav-kind">Lugar guardado</span>
+      </span>
+    `;
+    fila.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      centrarEnLugar(lat, lng, nombre);
+    });
+  }
+
+  return fila;
+}
+
+// Muestra los degradados de recorte solo del lado donde realmente queda contenido
+// fuera de la vista, para que se note que la lista sigue.
+function actualizarSombrasScrollFavoritosIsla() {
+  for (const scroller of avNodos('favs-scroller')) {
+    const lista = scroller.querySelector('[data-av="favs-lista"]');
+    if (!lista) continue;
+    const hayScroll = lista.scrollHeight - lista.clientHeight > 1;
+    scroller.classList.toggle('has-more-above', hayScroll && lista.scrollTop > 1);
+    scroller.classList.toggle(
+      'has-more-below',
+      hayScroll && lista.scrollTop < lista.scrollHeight - lista.clientHeight - 1,
+    );
+  }
+}
+
+// ── Diálogo de configuración de secciones ──
+
+// Guarda el orden tal como quedaron las filas en pantalla después de arrastrar.
+function guardarOrdenDesdeListaConfig() {
+  const lista = document.getElementById('av-config-list');
+  if (!lista) return;
+
+  const previos = obtenerConfigActividad();
+  const orden = Array.from(lista.querySelectorAll('[data-av-config-id]')).map((fila) => {
+    const id = fila.dataset.avConfigId;
+    return { id, visible: previos.find((s) => s.id === id)?.visible !== false };
+  });
+
+  if (orden.length !== previos.length) return;
+  guardarConfigActividad(orden);
+}
+
+function alternarSeccionActividad(id) {
+  const actual = obtenerConfigActividad().find((s) => s.id === id);
+  if (!actual) return;
+  setVisibilidadSeccionActividad(id, !actual.visible);
+  // El repintado rehace las filas: hay que devolverle el foco a la que se tocó.
+  document.querySelector(`#av-config-list [data-av-config-id="${id}"]`)?.focus();
+}
+
+function renderConfigActividad() {
+  const lista = document.getElementById('av-config-list');
+  if (!lista) return;
+
+  const cfg = obtenerConfigActividad();
+  const paradaElegida = obtenerParadaArribos();
+
+  lista.innerHTML = cfg.map((item) => {
+    const def = definicionSeccionActividad(item.id);
+    const extra = item.id === 'arribos'
+      ? `<button type="button" class="di-link-btn" data-av-config-accion="elegir-parada">${
+        paradaElegida ? `Parada: ${escapeHtml(paradaElegida.nombre)}` : 'Elegir parada'}</button>`
+      : '';
+
+    // Ojo abierto o tachado según el estado: reemplaza al interruptor, porque ahora
+    // la sección se activa y desactiva tocando la fila entera.
+    const iconoEstado = item.visible
+      ? '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle>'
+      : '<path d="M10.7 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a18 18 0 0 1-2.6 3.6"></path>'
+      + '<path d="M6.6 6.6A18 18 0 0 0 2 12s3.6 7 10 7a10.9 10.9 0 0 0 4.2-.8"></path>'
+      + '<line x1="2" y1="2" x2="22" y2="22"></line>';
+
+    return `
+      <li class="av-config-row${item.visible ? '' : ' is-oculta'}" data-av-config-id="${escapeHtml(item.id)}"
+        role="button" tabindex="0" aria-pressed="${item.visible}"
+        aria-label="${escapeHtml(def.nombre)}. Tocá para mostrarla u ocultarla; arrastrá para cambiarla de lugar.">
+        <span class="av-config-grip" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <circle cx="9" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle>
+            <circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle>
+            <circle cx="15" cy="12" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle>
+          </svg>
+        </span>
+        <div class="av-config-info">
+          <span class="av-config-nombre">${escapeHtml(def.nombre)}</span>
+          <p class="av-config-desc">${escapeHtml(def.desc)}</p>
+          ${extra}
+        </div>
+        <span class="av-config-estado" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">${iconoEstado}</svg>
+        </span>
+      </li>
+    `;
+  }).join('');
+}
+
+// Arrastre para reordenar: la fila sigue al dedo y, al pasar el centro de una vecina,
+// se intercambian en el acto. Si el dedo no se movió, el gesto fue un toque y lo que
+// hace es mostrar u ocultar esa sección.
+function setupArrastreConfigActividad(lista) {
+  let arrastre = null;
+
+  const soltar = (fila) => {
+    fila.style.transform = '';
+    fila.classList.remove('is-dragging');
+  };
+
+  lista.addEventListener('pointerdown', (ev) => {
+    const fila = ev.target instanceof Element ? ev.target.closest('[data-av-config-id]') : null;
+    if (!fila) return;
+    // El botón de elegir parada maneja su propio click.
+    if (ev.target instanceof Element && ev.target.closest('[data-av-config-accion]')) return;
+
+    arrastre = { fila, origenY: ev.clientY, movido: false };
+    try { fila.setPointerCapture(ev.pointerId); } catch { /* noop */ }
+  });
+
+  lista.addEventListener('pointermove', (ev) => {
+    if (!arrastre) return;
+    const dy = ev.clientY - arrastre.origenY;
+    if (!arrastre.movido && Math.abs(dy) < 6) return;
+
+    if (!arrastre.movido) {
+      arrastre.movido = true;
+      arrastre.fila.classList.add('is-dragging');
+    }
+
+    arrastre.fila.style.transform = `translateY(${dy}px)`;
+
+    const rect = arrastre.fila.getBoundingClientRect();
+    const centro = rect.top + (rect.height / 2);
+    const vecina = dy < 0 ? arrastre.fila.previousElementSibling : arrastre.fila.nextElementSibling;
+    if (!vecina) return;
+
+    const rectVecina = vecina.getBoundingClientRect();
+    const centroVecina = rectVecina.top + (rectVecina.height / 2);
+    const cruzo = dy < 0 ? centro < centroVecina : centro > centroVecina;
+    if (!cruzo) return;
+
+    // Al mover el nodo, el layout salta: se corrige el origen del gesto para que la
+    // fila siga quieta debajo del dedo.
+    const topVisual = rect.top;
+    if (dy < 0) lista.insertBefore(arrastre.fila, vecina);
+    else lista.insertBefore(vecina, arrastre.fila);
+
+    arrastre.fila.style.transform = '';
+    const topNuevo = arrastre.fila.getBoundingClientRect().top;
+    arrastre.origenY += topNuevo - topVisual;
+    arrastre.fila.style.transform = `translateY(${ev.clientY - arrastre.origenY}px)`;
+  });
+
+  lista.addEventListener('pointerup', (ev) => {
+    if (!arrastre) return;
+    const { fila, movido } = arrastre;
+    arrastre = null;
+
+    try { fila.releasePointerCapture(ev.pointerId); } catch { /* noop */ }
+    soltar(fila);
+
+    if (movido) guardarOrdenDesdeListaConfig();
+    else alternarSeccionActividad(fila.dataset.avConfigId);
+  });
+
+  lista.addEventListener('pointercancel', () => {
+    if (!arrastre) return;
+    soltar(arrastre.fila);
+    arrastre = null;
+  });
+
+  // Teclado: Enter/Espacio muestra u oculta, y las flechas mueven la sección.
+  lista.addEventListener('keydown', (ev) => {
+    const fila = ev.target instanceof Element ? ev.target.closest('[data-av-config-id]') : null;
+    if (!fila) return;
+
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      alternarSeccionActividad(fila.dataset.avConfigId);
+      return;
+    }
+
+    if (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown') return;
+    ev.preventDefault();
+    const id = fila.dataset.avConfigId;
+    moverSeccionActividad(id, ev.key === 'ArrowUp' ? -1 : 1);
+    document.querySelector(`#av-config-list [data-av-config-id="${id}"]`)?.focus();
+  });
+}
+
+
+// `origen` es opcional: el botón Configurar o la píldora del mapa, según de dónde
+// se haya abierto.
+function abrirConfigActividad(origen = null) {
+  const overlay = document.getElementById('actividad-config-overlay');
+  const modal = overlay?.querySelector('.confirm-modal');
+  if (!overlay || !modal) return;
+
+  renderConfigActividad();
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+  // Se mide con el diálogo ya en pantalla: antes de esto no tiene tamaño.
+  prepararMorphDialogo(modal, origen instanceof Element ? origen : null);
+}
+
+function cerrarConfigActividad() {
+  cerrarDialogoConMorph(document.getElementById('actividad-config-overlay'));
+}
+
+// ── Diálogo para elegir la parada de la sección de llegadas ──
+
+function htmlChipsParadasGuardadas(guardadas) {
+  return guardadas.slice(0, 6).map((parada) => `
+    <button type="button" class="av-parada-chip" data-av-action="usar-parada"
+      data-av-parada="${escapeHtml(JSON.stringify(parada))}">
+      <span aria-hidden="true">🚏</span>
+      <span>${escapeHtml(parada.nombre)}</span>
+    </button>
+  `).join('');
+}
+
+function htmlItemParadaActividad({ nombre, sub, lat, lng, id }) {
+  return `
+    <button type="button" class="av-parada-item" data-av-parada="${escapeHtml(JSON.stringify({ nombre, lat, lng, id: id || '' }))}">
+      <span class="av-parada-nombre">${escapeHtml(nombre)}</span>
+      <span class="av-parada-sub">${escapeHtml(sub)}</span>
+    </button>
+  `;
+}
+
+// Sugerencias con lo que ya conocemos del usuario: la parada más cercana y sus
+// paradas guardadas. Así no hace falta escribir nada para elegir la habitual.
+// Las paradas guardadas son las candidatas naturales de esta sección (la de casa, la
+// del trabajo), así que van listadas aparte y no hace falta buscarlas por nombre.
+function paradasGuardadasParaActividad() {
+  const guardadas = typeof obtenerParadasFavs === 'function' ? obtenerParadasFavs() : [];
+  if (!Array.isArray(guardadas)) return [];
+
+  return guardadas
+    .map((parada) => ({
+      nombre: String(parada?.nombre || parada?.label || 'Parada'),
+      lat: Number(parada?.lat),
+      lng: Number(parada?.lng),
+      id: String(parada?.id || ''),
+    }))
+    .filter((parada) => Number.isFinite(parada.lat) && Number.isFinite(parada.lng));
+}
+
+function htmlGrupoParadasActividad(titulo, items) {
+  if (items.length === 0) return '';
+  return `<p class="av-parada-grupo">${escapeHtml(titulo)}</p>${items.join('')}`;
+}
+
+function renderSugerenciasParadaActividad() {
+  const cont = document.getElementById('av-parada-resultados');
+  if (!cont) return;
+
+  const sugeridas = [];
+  const cercana = _avParadaCercana?.item;
+  if (cercana && cercana.feature) {
+    const nombre = typeof obtenerNombreParadaCompleto === 'function'
+      ? obtenerNombreParadaCompleto(cercana.feature)
+      : (cercana.feature.properties?.name || 'Parada cercana');
+    const dist = _avParadaCercana.dist;
+    const distTexto = dist < 1000 ? `${Math.round(dist)} m` : `${(dist / 1000).toFixed(1)} km`;
+    sugeridas.push(htmlItemParadaActividad({
+      nombre,
+      sub: `Tu parada más cercana • a ${distTexto}`,
+      lat: cercana.lat,
+      lng: cercana.lng,
+      id: typeof obtenerIdParada === 'function' ? obtenerIdParada(cercana.feature) : '',
+    }));
+  }
+
+  const guardadas = paradasGuardadasParaActividad().map((parada) => htmlItemParadaActividad({
+    ...parada,
+    sub: 'Parada guardada',
+  }));
+
+  const html = [
+    htmlGrupoParadasActividad('Sugerida', sugeridas),
+    htmlGrupoParadasActividad('Tus paradas guardadas', guardadas),
+  ].filter(Boolean).join('');
+
+  cont.innerHTML = html
+    || '<p class="av-secciones-vacio">Escribí el nombre de una parada para buscarla, o guardá tus paradas para tenerlas siempre a mano.</p>';
+}
+async function buscarParadasParaActividad(texto) {
+  const cont = document.getElementById('av-parada-resultados');
+  if (!cont) return;
+
+  const query = String(texto || '').trim();
+  if (query.length < 2) {
+    renderSugerenciasParadaActividad();
+    return;
+  }
+
+  cont.innerHTML = '<p class="av-secciones-vacio">Buscando paradas...</p>';
+
+  let resultados = [];
+  try {
+    resultados = await buscarParadasLocales(query);
+  } catch {
+    resultados = [];
+  }
+
+  // El input pudo cambiar mientras se buscaba.
+  const actual = document.getElementById('av-parada-input')?.value.trim() || '';
+  if (actual !== query) return;
+
+  if (!Array.isArray(resultados) || resultados.length === 0) {
+    cont.innerHTML = '<p class="av-secciones-vacio">No encontramos paradas con ese nombre.</p>';
+    return;
+  }
+
+  cont.innerHTML = resultados.slice(0, 12).map((p) => htmlItemParadaActividad({
+    nombre: String(p.nombre || 'Parada'),
+    sub: 'Parada de RedTulum',
+    lat: Number(p.lat),
+    lng: Number(p.lng),
+    id: String(p.paradaId || ''),
+  })).join('');
+}
+
+function abrirSelectorParadaActividad() {
+  const overlay = document.getElementById('actividad-parada-overlay');
+  if (!overlay) return;
+
+  const input = document.getElementById('av-parada-input');
+  if (input) input.value = '';
+  renderSugerenciasParadaActividad();
+
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+  window.setTimeout(() => input?.focus(), 80);
+}
+
+function cerrarSelectorParadaActividad() {
+  const overlay = document.getElementById('actividad-parada-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  overlay.setAttribute('aria-hidden', 'true');
+}
+
+function setupDialogosActividad() {
+  if (_avConfigListo) return;
+  _avConfigListo = true;
+
+  const btnConfig = document.getElementById('btn-actividad-config');
+  btnConfig?.addEventListener('click', () => abrirConfigActividad(btnConfig));
+  document.getElementById('actividad-config-cerrar')?.addEventListener('click', cerrarConfigActividad);
+  document.getElementById('actividad-parada-cerrar')?.addEventListener('click', cerrarSelectorParadaActividad);
+
+  // Tocar fuera del diálogo lo cierra (el modal corta la propagación del click).
+  document.getElementById('actividad-config-overlay')?.addEventListener('click', cerrarConfigActividad);
+  document.getElementById('actividad-parada-overlay')?.addEventListener('click', cerrarSelectorParadaActividad);
+
+  const lista = document.getElementById('av-config-list');
+  if (lista) {
+    setupArrastreConfigActividad(lista);
+    lista.addEventListener('click', (ev) => {
+      const accion = ev.target instanceof Element ? ev.target.closest('[data-av-config-accion]') : null;
+      if (accion?.dataset.avConfigAccion === 'elegir-parada') abrirSelectorParadaActividad();
+    });
+  }
+
+  const input = document.getElementById('av-parada-input');
+  let debounce = null;
+  input?.addEventListener('input', () => {
+    if (debounce) clearTimeout(debounce);
+    debounce = setTimeout(() => void buscarParadasParaActividad(input.value), 160);
+  });
+
+  document.getElementById('av-parada-resultados')?.addEventListener('click', (ev) => {
+    const btn = ev.target instanceof Element ? ev.target.closest('[data-av-parada]') : null;
+    if (!btn) return;
+    try {
+      const parada = JSON.parse(btn.dataset.avParada);
+      guardarParadaArribos(parada);
+    } catch {
+      // noop: el dato quedó mal armado, no se cambia nada
+    }
+    cerrarSelectorParadaActividad();
+    renderConfigActividad();
+  });
+
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape') return;
+    cerrarConfigActividad();
+    cerrarSelectorParadaActividad();
+  });
+
+  // Los horarios estimados envejecen solos: se recalculan cada minuto.
+  if (!_avTimerRefresco) {
+    _avTimerRefresco = window.setInterval(() => {
+      avActualizarSeccionParada();
+      void avActualizarSeccionArribos();
+    }, AV_REFRESCO_MS);
+  }
+}
+
+// ── Píldora del mapa: alternar secciones ──
+// Solo una sección está visible a la vez: el usuario alterna deslizando en
+// vertical (touch o rueda), tocando los puntos indicadores o con las flechas. La
+// altura del contenedor se anima hasta la de la sección activa, que es lo que da
+// la sensación de píldora que se re-forma en vez de tarjetas distintas.
 
 function diRefs() {
   return {
@@ -6706,7 +7994,10 @@ function ajustarAlturaIsla() {
   const { viewport, panes } = diRefs();
   if (!viewport) return;
   const activo = panes[_diIndice];
-  if (!activo) return;
+  if (!activo) {
+    viewport.style.height = '0px';
+    return;
+  }
   viewport.style.height = `${activo.offsetHeight}px`;
 }
 
@@ -6746,9 +8037,11 @@ function irAPanelIsla(indice, { silencioso = false } = {}) {
 
   _diIndice = destino;
 
-  // Los favoritos se re-leen al entrar al panel: pueden haber cambiado desde la
-  // última vez (se guardó una parada, se borró un lugar) sin pasar por acá.
-  if (DI_PANELES[destino] === 'favoritos') renderFavoritosIsla();
+  // Al entrar, las secciones que dependen de datos que pudieron cambiar desde la
+  // última vez se vuelven a leer.
+  const seccion = panes[destino]?.dataset.diPane;
+  if (seccion === 'favoritos') renderFavoritosActividad();
+  if (seccion === 'arribos') void avActualizarSeccionArribos();
 
   ajustarAlturaIsla();
 
@@ -6759,114 +8052,11 @@ function irAPanelIsla(indice, { silencioso = false } = {}) {
   }
 }
 
-// Favoritos (lugares, líneas y paradas guardadas) resumidos dentro de la isla.
-function renderFavoritosIsla() {
-  const cont = document.getElementById('di-favs-list');
-  if (!cont) return;
-
-  const lugares = typeof obtenerLugaresFavs === 'function' ? obtenerLugaresFavs() : [];
-  const lineas = typeof obtenerLineasFavs === 'function' ? obtenerLineasFavs() : [];
-  const paradas = typeof obtenerParadasFavs === 'function' ? obtenerParadasFavs() : [];
-
-  const items = [
-    ...(Array.isArray(lugares) ? lugares : []).map((l) => ({ tipo: 'lugar', data: l })),
-    ...(Array.isArray(lineas) ? lineas : []).map((l) => ({ tipo: 'linea', data: l })),
-    ...(Array.isArray(paradas) ? paradas : []).map((x) => ({ tipo: 'parada', data: x })),
-  ].slice(0, DI_MAX_FAVORITOS);
-
-  cont.innerHTML = '';
-
-  if (items.length === 0) {
-    const vacio = document.createElement('p');
-    vacio.className = 'di-favs-empty';
-    vacio.textContent = 'Todavía no guardaste nada. Tocá el corazón en una línea, parada o lugar y va a aparecer acá.';
-    cont.appendChild(vacio);
-    return;
-  }
-
-  for (const item of items) {
-    const fila = document.createElement('button');
-    fila.type = 'button';
-    fila.className = 'di-fav-row';
-    // Arrastrar la lista termina en un "click" sobre la fila donde estaba el dedo:
-    // si hubo movimiento, el gesto era para scrollear, no para abrir el favorito.
-    fila.addEventListener('click', (ev) => {
-      if (!_diGestoMovido) return;
-      ev.stopImmediatePropagation();
-      ev.preventDefault();
-    });
-
-    if (item.tipo === 'linea') {
-      const ref = String(item.data.ref || item.data.linea || '').trim();
-      const nombre = String(item.data.name || item.data.nombre || `Línea ${ref}`).trim();
-      const bg = getColorForLinea(ref);
-      const fg = getTextColorForBg(bg);
-      fila.innerHTML = `
-        <span class="di-fav-icon" style="background-color: ${bg}; color: ${fg};">${escapeHtml(formatBadgeLinea(ref))}</span>
-        <span class="di-fav-text">
-          <span class="di-fav-name">${escapeHtml(nombre)}</span>
-          <span class="di-fav-kind">Línea guardada</span>
-        </span>
-      `;
-      fila.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        void mostrarRecorridoDeLinea(ref, nombre);
-      });
-    } else if (item.tipo === 'parada') {
-      const nombre = String(item.data.nombre || item.data.label || 'Parada').trim();
-      fila.innerHTML = `
-        <span class="di-fav-icon">🚏</span>
-        <span class="di-fav-text">
-          <span class="di-fav-name">${escapeHtml(nombre)}</span>
-          <span class="di-fav-kind">Parada guardada</span>
-        </span>
-      `;
-      fila.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        void centrarEnParadaGuardada(item.data);
-      });
-    } else {
-      const nombre = String(item.data.nombre || 'Lugar').trim();
-      const lat = Number(item.data.lat);
-      const lng = Number(item.data.lng);
-      fila.innerHTML = `
-        <span class="di-fav-icon">📌</span>
-        <span class="di-fav-text">
-          <span class="di-fav-name">${escapeHtml(nombre)}</span>
-          <span class="di-fav-kind">Lugar guardado</span>
-        </span>
-      `;
-      fila.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        centrarEnLugar(lat, lng, nombre);
-      });
-    }
-
-    cont.appendChild(fila);
-  }
-
-  actualizarSombrasScrollFavoritosIsla();
-}
-
-// Muestra los degradados de recorte solo del lado donde realmente queda contenido
-// fuera de la vista, para que se note que la lista sigue.
-function actualizarSombrasScrollFavoritosIsla() {
-  const lista = document.getElementById('di-favs-list');
-  const scroller = document.getElementById('di-favs-scroller');
-  if (!lista || !scroller) return;
-  const hayScroll = lista.scrollHeight - lista.clientHeight > 1;
-  scroller.classList.toggle('has-more-above', hayScroll && lista.scrollTop > 1);
-  scroller.classList.toggle(
-    'has-more-below',
-    hayScroll && lista.scrollTop < lista.scrollHeight - lista.clientHeight - 1,
-  );
-}
-
 // La lista de favoritos scrolleable que contiene al elemento tocado, o null si el
 // gesto no empezó dentro de una.
 function listaFavoritosScrolleableDesde(target) {
   if (!(target instanceof Element)) return null;
-  const lista = target.closest('#di-favs-list');
+  const lista = target.closest('#di-viewport [data-av="favs-lista"]');
   if (!lista) return null;
   return lista.scrollHeight - lista.clientHeight > 1 ? lista : null;
 }
@@ -6887,8 +8077,8 @@ function setupNearestStopHud() {
   if (!hud || _diSetupHecho) return;
   _diSetupHecho = true;
 
-  // La isla flota sobre el mapa: sin esto, arrastrar o girar la rueda encima de ella
-  // termina moviendo/zoomeando el mapa de abajo en vez de cambiar de panel.
+  // La píldora flota sobre el mapa: sin esto, arrastrar o girar la rueda encima de
+  // ella termina moviendo/zoomeando el mapa de abajo en vez de cambiar de sección.
   if (typeof L !== 'undefined' && L.DomEvent) {
     try {
       L.DomEvent.disableClickPropagation(hud);
@@ -6898,49 +8088,24 @@ function setupNearestStopHud() {
     }
   }
 
-  // ── Panel 1: tocar la tarjeta traza la ruta a pie hasta la parada ──
-  const trigger = document.getElementById('hud-parada-trigger');
-  if (trigger) {
-    const trazar = (ev) => {
-      ev.stopPropagation();
-      // Un deslizamiento termina en "click": si el dedo se movió, no era un toque.
-      if (_diGestoMovido) return;
-      if (!_nearestStopHudParada || !_nearestStopHudParada.feature) return;
-      void trazarRutaGpsAParadaCercana(_nearestStopHudParada);
-    };
-    trigger.addEventListener('click', trazar);
-    trigger.addEventListener('keydown', (ev) => {
-      if (ev.key !== 'Enter' && ev.key !== ' ') return;
-      ev.preventDefault();
-      trazar(ev);
-    });
-  }
-
-  // ── Panel 2: accesos al planificador ──
-  document.getElementById('di-plan-btn')?.addEventListener('click', (ev) => {
+  // ── Puntos indicadores (se recrean con cada render: van por delegación) ──
+  document.getElementById('di-dots')?.addEventListener('click', (ev) => {
+    const dot = ev.target instanceof Element ? ev.target.closest('[data-di-goto]') : null;
+    if (!dot) return;
     ev.stopPropagation();
-    mostrarPlanificadorViaje();
+    irAPanelIsla(Number(dot.dataset.diGoto || 0));
   });
 
-  document.getElementById('di-plan-from-stop-btn')?.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    mostrarPlanificadorViaje();
-    if (typeof mostrarSelectorUbicacionRuta === 'function') mostrarSelectorUbicacionRuta('destino');
-  });
+  // ── Mantener apretada la píldora: abre la edición de secciones ──
+  // Es el atajo natural para reordenarlas sin tener que ir hasta Inicio. El diálogo
+  // se abre creciendo desde la propia píldora para que se vea de dónde salió.
+  let temporizadorPulsacion = null;
 
-  // ── Panel 3: ver todos los guardados ──
-  document.getElementById('di-favs-all-btn')?.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    cambiarVista('view-guardados');
-  });
-
-  // ── Puntos indicadores ──
-  for (const dot of diRefs().dots) {
-    dot.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      irAPanelIsla(Number(dot.dataset.diGoto || 0));
-    });
-  }
+  const cancelarPulsacionLarga = () => {
+    if (!temporizadorPulsacion) return;
+    window.clearTimeout(temporizadorPulsacion);
+    temporizadorPulsacion = null;
+  };
 
   // ── Gesto vertical (dedo o mouse) ──
   let inicioY = 0;
@@ -6966,14 +8131,27 @@ function setupNearestStopHud() {
     listaArrastre = listaFavoritosScrolleableDesde(ev.target);
     listaScrollInicial = listaArrastre ? listaArrastre.scrollTop : 0;
 
-    // Con captura, el gesto sigue llegando aunque el dedo se salga de la isla.
+    // Con captura, el gesto sigue llegando aunque el dedo se salga de la píldora.
     try { hud.setPointerCapture(ev.pointerId); } catch { /* noop */ }
+
+    cancelarPulsacionLarga();
+    temporizadorPulsacion = window.setTimeout(() => {
+      temporizadorPulsacion = null;
+      // Marcar el gesto como "movido" hace que el click posterior se descarte: el
+      // dedo se levanta sobre la sección, que si no dispararía su acción.
+      _diGestoMovido = true;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+      abrirConfigActividad(hud);
+    }, DI_PULSACION_LARGA_MS);
   });
 
   hud.addEventListener('pointermove', (ev) => {
     if (!arrastrando) return;
     const dy = ev.clientY - inicioY;
+    const dx = ev.clientX - inicioX;
     if (Math.abs(dy) > 8) _diGestoMovido = true;
+    // Si el dedo se mueve, el gesto era un deslizamiento, no una pulsación sostenida.
+    if (Math.abs(dy) > 8 || Math.abs(dx) > 8) cancelarPulsacionLarga();
 
     // Arrastre dentro de la lista: la movemos nosotros. El navegador no lo hace
     // porque la lista tiene touch-action: none.
@@ -6984,41 +8162,43 @@ function setupNearestStopHud() {
   });
 
   const terminarGesto = (ev) => {
+    cancelarPulsacionLarga();
     if (!arrastrando) return;
     arrastrando = false;
     try { hud.releasePointerCapture(ev.pointerId); } catch { /* noop */ }
 
     const dy = ev.clientY - inicioY;
     const dx = ev.clientX - inicioX;
-    // Solo cuenta como cambio de panel si el movimiento fue claramente vertical.
+    // Solo cuenta como cambio de sección si el movimiento fue claramente vertical.
     if (Math.abs(dy) <= Math.abs(dx)) return;
 
     // Dentro de la lista, lo que decide es el SOBRANTE: el tramo del arrastre que la
     // lista no pudo absorber porque ya estaba en el tope. Así, deslizar en el medio de
     // los favoritos los recorre, y seguir deslizando cuando ya no queda más cambia de
-    // panel — sin tener que sacar el dedo de la lista primero.
+    // sección — sin tener que sacar el dedo de la lista primero.
     const absorbido = listaArrastre ? Math.abs(listaArrastre.scrollTop - listaScrollInicial) : 0;
     listaArrastre = null;
 
     const sobrante = Math.abs(dy) - absorbido;
     if (sobrante < DI_UMBRAL_SWIPE_PX) return;
 
-    // Deslizar hacia arriba muestra el panel siguiente (como pasar de página).
+    // Deslizar hacia arriba muestra la sección siguiente (como pasar de página).
     irAPanelIsla(_diIndice + (dy < 0 ? 1 : -1));
   };
 
   hud.addEventListener('pointerup', terminarGesto);
   hud.addEventListener('pointercancel', () => {
+    cancelarPulsacionLarga();
     arrastrando = false;
     listaArrastre = null;
   });
 
-  // Rueda del mouse: un panel por gesto, con una pausa para que un scroll largo
-  // no atraviese los tres paneles de golpe.
+  // Rueda del mouse: una sección por gesto, con una pausa para que un scroll largo
+  // no atraviese todas de golpe.
   hud.addEventListener('wheel', (ev) => {
     if (Math.abs(ev.deltaY) < Math.abs(ev.deltaX)) return;
     // Dentro de la lista de favoritos la rueda la scrollea a ella (mientras le quede
-    // recorrido); recién al llegar al tope vuelve a cambiar de panel.
+    // recorrido); recién al llegar al tope vuelve a cambiar de sección.
     const listaRueda = listaFavoritosScrolleableDesde(ev.target);
     if (listaFavoritosPuedeScrollear(listaRueda, -ev.deltaY)) {
       ev.stopPropagation();
@@ -7049,35 +8229,20 @@ function setupNearestStopHud() {
     // noop
   }
 
-  // Si cambia el tamaño de la ventana, el panel activo puede pasar a ocupar más o
-  // menos líneas de texto; hay que volver a medirlo.
+  // Si cambia el tamaño de la ventana, la sección activa puede pasar a ocupar más o
+  // menos líneas de texto; hay que volver a medirla.
   window.addEventListener('resize', ajustarAlturaIsla);
 
-  document.getElementById('di-favs-list')
-    ?.addEventListener('scroll', actualizarSombrasScrollFavoritosIsla, { passive: true });
+  hud.addEventListener('scroll', actualizarSombrasScrollFavoritosIsla, { passive: true, capture: true });
 
-  renderFavoritosIsla();
-  irAPanelIsla(0, { silencioso: true });
+  irAPanelIsla(_diIndice, { silencioso: true });
 }
 
-// Estado del panel 1 cuando no hay ninguna parada cerca (o todavía no hay GPS): la
-// isla sigue a la vista porque los otros dos paneles siguen siendo útiles.
+// Estado de la sección de parada cuando no hay ninguna cerca (o todavía no hay
+// GPS): la píldora sigue a la vista porque las otras secciones siguen sirviendo.
 function marcarIslaSinParada(motivo) {
-  _nearestStopHudParada = null;
-
-  const nameEl = document.getElementById('hud-stop-name');
-  const distEl = document.getElementById('hud-stop-dist');
-  const instrEl = document.getElementById('hud-stop-instruction');
-  const linesRow = document.getElementById('hud-lines-row');
-
-  if (nameEl) nameEl.textContent = 'Sin parada cerca';
-  if (distEl) distEl.textContent = '--';
-  if (instrEl) instrEl.textContent = motivo;
-  if (linesRow) linesRow.innerHTML = '';
-
-  ajustarAlturaIsla();
+  marcarActividadSinParada(motivo);
 }
-
 
 function cargarLF(coords, zoomObjetivo = null) {
   if (typeof L === 'undefined') {
@@ -7263,7 +8428,7 @@ function obtenerLugaresFavs() {
 function guardarLugaresFavs(arr) {
   guardarJsonLocalStorage(STORAGE_LUGARES_FAVS_KEY, arr);
   if (typeof renderSeccionGuardados === 'function') renderSeccionGuardados();
-  if (typeof renderAccesosRapidosDashboard === 'function') renderAccesosRapidosDashboard();
+  if (typeof renderFavoritosActividad === 'function') renderFavoritosActividad();
 }
 
 function esMismoLugarGuardado(a, b) {

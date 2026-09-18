@@ -1,0 +1,135 @@
+{
+  "actualizado": "2026-09-18T21:36:02.074Z",
+  "fuentes": [
+    {
+      "nombre": "Gobierno de San Juan",
+      "url": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "nombre": "RedTulum",
+      "url": "https://www.redtulum.gob.ar/novedades"
+    }
+  ],
+  "noticias": [
+    {
+      "id": "sisanjuan-23",
+      "titulo": "RedTulum informa los horarios de las líneas 701 y 702 para Calingasta",
+      "resumen": "El Ministerio de Gobierno informa los horarios vigentes de RedTulum para los servicios que conectan Barreal, Tamberías, Calingasta, Villa Nueva y La Isla dentro del departamento Calingasta.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2026-05-05/67381-redtulum-informa-los-horarios-de-las-lineas-701-y-702-para-calingasta",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/601a84b882d87c253a58b8ad242d4932_XL.jpg",
+      "fecha": "2026-05-05T17:04:02.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "RedTulum informó modificaciones al recorrido de la línea 210",
+      "resumen": "Los cambios en el trazado responden a la necesidad de eficientizar el servicio para los usuarios de la provincia.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2026-04-17/67113-redtulum-informo-modificaciones-al-recorrido-de-la-linea-210",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/825a04ffefeb80e8d82b9a22374986e1_XL.jpg",
+      "fecha": "2026-04-17T16:25:10.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "El Ministerio de Gobierno informa sobre las herramientas digitales disponibles para usuarios de RedTulum",
+      "resumen": "A través de la Secretaría de Tránsito y Transporte, se detallan las características de todas las aplicaciones que permiten planificar recorridos y conocer horarios. Estas plataformas garantizan el acceso gratuito a la información para todos los pasajeros de…",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2026-02-28/66410-el-ministerio-de-gobierno-informa-sobre-las-herramientas-digitales-disponibles-para-usuarios-de-redtulum",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/496b0552d21e377734960266d72b1508_XL.jpg",
+      "fecha": "2026-02-28T11:00:00.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "Así los usuarios pueden chequear un cambio de recorrido de colectivos por eventos",
+      "resumen": "Las modificaciones en el tránsito normal de líneas pueden realizarse por diferentes motivos, tales como obras de pavimentación, actividades deportivas u otros.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2026-02-12/66208-asi-se-revisan-los-cambios-de-recorrido-en-la-app-redtulum",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/ee4cfa8b2e2409e037a2fbd36440b63a_XL.jpg",
+      "fecha": "2026-02-12T22:47:37.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "RedTulum informó las disposiciones de circulación por la Vuelta a San Juan 2026",
+      "resumen": "El evento deportivo incluirá diez jornadas y se desarrollará en nueve departamentos de la provincia.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2026-01-23/65920-redtulum-informo-las-disposiciones-de-circulacion-por-la-vuelta-a-san-juan-2026",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/6568b3e38ca10e7e5517553161e1fbdd_XL.jpg",
+      "fecha": "2026-01-23T14:03:22.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "RedTulum definió horarios especiales para las fiestas",
+      "resumen": "El servicio ajustará su esquema de funcionamiento en cuatro fechas clave de diciembre y enero. Días hábiles extendidos y jornadas con modalidad de feriado forman parte del cronograma previsto.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2025-12-17/65501-redtulum-definio-horarios-especiales-para-las-fiestas",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/67c99544e414116295b23449cf106e4f_XL.jpg",
+      "fecha": "2025-12-17T15:33:28.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "RedTulum: los beneficios de planificar los viajes con Google Maps",
+      "resumen": "La incorporación, impulsada junto al Ministerio de Gobierno, permite planificar viajes, conocer recorridos y acceder a información precisa.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2025-12-11/65403-redtulum-los-beneficios-de-planificar-los-viajes-con-google-maps",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/79baf389ad8b12504091d59ba820b646_XL.jpg",
+      "fecha": "2025-12-11T16:17:12.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "RedTulum prorroga la validez de credenciales y pases para personas con discapacidad",
+      "resumen": "La decisión del Gobierno provincial tiene vigencia hasta el mes de marzo de 2026.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2025-11-30/65216-redtulum-prorroga-la-validez-de-credenciales-y-pases-para-personas-con-discapacidad",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/6f84c7df5b24872984b4b9f81a4d4a65_XL.jpg",
+      "fecha": "2025-11-30T00:05:46.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "FNS 2025: habrá colectivos gratis y 23 puntos de partida",
+      "resumen": "El Ministerio de Gobierno, a través de la RedTulum, informó que serán 23 paradas distribuidas en toda la provincia y 100 unidades para garantizar el acceso de los sanjuaninos al Estadio del Bicentenario.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2025-11-07/64812-fns-2025-habra-colectivos-gratis-y-23-puntos-de-partida",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/346a964acea695a308149c81abb5e025_XL.jpg",
+      "fecha": "2025-11-07T14:03:18.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "Gobierno informa sobre la nueva forma de pago del pasaje de colectivos",
+      "resumen": "El Ministerio de Gobierno informa que, tras abrirse las nuevas formas de pago en los pasajes de colectivos de la RedTulum, se podrán obtener reintegros hasta del 100%.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2025-10-20/64510-gobierno-informa-sobre-la-nueva-forma-de-pago-del-pasaje-de-colectivos",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/aad3c4a25c8353b7a20f53593d20292c_XL.jpg",
+      "fecha": "2025-10-20T18:13:23.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "RedTulum informó modificaciones de recorridos por eventos del fin de semana",
+      "resumen": "El Ministerio de Gobierno comunicó que el sábado 18 de octubre se habrá desvíos temporales en distintas líneas del transporte público debido a actividades autorizadas en Capital.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2025-10-17/64478-redtulum-informo-modificaciones-de-recorridos-por-eventos-del-fin-de-semana",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/cff194d4045a079952dd49b35c6b88bb_XL.jpg",
+      "fecha": "2025-10-17T14:54:28.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    },
+    {
+      "id": "sisanjuan-23",
+      "titulo": "RedTulum informó que se extiende el plazo de validez de los pases de discapacidad",
+      "resumen": "Los pases de discapacidad emitidos por EMICAR durante 2024 y 2025 que se encuentran vencidos tendrán vigencia hasta noviembre del corriente año.",
+      "url": "https://sisanjuan.gob.ar/23-gobierno/2025-10-13/64404-redtulum-informo-que-se-extiende-el-plazo-de-validez-de-los-pases-de-discapacidad",
+      "imagen": "https://sisanjuan.b-cdn.net/media/k2/items/cache/41dc09d593263a77b1dc43d6550719c3_XL.jpg",
+      "fecha": "2025-10-13T14:52:43.000Z",
+      "fuente": "Gobierno de San Juan",
+      "fuenteUrl": "https://sisanjuan.gob.ar/secciones/gobierno/itemlist/tag/RedTulum"
+    }
+  ]
+}
