@@ -916,34 +916,30 @@ function ocultarModalConfirmCentradoTiempoReal() {
 }
 
 function actualizarModalConfirmCentradoTiempoReal(activando) {
-  const title = document.getElementById('confirm-realtime-center-title');
   const message = document.getElementById('confirm-realtime-center-message');
-  const warning = document.getElementById('confirm-realtime-center-warning');
   const okBtn = document.getElementById('confirm-realtime-center-ok');
-  if (!title || !message || !warning || !okBtn) return;
+  if (!okBtn) return;
 
   if (activando) {
-    title.textContent = 'Activar centrado en tiempo real';
-    message.textContent = 'Cada 10 segundos se consultará tu ubicación para recentrar el mapa.';
-    warning.textContent = 'Advertencia: este modo puede consumir más datos y batería.';
+    if (message) message.textContent = 'Seguir ubicación en tiempo real';
     okBtn.textContent = 'Activar';
+    okBtn.classList.remove('btn-desactivar');
   } else {
-    title.textContent = 'Desactivar centrado en tiempo real';
-    message.textContent = 'El mapa dejará de seguir tu ubicación automáticamente.';
-    warning.textContent = 'Podés volver a activarlo manteniendo presionado el botón de centrar.';
+    if (message) message.textContent = 'Desactivar centrado en tiempo real';
     okBtn.textContent = 'Desactivar';
+    okBtn.classList.add('btn-desactivar');
   }
 }
 
-// `origen` es el botón de centrar que se mantuvo apretado: el diálogo se abre
-// expandiéndose desde él.
+// `origen` es el botón de centrar que se mantuvo apretado: el dock se abre
+// expandiéndose verticalmente desde él.
 function mostrarModalConfirmCentradoTiempoReal(onConfirm, activando, origen = null) {
   const overlay = document.getElementById('confirm-realtime-center-overlay');
   const okBtn = document.getElementById('confirm-realtime-center-ok');
   if (!overlay || !okBtn) {
     const ok = confirm(
       activando
-        ? 'Se consultará tu ubicación cada 10 segundos para recentrar el mapa. Puede consumir más datos y batería. ¿Activar?'
+        ? 'Se consultará tu ubicación cada 10 segundos para recentrar el mapa. ¿Activar?'
         : 'El mapa dejará de seguir tu ubicación automáticamente. ¿Desactivar?'
     );
     if (ok && typeof onConfirm === 'function') onConfirm();
@@ -954,12 +950,11 @@ function mostrarModalConfirmCentradoTiempoReal(onConfirm, activando, origen = nu
   _confirmRealtimeCenterOnConfirm = typeof onConfirm === 'function' ? onConfirm : null;
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
-  // Se mide con el diálogo ya en pantalla: antes de esto no tiene tamaño.
+  // Se mide con el dock ya en pantalla para calcular la expansión vertical desde el botón de centrar
   prepararMorphDialogo(overlay.querySelector('.confirm-modal'), origen);
 
-  const cancelBtn = document.getElementById('confirm-realtime-center-cancel');
   setTimeout(() => {
-    (cancelBtn || okBtn).focus?.();
+    okBtn.focus?.();
   }, 0);
 }
 
@@ -967,14 +962,14 @@ function setupModalConfirmCentradoTiempoReal() {
   const overlay = document.getElementById('confirm-realtime-center-overlay');
   const cancelBtn = document.getElementById('confirm-realtime-center-cancel');
   const okBtn = document.getElementById('confirm-realtime-center-ok');
-  if (!overlay || !cancelBtn || !okBtn) return;
+  if (!overlay || !okBtn) return;
 
   overlay.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'confirm-realtime-center-overlay') {
       ocultarModalConfirmCentradoTiempoReal();
     }
   });
-  cancelBtn.addEventListener('click', () => {
+  cancelBtn?.addEventListener('click', () => {
     ocultarModalConfirmCentradoTiempoReal();
   });
   okBtn.addEventListener('click', () => {
@@ -1669,9 +1664,35 @@ function iniciarCarruselHeroDashboard() {
   }, 5500);
 }
 
+/**
+ * Desactiva el menú contextual nativo del navegador al mantener presionado
+ * (long-press) o hacer clic derecho cuando se está en vista móvil o dispositivo táctil,
+ * evitando que se abra el menú de opciones del navegador salvo en campos de texto editables.
+ */
+function setupDesactivarContextMenuMovil() {
+  window.addEventListener('contextmenu', (e) => {
+    const esVistaMovil = window.matchMedia('(max-width: 1023px)').matches;
+    const esTouch = e.pointerType === 'touch' || ('ontouchstart' in window && e.button !== 2);
+
+    if (esVistaMovil || esTouch) {
+      const target = e.target;
+      const esInputTexto = target && (
+        (target.tagName === 'INPUT' && !['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'color', 'file', 'image'].includes(target.type)) ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      );
+
+      if (!esInputTexto) {
+        e.preventDefault();
+      }
+    }
+  }, { capture: true, passive: false });
+}
+
 // Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
+    setupDesactivarContextMenuMovil();
     setupBottomSheetDrag();
     setupModalConfirmCerrarRuta();
     setupModalConfirmCentradoTiempoReal();
@@ -1691,6 +1712,7 @@ if (document.readyState === 'loading') {
     setupDialogosActividad();
   });
 } else {
+  setupDesactivarContextMenuMovil();
   setupBottomSheetDrag();
   setupModalConfirmCerrarRuta();
   setupModalConfirmCentradoTiempoReal();
@@ -7047,9 +7069,8 @@ function htmlListaArribos({ items, total }) {
     // Solo el número de línea y cuándo llega: el nombre del recorrido es largo, se
     // corta igual en pantalla y acá lo que se viene a mirar es el horario.
     return `
-      <div class="av-arribo-row">
-        <span class="hud-line-pill" style="background-color: ${bg}; color: ${fg};"
-          title="${escapeHtml(item.nombre || `Línea ${ref}`)}">${escapeHtml(formatBadgeLinea(ref))}</span>
+      <div class="av-arribo-row" title="${escapeHtml(item.nombre || `Línea ${ref}`)}">
+        <span class="hud-line-pill" style="background-color: ${bg}; color: ${fg};">${escapeHtml(formatBadgeLinea(ref))}</span>
         <span class="${claseEta}">${escapeHtml(espera)}</span>
       </div>
     `;
@@ -7113,7 +7134,7 @@ function avPlantillaSeccion(id) {
           <span class="hud-tag-dot" aria-hidden="true"></span>
           <span>LLEGADAS EN UNA PARADA</span>
         </div>
-        <button type="button" class="di-link-btn" data-av-action="elegir-parada">Cambiar parada</button>
+        <button type="button" class="di-link-btn" data-av-action="elegir-parada" data-av="arribos-cambiar-btn">Cambiar parada</button>
       </div>
 
       <div class="hud-main-row">
@@ -7132,9 +7153,6 @@ function avPlantillaSeccion(id) {
       </div>
 
       <div class="av-arribos-lista" data-av="arribos-lista"></div>
-
-      <!-- Atajos a las paradas guardadas: son las candidatas de siempre (casa, trabajo). -->
-      <div class="av-parada-chips" data-av="arribos-favs"></div>
 
       <div class="di-actions" data-av="arribos-acciones">
         <button type="button" class="di-action-btn di-action-btn--primary" data-av-action="elegir-parada">
@@ -7304,8 +7322,10 @@ function esEventoEnPildora(ev) {
 }
 
 function ejecutarAccionActividad(accion, ev) {
-  // Un deslizamiento termina en "click": si el dedo se movió, no era un toque.
-  if (_diGestoMovido && esEventoEnPildora(ev)) return;
+  // Si el click provino de un botón de acción o disparador explícito, nunca debe descartarse por arrastre previo
+  const esBoton = Boolean(ev?.target instanceof Element && ev.target.closest('button, .di-link-btn, .di-action-btn, [data-av-action]'));
+  if (_diGestoMovido && esEventoEnPildora(ev) && !esBoton) return;
+  _diGestoMovido = false;
   ev?.stopPropagation();
 
   if (accion === 'trazar-ruta') {
@@ -7442,20 +7462,15 @@ async function avActualizarSeccionArribos() {
 
   const mostrarAcciones = (visible) => {
     for (const nodo of avNodos('arribos-acciones')) nodo.style.display = visible ? '' : 'none';
+    for (const nodo of avNodos('arribos-cambiar-btn')) nodo.style.display = visible ? 'none' : '';
   };
 
-  // Con una parada ya elegida los atajos estorban: la sección pasa a ser la lista.
-  const guardadas = paradasGuardadasParaActividad();
-  avEscribirHtml('arribos-favs', !elegida && guardadas.length > 0 ? htmlChipsParadasGuardadas(guardadas) : '');
+  // Sin pildoritas de paradas dentro del contenedor (se eligen en el modal al tocar el botón)
+  avEscribirHtml('arribos-favs', '');
 
   if (!elegida) {
     avEscribirTexto('arribos-nombre', 'Elegí una parada');
-    avEscribirTexto(
-      'arribos-sub',
-      guardadas.length > 0
-        ? 'Tocá una de tus paradas guardadas o buscá otra.'
-        : 'Te mostramos cuándo pasa cada línea por la parada que elijas.',
-    );
+    avEscribirTexto('arribos-sub', 'Te mostramos cuándo pasa cada línea por la parada que elijas.');
     avEscribirHtml('arribos-lista', '');
     mostrarAcciones(true);
     ajustarAlturaIsla();
@@ -7629,117 +7644,96 @@ function renderConfigActividad() {
   const cfg = obtenerConfigActividad();
   const paradaElegida = obtenerParadaArribos();
 
-  lista.innerHTML = cfg.map((item) => {
+  lista.innerHTML = cfg.map((item, index) => {
     const def = definicionSeccionActividad(item.id);
     const extra = item.id === 'arribos'
       ? `<button type="button" class="di-link-btn" data-av-config-accion="elegir-parada">${
         paradaElegida ? `Parada: ${escapeHtml(paradaElegida.nombre)}` : 'Elegir parada'}</button>`
       : '';
 
-    // Ojo abierto o tachado según el estado: reemplaza al interruptor, porque ahora
-    // la sección se activa y desactiva tocando la fila entera.
     const iconoEstado = item.visible
       ? '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle>'
       : '<path d="M10.7 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a18 18 0 0 1-2.6 3.6"></path>'
       + '<path d="M6.6 6.6A18 18 0 0 0 2 12s3.6 7 10 7a10.9 10.9 0 0 0 4.2-.8"></path>'
       + '<line x1="2" y1="2" x2="22" y2="22"></line>';
 
+    const esPrimero = index === 0;
+    const esUltimo = index === cfg.length - 1;
+
     return `
       <li class="av-config-row${item.visible ? '' : ' is-oculta'}" data-av-config-id="${escapeHtml(item.id)}"
         role="button" tabindex="0" aria-pressed="${item.visible}"
-        aria-label="${escapeHtml(def.nombre)}. Tocá para mostrarla u ocultarla; arrastrá para cambiarla de lugar.">
-        <span class="av-config-grip" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-            <circle cx="9" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle>
-            <circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle>
-            <circle cx="15" cy="12" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle>
-          </svg>
-        </span>
+        aria-label="${escapeHtml(def.nombre)}. Tocá para mostrarla u ocultarla; usá las flechas para ordenar.">
+        
+        <div class="av-config-arrows">
+          <button type="button" class="av-config-arrow-btn av-config-arrow-up" data-av-config-mover="-1"
+            ${esPrimero ? 'disabled aria-disabled="true"' : ''} title="Mover arriba" aria-label="Mover arriba">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          </button>
+          <div class="av-config-arrow-divider" aria-hidden="true"></div>
+          <button type="button" class="av-config-arrow-btn av-config-arrow-down" data-av-config-mover="1"
+            ${esUltimo ? 'disabled aria-disabled="true"' : ''} title="Mover abajo" aria-label="Mover abajo">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
         <div class="av-config-info">
           <span class="av-config-nombre">${escapeHtml(def.nombre)}</span>
           <p class="av-config-desc">${escapeHtml(def.desc)}</p>
           ${extra}
         </div>
-        <span class="av-config-estado" aria-hidden="true">
+
+        <button type="button" class="av-config-estado" data-av-config-accion="toggle"
+          title="${item.visible ? 'Ocultar sección' : 'Mostrar sección'}"
+          aria-label="${item.visible ? 'Ocultar sección' : 'Mostrar sección'}">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">${iconoEstado}</svg>
-        </span>
+        </button>
       </li>
     `;
   }).join('');
 }
 
-// Arrastre para reordenar: la fila sigue al dedo y, al pasar el centro de una vecina,
-// se intercambian en el acto. Si el dedo no se movió, el gesto fue un toque y lo que
-// hace es mostrar u ocultar esa sección.
+// Control de orden y visibilidad de secciones mediante botones de flechas y toques directos
 function setupArrastreConfigActividad(lista) {
-  let arrastre = null;
+  if (!lista || lista.dataset.setupListo === '1') return;
+  lista.dataset.setupListo = '1';
 
-  const soltar = (fila) => {
-    fila.style.transform = '';
-    fila.classList.remove('is-dragging');
-  };
-
-  lista.addEventListener('pointerdown', (ev) => {
-    const fila = ev.target instanceof Element ? ev.target.closest('[data-av-config-id]') : null;
-    if (!fila) return;
-    // El botón de elegir parada maneja su propio click.
-    if (ev.target instanceof Element && ev.target.closest('[data-av-config-accion]')) return;
-
-    arrastre = { fila, origenY: ev.clientY, movido: false };
-    try { fila.setPointerCapture(ev.pointerId); } catch { /* noop */ }
-  });
-
-  lista.addEventListener('pointermove', (ev) => {
-    if (!arrastre) return;
-    const dy = ev.clientY - arrastre.origenY;
-    if (!arrastre.movido && Math.abs(dy) < 6) return;
-
-    if (!arrastre.movido) {
-      arrastre.movido = true;
-      arrastre.fila.classList.add('is-dragging');
+  // Manejo de clicks en flechas para mover, en botón de toggle, o en la fila
+  lista.addEventListener('click', (ev) => {
+    const btnMover = ev.target instanceof Element ? ev.target.closest('[data-av-config-mover]') : null;
+    if (btnMover) {
+      ev.stopPropagation();
+      const fila = btnMover.closest('.av-config-row');
+      if (!fila) return;
+      const delta = parseInt(btnMover.dataset.avConfigMover, 10);
+      moverSeccionActividad(fila.dataset.avConfigId, delta);
+      return;
     }
 
-    arrastre.fila.style.transform = `translateY(${dy}px)`;
+    const btnToggle = ev.target instanceof Element ? ev.target.closest('[data-av-config-accion="toggle"]') : null;
+    if (btnToggle) {
+      ev.stopPropagation();
+      const fila = btnToggle.closest('.av-config-row');
+      if (!fila) return;
+      alternarSeccionActividad(fila.dataset.avConfigId);
+      return;
+    }
 
-    const rect = arrastre.fila.getBoundingClientRect();
-    const centro = rect.top + (rect.height / 2);
-    const vecina = dy < 0 ? arrastre.fila.previousElementSibling : arrastre.fila.nextElementSibling;
-    if (!vecina) return;
+    // Si tocó el link de elegir parada, dejar que su listener específico lo maneje
+    if (ev.target instanceof Element && ev.target.closest('[data-av-config-accion="elegir-parada"]')) {
+      return;
+    }
 
-    const rectVecina = vecina.getBoundingClientRect();
-    const centroVecina = rectVecina.top + (rectVecina.height / 2);
-    const cruzo = dy < 0 ? centro < centroVecina : centro > centroVecina;
-    if (!cruzo) return;
-
-    // Al mover el nodo, el layout salta: se corrige el origen del gesto para que la
-    // fila siga quieta debajo del dedo.
-    const topVisual = rect.top;
-    if (dy < 0) lista.insertBefore(arrastre.fila, vecina);
-    else lista.insertBefore(vecina, arrastre.fila);
-
-    arrastre.fila.style.transform = '';
-    const topNuevo = arrastre.fila.getBoundingClientRect().top;
-    arrastre.origenY += topNuevo - topVisual;
-    arrastre.fila.style.transform = `translateY(${ev.clientY - arrastre.origenY}px)`;
-  });
-
-  lista.addEventListener('pointerup', (ev) => {
-    if (!arrastre) return;
-    const { fila, movido } = arrastre;
-    arrastre = null;
-
-    try { fila.releasePointerCapture(ev.pointerId); } catch { /* noop */ }
-    soltar(fila);
-
-    if (movido) guardarOrdenDesdeListaConfig();
-    else alternarSeccionActividad(fila.dataset.avConfigId);
-  });
-
-  lista.addEventListener('pointercancel', () => {
-    if (!arrastre) return;
-    soltar(arrastre.fila);
-    arrastre = null;
+    // Tocar el cuerpo de la fila alterna su visibilidad
+    const fila = ev.target instanceof Element ? ev.target.closest('.av-config-row') : null;
+    if (fila && !ev.target.closest('button, [data-av-config-accion], [data-av-config-mover]')) {
+      alternarSeccionActividad(fila.dataset.avConfigId);
+    }
   });
 
   // Teclado: Enter/Espacio muestra u oculta, y las flechas mueven la sección.
@@ -7761,23 +7755,45 @@ function setupArrastreConfigActividad(lista) {
   });
 }
 
-
-// `origen` es opcional: el botón Configurar o la píldora del mapa, según de dónde
-// se haya abierto.
+// `origen` es opcional: el botón Configurar o la píldora del mapa, según de dónde se haya abierto.
+// Si se abre desde Inicio, NO se usa morphing para una apertura limpia, instantánea y sin deformaciones.
 function abrirConfigActividad(origen = null) {
   const overlay = document.getElementById('actividad-config-overlay');
   const modal = overlay?.querySelector('.confirm-modal');
   if (!overlay || !modal) return;
 
   renderConfigActividad();
+
+  // Limpiar cualquier estado residual de morphing
+  modal.classList.remove('is-morphing', 'is-morphing-out');
+  modal.style.removeProperty('--morph-x');
+  modal.style.removeProperty('--morph-y');
+  modal.style.removeProperty('--morph-sx');
+  modal.style.removeProperty('--morph-sy');
+
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
-  // Se mide con el diálogo ya en pantalla: antes de esto no tiene tamaño.
-  prepararMorphDialogo(modal, origen instanceof Element ? origen : null);
+
+  const btnConfigInicio = document.getElementById('btn-actividad-config');
+  const esDesdeInicio = (origen === btnConfigInicio) || !origen || Boolean(document.getElementById('view-dashboard')?.classList.contains('active'));
+
+  // Quitar la animación morphing si se abre desde el inicio
+  if (!esDesdeInicio && origen instanceof Element) {
+    prepararMorphDialogo(modal, origen);
+  }
 }
 
 function cerrarConfigActividad() {
-  cerrarDialogoConMorph(document.getElementById('actividad-config-overlay'));
+  const overlay = document.getElementById('actividad-config-overlay');
+  if (!overlay) return;
+  const modal = overlay.querySelector('.confirm-modal');
+  if (!modal || !modal.classList.contains('is-morphing')) {
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    modal?.classList.remove('is-morphing', 'is-morphing-out');
+    return;
+  }
+  cerrarDialogoConMorph(overlay);
 }
 
 // ── Diálogo para elegir la parada de la sección de llegadas ──
@@ -7899,6 +7915,15 @@ function abrirSelectorParadaActividad() {
   const overlay = document.getElementById('actividad-parada-overlay');
   if (!overlay) return;
 
+  const modal = overlay.querySelector('.confirm-modal');
+  if (modal) {
+    modal.classList.remove('is-morphing', 'is-morphing-out');
+    modal.style.removeProperty('--morph-x');
+    modal.style.removeProperty('--morph-y');
+    modal.style.removeProperty('--morph-sx');
+    modal.style.removeProperty('--morph-sy');
+  }
+
   const input = document.getElementById('av-parada-input');
   if (input) input.value = '';
   renderSugerenciasParadaActividad();
@@ -7913,6 +7938,8 @@ function cerrarSelectorParadaActividad() {
   if (!overlay) return;
   overlay.classList.remove('active');
   overlay.setAttribute('aria-hidden', 'true');
+  const modal = overlay.querySelector('.confirm-modal');
+  modal?.classList.remove('is-morphing', 'is-morphing-out');
 }
 
 function setupDialogosActividad() {
@@ -8036,6 +8063,7 @@ function irAPanelIsla(indice, { silencioso = false } = {}) {
   });
 
   _diIndice = destino;
+  _diGestoMovido = false;
 
   // Al entrar, las secciones que dependen de datos que pudieron cambiar desde la
   // última vez se vuelven a leer.
@@ -8120,9 +8148,12 @@ function setupNearestStopHud() {
     // Los botones internos manejan su propio click; no arrancamos gesto sobre ellos.
     // Las filas de favoritos SÍ son botones, pero también tienen que poder arrastrarse,
     // así que se las exceptúa (el click se descarta después si hubo movimiento).
-    const sobreBoton = ev.target instanceof Element && ev.target.closest('button');
+    const sobreBoton = ev.target instanceof Element && ev.target.closest('button, .di-link-btn, .di-action-btn, [data-av-action]');
     const sobreFila = ev.target instanceof Element && ev.target.closest('.di-fav-row');
-    if (sobreBoton && !sobreFila) return;
+    if (sobreBoton && !sobreFila) {
+      _diGestoMovido = false;
+      return;
+    }
 
     arrastrando = true;
     _diGestoMovido = false;
@@ -8170,7 +8201,10 @@ function setupNearestStopHud() {
     const dy = ev.clientY - inicioY;
     const dx = ev.clientX - inicioX;
     // Solo cuenta como cambio de sección si el movimiento fue claramente vertical.
-    if (Math.abs(dy) <= Math.abs(dx)) return;
+    if (Math.abs(dy) <= Math.abs(dx)) {
+      _diGestoMovido = false;
+      return;
+    }
 
     // Dentro de la lista, lo que decide es el SOBRANTE: el tramo del arrastre que la
     // lista no pudo absorber porque ya estaba en el tope. Así, deslizar en el medio de
@@ -8180,8 +8214,12 @@ function setupNearestStopHud() {
     listaArrastre = null;
 
     const sobrante = Math.abs(dy) - absorbido;
-    if (sobrante < DI_UMBRAL_SWIPE_PX) return;
+    if (sobrante < DI_UMBRAL_SWIPE_PX) {
+      _diGestoMovido = false;
+      return;
+    }
 
+    _diGestoMovido = false;
     // Deslizar hacia arriba muestra la sección siguiente (como pasar de página).
     irAPanelIsla(_diIndice + (dy < 0 ? 1 : -1));
   };
@@ -8191,6 +8229,15 @@ function setupNearestStopHud() {
     cancelarPulsacionLarga();
     arrastrando = false;
     listaArrastre = null;
+    _diGestoMovido = false;
+  });
+
+  // Delegación explícita para clicks en botones de acción dentro de la píldora
+  hud.addEventListener('click', (ev) => {
+    const disparador = ev.target instanceof Element ? ev.target.closest('[data-av-action]') : null;
+    if (!disparador) return;
+    _diGestoMovido = false;
+    ejecutarAccionActividad(disparador.dataset.avAction, ev);
   });
 
   // Rueda del mouse: una sección por gesto, con una pausa para que un scroll largo
@@ -8403,6 +8450,9 @@ function setupLongPressGuardarUbicacionEnMapa() {
   // Fallback táctil nativo de Leaflet (en móvil long-press dispara contextmenu).
   leafletMap.on('contextmenu', (e) => {
     clear();
+    if (e?.originalEvent && typeof e.originalEvent.preventDefault === 'function') {
+      e.originalEvent.preventDefault();
+    }
     const latlng = e?.latlng;
     if (!latlng) return;
     abrirGuardadoEn(L.latLng(latlng.lat, latlng.lng));
