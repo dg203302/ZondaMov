@@ -6863,6 +6863,7 @@ let _avConfigListo = false;
 let _diIndice = 0;
 let _diSetupHecho = false;
 let _diGestoMovido = false;
+let _diUltimoGestoTiempo = 0;
 let _diUltimoWheel = 0;
 
 // ── Configuración de secciones (orden + visibilidad) ──
@@ -7322,9 +7323,12 @@ function esEventoEnPildora(ev) {
 }
 
 function ejecutarAccionActividad(accion, ev) {
-  // Si el click provino de un botón de acción o disparador explícito, nunca debe descartarse por arrastre previo
-  const esBoton = Boolean(ev?.target instanceof Element && ev.target.closest('button, .di-link-btn, .di-action-btn, [data-av-action]'));
-  if (_diGestoMovido && esEventoEnPildora(ev) && !esBoton) return;
+  if (esEventoEnPildora(ev) && (Date.now() - _diUltimoGestoTiempo < 350 || _diGestoMovido)) {
+    _diGestoMovido = false;
+    ev?.stopImmediatePropagation?.();
+    ev?.preventDefault?.();
+    return;
+  }
   _diGestoMovido = false;
   ev?.stopPropagation();
 
@@ -7543,9 +7547,11 @@ function crearFilaFavoritoActividad(item) {
   // Arrastrar la lista termina en un "click" sobre la fila donde estaba el dedo:
   // si hubo movimiento, el gesto era para scrollear, no para abrir el favorito.
   fila.addEventListener('click', (ev) => {
-    if (!_diGestoMovido || !esEventoEnPildora(ev)) return;
-    ev.stopImmediatePropagation();
-    ev.preventDefault();
+    if (Date.now() - _diUltimoGestoTiempo < 350 || (_diGestoMovido && esEventoEnPildora(ev))) {
+      ev.stopImmediatePropagation();
+      ev.preventDefault();
+      return;
+    }
   });
 
   if (item.tipo === 'linea') {
@@ -8145,15 +8151,8 @@ function setupNearestStopHud() {
   let listaScrollInicial = 0;
 
   hud.addEventListener('pointerdown', (ev) => {
-    // Los botones internos manejan su propio click; no arrancamos gesto sobre ellos.
-    // Las filas de favoritos SÍ son botones, pero también tienen que poder arrastrarse,
-    // así que se las exceptúa (el click se descarta después si hubo movimiento).
-    const sobreBoton = ev.target instanceof Element && ev.target.closest('button, .di-link-btn, .di-action-btn, [data-av-action]');
-    const sobreFila = ev.target instanceof Element && ev.target.closest('.di-fav-row');
-    if (sobreBoton && !sobreFila) {
-      _diGestoMovido = false;
-      return;
-    }
+    // Si se interactúa con los puntos indicadores de la píldora, dejamos que actúe su propio click
+    if (ev.target instanceof Element && ev.target.closest('#di-dots')) return;
 
     arrastrando = true;
     _diGestoMovido = false;
@@ -8168,9 +8167,8 @@ function setupNearestStopHud() {
     cancelarPulsacionLarga();
     temporizadorPulsacion = window.setTimeout(() => {
       temporizadorPulsacion = null;
-      // Marcar el gesto como "movido" hace que el click posterior se descarte: el
-      // dedo se levanta sobre la sección, que si no dispararía su acción.
       _diGestoMovido = true;
+      _diUltimoGestoTiempo = Date.now();
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
       abrirConfigActividad(hud);
     }, DI_PULSACION_LARGA_MS);
@@ -8180,12 +8178,12 @@ function setupNearestStopHud() {
     if (!arrastrando) return;
     const dy = ev.clientY - inicioY;
     const dx = ev.clientX - inicioX;
-    if (Math.abs(dy) > 8) _diGestoMovido = true;
-    // Si el dedo se mueve, el gesto era un deslizamiento, no una pulsación sostenida.
-    if (Math.abs(dy) > 8 || Math.abs(dx) > 8) cancelarPulsacionLarga();
+    if (Math.abs(dy) > 8 || Math.abs(dx) > 8) {
+      _diGestoMovido = true;
+      cancelarPulsacionLarga();
+    }
 
-    // Arrastre dentro de la lista: la movemos nosotros. El navegador no lo hace
-    // porque la lista tiene touch-action: none.
+    // Arrastre dentro de la lista: la movemos nosotros.
     if (listaArrastre) {
       listaArrastre.scrollTop = listaScrollInicial - dy;
       actualizarSombrasScrollFavoritosIsla();
@@ -8196,65 +8194,92 @@ function setupNearestStopHud() {
     cancelarPulsacionLarga();
     if (!arrastrando) return;
     arrastrando = false;
-    try { hud.releasePointerCapture(ev.pointerId); } catch { /* noop */ }
+    try {
+      if (hud.hasPointerCapture(ev.pointerId)) {
+        hud.releasePointerCapture(ev.pointerId);
+      }
+    } catch { /* noop */ }
 
     const dy = ev.clientY - inicioY;
     const dx = ev.clientX - inicioX;
-    // Solo cuenta como cambio de sección si el movimiento fue claramente vertical.
-    if (Math.abs(dy) <= Math.abs(dx)) {
-      _diGestoMovido = false;
+
+    if (_diGestoMovido) {
+      _diUltimoGestoTiempo = Date.now();
+    }
+
+    // Solo cuenta como cambio de sección si el movimiento fue predominantemente vertical
+    if (Math.abs(dy) < DI_UMBRAL_SWIPE_PX || Math.abs(dy) < Math.abs(dx) * 0.7) {
       return;
     }
 
     // Dentro de la lista, lo que decide es el SOBRANTE: el tramo del arrastre que la
-    // lista no pudo absorber porque ya estaba en el tope. Así, deslizar en el medio de
-    // los favoritos los recorre, y seguir deslizando cuando ya no queda más cambia de
-    // sección — sin tener que sacar el dedo de la lista primero.
+    // lista no pudo absorber porque ya estaba en el tope.
     const absorbido = listaArrastre ? Math.abs(listaArrastre.scrollTop - listaScrollInicial) : 0;
     listaArrastre = null;
 
     const sobrante = Math.abs(dy) - absorbido;
     if (sobrante < DI_UMBRAL_SWIPE_PX) {
-      _diGestoMovido = false;
       return;
     }
 
-    _diGestoMovido = false;
     // Deslizar hacia arriba muestra la sección siguiente (como pasar de página).
     irAPanelIsla(_diIndice + (dy < 0 ? 1 : -1));
   };
 
   hud.addEventListener('pointerup', terminarGesto);
-  hud.addEventListener('pointercancel', () => {
+  hud.addEventListener('pointercancel', (ev) => {
     cancelarPulsacionLarga();
+    if (arrastrando && _diGestoMovido) {
+      _diUltimoGestoTiempo = Date.now();
+    }
     arrastrando = false;
     listaArrastre = null;
-    _diGestoMovido = false;
+    try {
+      if (hud.hasPointerCapture(ev.pointerId)) {
+        hud.releasePointerCapture(ev.pointerId);
+      }
+    } catch { /* noop */ }
   });
+
+  // Interceptar en fase de captura cualquier click disparado luego de deslizar o arrastrar
+  hud.addEventListener('click', (ev) => {
+    if (Date.now() - _diUltimoGestoTiempo < 350 || _diGestoMovido) {
+      _diGestoMovido = false;
+      ev.stopImmediatePropagation();
+      ev.preventDefault();
+    }
+  }, true);
 
   // Delegación explícita para clicks en botones de acción dentro de la píldora
   hud.addEventListener('click', (ev) => {
     const disparador = ev.target instanceof Element ? ev.target.closest('[data-av-action]') : null;
     if (!disparador) return;
-    _diGestoMovido = false;
     ejecutarAccionActividad(disparador.dataset.avAction, ev);
   });
 
-  // Rueda del mouse: una sección por gesto, con una pausa para que un scroll largo
-  // no atraviese todas de golpe.
+  // Rueda del mouse / trackpad: una sección por gesto, con pausa para no pasar todas de golpe
   hud.addEventListener('wheel', (ev) => {
-    if (Math.abs(ev.deltaY) < Math.abs(ev.deltaX)) return;
-    // Dentro de la lista de favoritos la rueda la scrollea a ella (mientras le quede
-    // recorrido); recién al llegar al tope vuelve a cambiar de sección.
+    if (Math.abs(ev.deltaY) < 3 || Math.abs(ev.deltaY) < Math.abs(ev.deltaX) * 0.5) return;
+
+    // Dentro de la lista de favoritos la rueda la scrollea a ella mientras tenga recorrido
     const listaRueda = listaFavoritosScrolleableDesde(ev.target);
-    if (listaFavoritosPuedeScrollear(listaRueda, -ev.deltaY)) {
-      ev.stopPropagation();
-      return;
+    if (listaRueda) {
+      const maxScroll = listaRueda.scrollHeight - listaRueda.clientHeight;
+      const puedeArriba = ev.deltaY < 0 && listaRueda.scrollTop > 1;
+      const puedeAbajo = ev.deltaY > 0 && listaRueda.scrollTop < maxScroll - 1;
+      if (puedeArriba || puedeAbajo) {
+        listaRueda.scrollTop += ev.deltaY;
+        actualizarSombrasScrollFavoritosIsla();
+        ev.preventDefault();
+        ev.stopPropagation();
+        return;
+      }
     }
+
     ev.preventDefault();
     ev.stopPropagation();
     const ahora = Date.now();
-    if (ahora - _diUltimoWheel < 380) return;
+    if (ahora - _diUltimoWheel < 320) return;
     _diUltimoWheel = ahora;
     irAPanelIsla(_diIndice + (ev.deltaY > 0 ? 1 : -1));
   }, { passive: false });
