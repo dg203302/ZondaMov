@@ -17,26 +17,19 @@ let paradasRecorridoMarkers = null;
 let _cargaDiferidaParadasHandler = null; // listener 'zoomend' pendiente para dibujar paradas de línea al hacer zoom
 let seleccionParadaLayer = null;
 let _planeoParadasIndex = null; // Map(paradaId -> { feature, lat, lng }) para listas de paradas en planeo
-let _indiceParadasApi = null; // Cache de nombres canónicos para arrivals API
-let _paradasPorLinea = null; // Cache de Datos/paradas_por_linea.json
-let _urlsPorLinea = null; // Cache de Datos/urls_por_linea.json
-let _indicesParadasPorLinea = null; // Cache de índices normalizados por línea
-let _correspondenciaParadas = null; // Cache de Datos/correspondencia_paradas.json
-let arrivalsAbortController = null; // Permite abortar/renovar consultas de arrivals
-let _lastParadasPorLineaError = ''; // Último error al cargar paradas_por_linea.json (para diagnóstico)
-let _lastUrlsPorLineaError = ''; // Último error al cargar urls_por_linea.json (para diagnóstico)
-let _horariosAproximadosPorLinea = null; // Cache: Map(lineaKey -> entrada de línea) de redtulum_lineas_horarios_aproximados.json
-let _horariosAproximadosPromise = null; // Promise en vuelo mientras se carga el JSON de horarios aproximados
+let _redTulumApi = null; // API local de horarios programados (Datos/redtulum), ya inicializada
+let _redTulumPromise = null; // Promise en vuelo mientras se descarga/arma el índice
+let _paradasPorLineaIndice = new Map(); // Cache: claveLinea -> { linea, nombre, paradas:[{id,nombre,tokens}] }
 
 // ─── Planeo de ruta (opciones / trasbordos) ─────────────────────────────────
 let _routePlanTarget = null; // { feature, nombre, lat, lng, stopId }
 let _routePlanOrigin = null; // { lat, lng, nombre } | null (null = usar mi ubicación GPS)
 let _pickingOrigenEnMapa = false; // true mientras se espera que el usuario toque un punto del mapa
-let _indiceLineasPorStopId = null; // Map(stopId -> Set(refs)) (legacy; puede no coincidir con GeoJSON)
 let _indiceParadasPuntosPorId = null; // Map(stopId -> { lat, lng, feature })
-let _stopIdsSetPorLinea = null; // Map(ref -> Set(stopIds)) (legacy)
 let _stopsIndexPorLinea = null; // Map(ref -> { ids:Set<string>, stops:Array<{id,lat,lng,feature}> })
 let _routePlanLastAllowTransfer = false;
+let _bottomSheetActual = null; // { titulo, contenidoHtml, tipo, subtitulo } del panel en pantalla
+let _routePlanVistaPrevia = null; // panel desde el que se pidió planear, para el botón de volver
 const ROUTE_NEARBY_STOPS_RADIUS_M = 1200;
 const ROUTE_NEARBY_STOPS_MAX = 60;
 const ROUTE_MAX_OPCIONES_DIRECTAS = 10;
@@ -44,17 +37,14 @@ const ROUTE_MAX_OPCIONES_TRASBORDO = 10;
 
 const JSON_VERSION = '?v=3';
 const PARADAS_GEOJSON_URL = encodeURI('Datos/DATOS SAN JUAN.geojson');
-const RED_TULUM_PARADAS_URL = encodeURI('Datos/red_tulum_paradas.json' + JSON_VERSION);
-const PARADAS_POR_LINEA_URL = encodeURI('Datos/paradas_por_linea.json' + JSON_VERSION);
-const URLS_POR_LINEA_URL = encodeURI('Datos/urls_por_linea.json' + JSON_VERSION);
-const CORRESPONDENCIA_PARADAS_URL = encodeURI('Datos/correspondencia_paradas.json' + JSON_VERSION);
-const HORARIOS_APROXIMADOS_URL = encodeURI('Datos/redtulum_lineas_horarios_aproximados.json' + JSON_VERSION);
+// Motor local de horarios programados: el índice (~435 KB, ~94 KB comprimido) se baja una
+// vez y todas las consultas se resuelven en el dispositivo, sin API ni red. La versión sigue
+// a la del feed (meta.feed.version del índice): subirla fuerza la recarga del archivo.
+const REDTULUM_MODULE_URL = encodeURI('Datos/redtulum/redtulum.js');
+const REDTULUM_INDEX_URL = encodeURI('Datos/redtulum/index.json?v=2026-09-11-v2-aprox');
 const NOTICIAS_URL = encodeURI('Datos/noticias_redtulum.json' + JSON_VERSION);
 // Cuántas noticias se muestran antes de tocar "Ver más noticias".
 const NOTICIAS_VISIBLES_INICIAL = 3;
-const ARRIVALS_API_URL = '/api/arrivals';
-const ARRIVALS_TIMEOUT_MS = 30000;
-const ARRIVALS_MAX_INTENTOS_PARADA = 3; // cuando hay paradas duplicadas por sufijos, probar varias variantes
 const RADIO_PARADAS_METROS = 700;
 const MAX_PARADAS_MOSTRAR = 40;
 const MAX_PARADAS_MOSTRAR_EN_VISTA = 200;
@@ -162,7 +152,6 @@ const BUS_SPEED_M_S = 5.0; // ~18 km/h (estimación conservadora)
 const DESTINO_UMBRAL_CORTE_M = 90; // cortar tramo si pasa a <= 90m del destino
 const CAMINATA_EXCESIVA_UMBRAL_M = 500; // a partir de acá, caminar hasta el origen de la ruta se penaliza
 const CAMINATA_EXCESIVA_PENALIZACION = 1.8; // multiplicador de tiempo aplicado a esa caminata
-
 
 // Long press en mapa para guardar ubicación
 const MAP_LONG_PRESS_MS = 650;
@@ -630,6 +619,10 @@ function inyectarFilasNavegacionBottomSheet(titulo, tipo, contenidoHtml) {
 }
 
 function abrirBottomSheet(titulo, contenidoHtml, tipo = '', subtitulo = '') {
+  // Se guarda lo que se va a pintar para poder volver a esta misma vista después
+  // (lo usa el "← Volver" de las opciones de ruta).
+  _bottomSheetActual = { titulo, contenidoHtml, tipo, subtitulo };
+
   const bs = document.getElementById('bottom-sheet');
   const bsTitle = document.getElementById('bs-title');
   const bsSubtitle = document.getElementById('bs-subtitle');
@@ -756,7 +749,6 @@ let _realtimeCenterBusy = false;
 let _realtimeCenterLongPressTimer = null;
 let _realtimeCenterSuppressNextClick = false;
 let _realtimeCenterActive = false;
-let _arrivalsAbortController = null; // AbortController activo mientras se consulta la API de arribos
 
 // Deja el diálogo listo para "nacer" desde el elemento que lo abrió: se mide dónde
 // está ese elemento y cuánto más chico es que el diálogo ya ubicado, y el
@@ -858,55 +850,6 @@ function setupModalConfirmCerrarRuta() {
       if (active) ocultarModalConfirmCerrarRuta();
     });
   }
-}
-
-let _confirmCloseArrivalsOnConfirm = null;
-
-function ocultarModalConfirmCerrarArribos() {
-  const overlay = document.getElementById('confirm-close-arrivals-overlay');
-  if (!overlay) return;
-  overlay.classList.remove('active');
-  overlay.setAttribute('aria-hidden', 'true');
-  _confirmCloseArrivalsOnConfirm = null;
-}
-
-function mostrarModalConfirmCerrarArribos(onConfirm) {
-  const overlay = document.getElementById('confirm-close-arrivals-overlay');
-  const okBtn = document.getElementById('confirm-close-arrivals-ok');
-  if (!overlay || !okBtn) {
-    const ok = confirm('Hay una consulta de arribos en curso. ¿Querés cancelarla y cerrar?');
-    if (ok && typeof onConfirm === 'function') onConfirm();
-    return;
-  }
-  _confirmCloseArrivalsOnConfirm = typeof onConfirm === 'function' ? onConfirm : null;
-  overlay.classList.add('active');
-  overlay.setAttribute('aria-hidden', 'false');
-
-  const cancelBtn = document.getElementById('confirm-close-arrivals-cancel');
-
-  const onOk = () => {
-    overlay.removeEventListener('click', onOverlay);
-    cancelBtn?.removeEventListener('click', onCancel);
-    okBtn.removeEventListener('click', onOk);
-    const cb = _confirmCloseArrivalsOnConfirm;
-    ocultarModalConfirmCerrarArribos();
-    if (typeof cb === 'function') cb();
-  };
-  const onCancel = () => {
-    overlay.removeEventListener('click', onOverlay);
-    okBtn.removeEventListener('click', onOk);
-    cancelBtn?.removeEventListener('click', onCancel);
-    ocultarModalConfirmCerrarArribos();
-  };
-  const onOverlay = (e) => {
-    if (e.target && e.target.id === 'confirm-close-arrivals-overlay') onCancel();
-  };
-
-  overlay.addEventListener('click', onOverlay);
-  cancelBtn?.addEventListener('click', onCancel);
-  okBtn.addEventListener('click', onOk);
-
-  setTimeout(() => { (cancelBtn || okBtn).focus?.(); }, 0);
 }
 
 function ocultarModalConfirmCentradoTiempoReal() {
@@ -1125,16 +1068,6 @@ function cerrarBottomSheet(force = false) {
   const favBtn = document.getElementById('bs-fav-btn');
   const planBtn = document.getElementById('bs-plan-btn');
 
-  // Si hay una petición de arribos en curso, pedir confirmación antes de cerrar.
-  if (!force && _arrivalsAbortController) {
-    mostrarModalConfirmCerrarArribos(() => {
-      try { _arrivalsAbortController?.abort(); } catch { }
-      _arrivalsAbortController = null;
-      cerrarBottomSheet(true);
-    });
-    return;
-  }
-
   // Si hay un recorrido planeado activo, confirmar antes de cerrarlo.
   if (!force && recorridoActivo && recorridoActivo.planned) {
     mostrarModalConfirmCerrarRuta(() => cerrarBottomSheet(true));
@@ -1202,81 +1135,136 @@ function asegurarVistaMenuEnEscritorio() {
 }
 
 /**
- * Carga (y cachea) Datos/redtulum_lineas_horarios_aproximados.json y lo indexa
- * por línea (clave normalizada) para búsqueda rápida.
+ * Carga (una sola vez) el motor local de horarios programados de RedTulum:
+ * Datos/redtulum/{redtulum.js, engine.js, index.json}.
+ *
+ * Es una "API" que corre entera en el dispositivo: se descarga el índice una vez
+ * y después cada consulta de arribos se resuelve en memoria (~0,02 ms), sin red.
+ * Devuelve null si no se pudo cargar, y en ese caso reintenta en la próxima llamada.
  */
-async function cargarHorariosAproximados() {
-  if (_horariosAproximadosPorLinea) return _horariosAproximadosPorLinea;
-  if (_horariosAproximadosPromise) return _horariosAproximadosPromise;
+/**
+ * Carga (una sola vez) el motor local de horarios programados de RedTulum:
+ * Datos/redtulum/{redtulum.js, engine.js, index.json}.
+ *
+ * Es una "API" que corre entera en el dispositivo: se descarga el índice una vez
+ * y después cada consulta de arribos se resuelve en memoria (~0,02 ms), sin red.
+ * Devuelve null si no se pudo cargar, y en ese caso reintenta en la próxima llamada.
+ *
+ * El índice tiene fecha de vencimiento (el calendario del feed); cómo regenerarlo
+ * está en Datos/redtulum/ACTUALIZAR.md.
+ */
+async function cargarApiHorarios() {
+  if (_redTulumApi) return _redTulumApi;
+  if (_redTulumPromise) return _redTulumPromise;
 
-  _horariosAproximadosPromise = (async () => {
-    const mapa = new Map();
+  _redTulumPromise = (async () => {
     try {
-      const resp = await fetch(HORARIOS_APROXIMADOS_URL, { cache: 'force-cache' });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const payload = await resp.json();
-      const lineas = Array.isArray(payload?.lines) ? payload.lines : [];
-      for (const linea of lineas) {
-        const key = normalizarLineaParaLookup(linea?.line);
-        if (key && !mapa.has(key)) mapa.set(key, linea);
-      }
+      const moduloUrl = new URL(REDTULUM_MODULE_URL, document.baseURI).href;
+      const indexUrl = new URL(REDTULUM_INDEX_URL, document.baseURI).href;
+      const { loadRedTulum } = await import(moduloUrl);
+      const api = await loadRedTulum({
+        indexUrl,
+        fetchImpl: (url) => fetch(url, { cache: 'force-cache' }),
+      });
+      _redTulumApi = api;
+      _paradasPorLineaIndice = new Map();
+      try {
+        const estado = api.health();
+        console.debug(`[horarios] Índice RedTulum listo: ${estado.lineas} líneas, ${estado.paradas} paradas (feed ${estado.feed?.version || '?'})`);
+      } catch { }
+      return api;
     } catch (err) {
-      console.warn('No se pudo cargar redtulum_lineas_horarios_aproximados.json:', err);
+      console.warn('No se pudo cargar el índice de horarios de RedTulum:', err);
+      _redTulumPromise = null; // que el próximo intento vuelva a probar
+      return null;
     }
-    _horariosAproximadosPorLinea = mapa;
-    return mapa;
   })();
 
-  return _horariosAproximadosPromise;
+  return _redTulumPromise;
 }
 
-function buscarLineaEnHorariosAproximados(mapaLineas, lineaRef) {
-  if (!(mapaLineas instanceof Map)) return null;
+/**
+ * Resuelve la línea del mapa (ref de OSM) contra el índice y devuelve sus paradas
+ * en orden, ya tokenizadas para el matching por nombre. Se cachea por línea porque
+ * el HUD de arribos vuelve a pedir lo mismo cada vez que se refresca.
+ */
+function resolverLineaEnIndice(rt, lineaRef) {
+  if (!rt) return null;
+
   for (const clave of obtenerClavesLineaLookup(lineaRef)) {
-    if (mapaLineas.has(clave)) return mapaLineas.get(clave);
+    if (_paradasPorLineaIndice.has(clave)) {
+      const cacheada = _paradasPorLineaIndice.get(clave);
+      if (cacheada) return cacheada;
+      continue; // ya se sabe que esta clave no existe en el índice
+    }
+
+    const info = rt.paradasDeLinea({ linea: clave });
+    if (!info || info.error) {
+      _paradasPorLineaIndice.set(clave, null);
+      continue;
+    }
+
+    // Si el feed trae más de un recorrido por línea (ida/vuelta), se consideran
+    // las paradas de todas las variantes: la parada tocada puede estar en cualquiera.
+    const vistas = new Set();
+    const paradas = [];
+    const agregar = (lista) => {
+      for (const p of Array.isArray(lista) ? lista : []) {
+        if (!p?.id || vistas.has(p.id)) continue;
+        vistas.add(p.id);
+        paradas.push({ id: p.id, nombre: p.nombre, tokens: tokenizarNombreParada(p.nombre) });
+      }
+    };
+    agregar(info.paradas);
+    for (const v of Array.isArray(info.variantes) ? info.variantes : []) agregar(v?.paradas);
+
+    const entrada = { linea: info.linea, nombre: info.nombre, paradas };
+    _paradasPorLineaIndice.set(clave, entrada);
+    return entrada;
   }
+
   return null;
 }
 
 /**
- * Busca, dentro de la secuencia de paradas de una línea (dataset aproximado),
- * la parada que mejor coincide con los nombres candidatos de la parada tocada
- * en el mapa (misma lógica de tokens/Jaccard usada para matching de paradas).
+ * Busca, dentro de las paradas de una línea, la que mejor coincide con los nombres
+ * candidatos de la parada tocada en el mapa. Los nombres del índice (Moovit) y los
+ * del GeoJSON (OSM) no son iguales, así que se compara primero exacto y después por
+ * tokens/Jaccard. Si no hay match razonable se cae a la cabecera de la línea, que es
+ * lo que hacía la implementación anterior (offset 0).
  */
-function buscarParadaEnLineaAproximada(lineaEntry, candidatosNombre) {
-  const stops = Array.isArray(lineaEntry?.stops) ? lineaEntry.stops : [];
-  if (!stops.length) return null;
+function buscarParadaEnLinea(entradaLinea, candidatosNombre) {
+  const paradas = entradaLinea?.paradas;
+  if (!Array.isArray(paradas) || paradas.length === 0) return null;
 
   const candidatos = (Array.isArray(candidatosNombre) ? candidatosNombre : [])
     .filter((c) => typeof c === 'string' && c.trim());
-  if (!candidatos.length) return null;
+  if (!candidatos.length) return paradas[0];
 
   const normSimple = (s) => String(s || '').trim().toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   for (const cand of candidatos) {
     const candNorm = normSimple(cand);
-    const stopExacto = stops.find((s) => normSimple(s?.name) === candNorm);
-    if (stopExacto) return stopExacto;
+    const exacta = paradas.find((p) => normSimple(p.nombre) === candNorm);
+    if (exacta) return exacta;
   }
 
   let mejor = null;
   let mejorScore = 0;
   for (const cand of candidatos) {
     const tokensCand = tokenizarNombreParada(cand);
-    for (const stop of stops) {
-      const score = calcularSimilitudJaccard(tokensCand, tokenizarNombreParada(stop?.name));
+    for (const parada of paradas) {
+      const score = calcularSimilitudJaccard(tokensCand, parada.tokens);
       if (score > mejorScore) {
         mejorScore = score;
-        mejor = stop;
+        mejor = parada;
       }
     }
   }
 
-  return mejorScore >= 0.3 ? mejor : null;
+  return mejorScore >= 0.3 ? mejor : paradas[0];
 }
-
-const DIAS_SEMANA_HORARIOS_APROX = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
 function horaTextoAMinutos(hhmm) {
   const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || '').trim());
@@ -1284,63 +1272,82 @@ function horaTextoAMinutos(hhmm) {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
-function minutosATextoHora(mins) {
-  const total = Math.round(mins);
-  const h = Math.floor(total / 60) % 24;
-  const m = ((total % 60) + 60) % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
 /**
- * Genera las próximas salidas estimadas de una línea en una parada puntual,
- * a partir del horario semanal aproximado (ventana + frecuencia, o salida
- * única, por día) y el offset en minutos de esa parada dentro del recorrido.
- * Es una estimación sintética (interpolación lineal de duración), NO datos
- * en tiempo real ni GPS de la unidad — ver Datos/redtulum_gtfs_aproximado_v2/README.txt.
+ * Próximas pasadas de una línea por una parada, en el formato que consumen las
+ * vistas: { minutosDesdeAhora, dayOffset, horaTexto }.
+ *
+ * El motor mira solo ayer/hoy/mañana (le alcanza para el 99% de los casos y para
+ * los viajes que cruzan la medianoche). Como 54 de las 137 líneas no operan algún
+ * día de la semana, si con eso no alcanza se sondea día por día hacia adelante
+ * usando el parámetro `ahora`, igual que hacía la implementación anterior.
+ *
+ * Todas las horas salen del índice en hora de San Juan (UTC−3), sin depender de la
+ * zona horaria del dispositivo.
  */
-function generarProximasLlegadasAproximadas(lineaEntry, offsetMin, ahora = new Date(), maxResultados = MAX_HORARIOS_MOSTRAR) {
-  const resultados = [];
-  const offset = Number.isFinite(offsetMin) ? offsetMin : 0;
-  const medianocheHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-  const minutosDesdeMedianoche = (ahora.getTime() - medianocheHoy.getTime()) / 60000;
+function proximasLlegadasDeLinea(rt, linea, paradaId, maxResultados = MAX_HORARIOS_MOSTRAR) {
+  const n = Math.max(1, Math.min(20, Number(maxResultados) || MAX_HORARIOS_MOSTRAR));
+  const res = rt?.llegadas?.({ linea, parada: paradaId, n });
+  if (!res || res.error) return [];
 
-  for (let dayOffset = 0; dayOffset < 8 && resultados.length < maxResultados; dayOffset++) {
-    const fecha = new Date(medianocheHoy.getTime() + dayOffset * 86400000);
-    const diaKey = DIAS_SEMANA_HORARIOS_APROX[fecha.getDay()];
-    const sched = lineaEntry?.weekly_schedule?.[diaKey];
-    if (!sched || typeof sched !== 'object') continue; // sin servicio ese día
+  const items = (Array.isArray(res.proximos) ? res.proximos : []).map((p) => ({
+    minutosDesdeAhora: Number(p.en_min) || 0,
+    dayOffset: p.dia === 'mañana' ? 1 : 0,
+    horaTexto: p.hora,
+  }));
+  if (items.length >= n) return items;
 
-    const salidasBase = [];
-    if (sched.type === 'single') {
-      const t = horaTextoAMinutos(sched.time);
-      if (t != null) salidasBase.push(t);
-    } else if (sched.type === 'range') {
-      const s = horaTextoAMinutos(sched.start);
-      let e = horaTextoAMinutos(sched.end);
-      const freq = Number(sched.freq_min);
-      if (s != null && e != null && freq > 0) {
-        if (e < s) e += 1440; // el servicio cruza la medianoche
-        for (let t = s; t <= e + 0.001; t += freq) {
-          salidasBase.push(t);
-        }
-      }
-    }
+  const ref = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(String(res.consulta_local || ''));
+  if (!ref) return items;
 
-    for (const base of salidasBase) {
-      const arriboMin = base + offset; // minutos desde medianoche de "fecha", ya en la parada consultada
-      const arriboAbsoluto = dayOffset * 1440 + arriboMin; // minutos desde medianoche de HOY
-      if (arriboAbsoluto >= minutosDesdeMedianoche - 0.5) {
-        resultados.push({
-          minutosDesdeAhora: arriboAbsoluto - minutosDesdeMedianoche,
-          dayOffset,
-          horaTexto: minutosATextoHora(arriboMin),
-        });
-      }
+  const medianocheHoy = Date.UTC(Number(ref[1]), Number(ref[2]) - 1, Number(ref[3]));
+  const minutosAhora = Number(ref[4]) * 60 + Number(ref[5]);
+  const vistos = new Set(items.map((i) => `${i.dayOffset}|${i.horaTexto}`));
+
+  for (let dia = 2; dia <= 7 && items.length < n; dia++) {
+    const fecha = new Date(medianocheHoy + dia * 86400000);
+    const ymd = `${fecha.getUTCFullYear()}-${String(fecha.getUTCMonth() + 1).padStart(2, '0')}-${String(fecha.getUTCDate()).padStart(2, '0')}`;
+    const sonda = rt.llegadas({ linea, parada: paradaId, n: n - items.length, ahora: `${ymd}T00:00` });
+    if (!sonda || sonda.error) break;
+
+    for (const p of Array.isArray(sonda.proximos) ? sonda.proximos : []) {
+      const dayOffset = dia + (p.dia === 'mañana' ? 1 : 0);
+      const clave = `${dayOffset}|${p.hora}`;
+      if (vistos.has(clave)) continue;
+      const minutos = horaTextoAMinutos(p.hora);
+      if (minutos == null) continue;
+      vistos.add(clave);
+      items.push({
+        minutosDesdeAhora: dayOffset * 1440 + minutos - minutosAhora,
+        dayOffset,
+        horaTexto: p.hora,
+      });
+      if (items.length >= n) break;
     }
   }
 
-  resultados.sort((a, b) => a.minutosDesdeAhora - b.minutosDesdeAhora);
-  return resultados.slice(0, maxResultados);
+  items.sort((a, b) => a.minutosDesdeAhora - b.minutosDesdeAhora);
+  return items.slice(0, n);
+}
+
+/**
+ * Próximas llegadas de una línea en la parada `feature` del mapa.
+ * Devuelve { items, sinDatos }: `sinDatos` es true cuando no se pudo consultar
+ * (índice caído o línea que no está en el feed), distinto de "no hay más servicios".
+ */
+async function obtenerArribosDeLinea(feature, lineaRef, maxResultados = MAX_HORARIOS_MOSTRAR) {
+  const rt = await cargarApiHorarios();
+  const entrada = resolverLineaEnIndice(rt, lineaRef);
+  if (!entrada) return { items: [], sinDatos: true };
+
+  const nombreBase = obtenerNombreParadaBase(feature);
+  const parada = buscarParadaEnLinea(entrada, obtenerCandidatosNombreParada(feature, nombreBase));
+  if (!parada) return { items: [], sinDatos: true };
+
+  return {
+    items: proximasLlegadasDeLinea(rt, entrada.linea, parada.id, maxResultados),
+    sinDatos: false,
+    parada,
+  };
 }
 
 function etiquetaDiaRelativoHorarios(dayOffset) {
@@ -1432,8 +1439,28 @@ function renderArribosAproximadosHtml(items, lineaRef, paradaNombre, opts = {}) 
 }
 
 /**
+ * Texto secundario de un arribo: cuánto falta, o qué día es si no es hoy.
+ * El horario exacto va aparte, en grande; esto lo acompaña.
+ */
+function textoEsperaArribo(item) {
+  const dia = etiquetaDiaRelativoHorarios(item?.dayOffset || 0).trim();
+  if (dia) return dia;
+
+  const min = Math.round(Number(item?.minutosDesdeAhora) || 0);
+  if (min <= 0) return 'llegando';
+  if (min < 60) return `en ${min} min`;
+
+  const horas = Math.floor(min / 60);
+  const resto = min % 60;
+  return resto ? `en ${horas} h ${resto} min` : `en ${horas} h`;
+}
+
+/**
  * Tarjeta compacta de "próximas llegadas" para insertar dentro de la vista de
  * recorrido completo de una línea (cuando se llegó ahí desde una parada puntual).
+ *
+ * Los horarios van en vertical: el de arriba es el más próximo, en verde y con
+ * un anillo que palpita. Los estilos están en index.html (.arribo-*).
  */
 function renderArribosPreviewHtml(items, paradaNombre, sinDatos = false) {
   const paradaTxt = paradaNombre ? ` en ${escapeHtml(paradaNombre)}` : '';
@@ -1443,36 +1470,31 @@ function renderArribosPreviewHtml(items, paradaNombre, sinDatos = false) {
       ? 'Todavía no tenemos horario aproximado para esta línea.'
       : 'Sin más servicios programados por ahora.';
     return `
-      <div style="padding: 14px; border-radius: 12px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); margin: 12px 0; text-align: center;">
-        <p style="margin: 0; font-size: 13px; color: var(--glass-fg); font-weight: 500;">⏱ ${escapeHtml(msg)}</p>
+      <div class="arribo-card">
+        <p class="arribo-card-empty">⏱ ${escapeHtml(msg)}</p>
       </div>
     `;
   }
 
-  const chips = items.map((item, i) => {
-    const minRedondeado = Math.max(0, Math.round(item.minutosDesdeAhora));
-    const diaTxt = etiquetaDiaRelativoHorarios(item.dayOffset);
-    const label = diaTxt ? `${diaTxt}${item.horaTexto}` : (minRedondeado <= 60 ? `${minRedondeado} min` : item.horaTexto);
+  const filas = items.map((item, i) => {
     const esProximo = i === 0;
+    const punto = esProximo ? '<span class="arribo-dot" aria-hidden="true"></span>' : '';
     return `
-      <span style="
-        display: inline-flex;
-        align-items: center;
-        padding: 8px 12px;
-        border-radius: 10px;
-        background: ${esProximo ? 'rgba(0,123,255,0.12)' : 'rgba(0,0,0,0.05)'};
-        border: 1px solid ${esProximo ? 'rgba(0,123,255,0.3)' : 'rgba(0,0,0,0.08)'};
-      ">
-        <span style="font-size: ${esProximo ? '18px' : '15px'}; font-weight: 700; color: ${esProximo ? '#007BFF' : 'var(--glass-fg)'};">${escapeHtml(label)}</span>
-      </span>
+      <li class="arribo-row${esProximo ? ' is-next' : ''}">
+        <span class="arribo-time">${punto}${escapeHtml(item.horaTexto)}</span>
+        <span class="arribo-wait">${escapeHtml(textoEsperaArribo(item))}</span>
+      </li>
     `;
   }).join('');
 
   return `
-    <div style="padding: 12px 14px; border-radius: 12px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); margin: 12px 0;">
-      <p style="margin: 0 0 10px 0; font-size: 12px; color: var(--text-muted, #888); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;">⏱ Próximas llegadas${paradaTxt}</p>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">${chips}</div>
-      <p style="margin: 10px 0 0 0; font-size: 10.5px; color: var(--text-muted, #999);">Estimado según horario publicado, no es tiempo real.</p>
+    <div class="arribo-card">
+      <p class="arribo-card-title">
+        <span aria-hidden="true">⏱</span>
+        <span>Próximas llegadas${paradaTxt}</span>
+      </p>
+      <ul class="arribo-list">${filas}</ul>
+      <p class="arribo-note">Estimado según horario publicado, no es tiempo real.</p>
     </div>
   `;
 }
@@ -1488,10 +1510,9 @@ async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNomb
   abrirBottomSheet(titulo, renderEstadoCargaArribos(ref, name), 'linea', subtitulo);
 
   try {
-    const mapaHorarios = await cargarHorariosAproximados();
-    const lineaEntry = buscarLineaEnHorariosAproximados(mapaHorarios, ref);
+    const { items, sinDatos } = await obtenerArribosDeLinea(feature, ref, MAX_HORARIOS_MOSTRAR);
 
-    if (!lineaEntry) {
+    if (sinDatos) {
       abrirBottomSheet(titulo, renderArribosAproximadosHtml([], ref, paradaNombreBase, {
         sinDatos: true,
         mensaje: 'Todavía no tenemos horario aproximado cargado para esta línea.',
@@ -1499,11 +1520,6 @@ async function mostrarArribosParaParadaYLinea(paradaFeature, lineaRef, lineaNomb
       return;
     }
 
-    const candidatos = obtenerCandidatosNombreParada(feature, paradaNombreBase);
-    const stopMatch = buscarParadaEnLineaAproximada(lineaEntry, candidatos);
-    const offsetMin = Number(stopMatch?.est_offset_min) || 0;
-
-    const items = generarProximasLlegadasAproximadas(lineaEntry, offsetMin, new Date());
     abrirBottomSheet(titulo, renderArribosAproximadosHtml(items, ref, paradaNombreBase), 'linea', subtitulo);
   } catch (err) {
     console.warn('Error calculando horario aproximado de arribos:', err);
@@ -1689,6 +1705,63 @@ function setupDesactivarContextMenuMovil() {
   }, { capture: true, passive: false });
 }
 
+/**
+ * Banner publicitario apoyado sobre el dock inferior (#app-banner).
+ *
+ * El creativo mide 728x90 fijos y vive en ads/banner-728x90.html, dentro de un
+ * iframe. Acá se hacen dos cosas:
+ *
+ *  1. Escalarlo al ancho del contenedor (que es el del dock), vía --banner-k.
+ *     728px no entran en un teléfono, y recortar el anuncio no es una opción.
+ *  2. Si el anuncio no llegó, esconder la píldora para no dejar un hueco vacío
+ *     encima del dock. El documento del iframe es del propio sitio, así que se
+ *     puede mirar si adentro apareció algo.
+ */
+function setupBannerInferior() {
+  const cont = document.getElementById('app-banner');
+  const frame = cont?.querySelector('iframe');
+  if (!cont || !frame) return;
+
+  // Margen entre el creativo y el borde de la píldora, para que el redondeo no le
+  // coma las esquinas. Va acá y no como padding CSS porque clientWidth incluiría
+  // el padding y la escala saldría igual de grande.
+  const MARGEN_X = 24;
+  const MARGEN_Y = 8;
+
+  const ajustarEscala = () => {
+    const ancho = cont.clientWidth - MARGEN_X;
+    const alto = cont.clientHeight - MARGEN_Y;
+    if (ancho <= 0 || alto <= 0) return;
+    const k = Math.min(ancho / 728, alto / 90);
+    cont.style.setProperty('--banner-k', String(k > 0 ? k : 1));
+  };
+
+  ajustarEscala();
+  if (typeof ResizeObserver === 'function') {
+    new ResizeObserver(ajustarEscala).observe(cont);
+  } else {
+    window.addEventListener('resize', ajustarEscala);
+  }
+
+  // Al anuncio hay que darle tiempo: primero carga invoke.js y después ese script
+  // inyecta el iframe con el creativo.
+  const revisarSiLlego = () => {
+    let vacio = false;
+    try {
+      const doc = frame.contentDocument;
+      // Sin doc todavía no se puede decidir; con doc, se busca algo renderizado.
+      vacio = Boolean(doc && doc.body && !doc.body.querySelector('iframe, ins, img, a, canvas'));
+    } catch {
+      // Si el documento quedó en otro origen no hay forma de saberlo: se deja visible.
+      vacio = false;
+    }
+    cont.classList.toggle('app-banner--vacio', vacio);
+  };
+
+  setTimeout(revisarSiLlego, 4000);
+  setTimeout(revisarSiLlego, 10000);
+}
+
 // Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
@@ -1710,6 +1783,7 @@ if (document.readyState === 'loading') {
     void cargarNoticiasDashboard();
     renderActividadEnVivo();
     setupDialogosActividad();
+    setupBannerInferior();
   });
 } else {
   setupDesactivarContextMenuMovil();
@@ -1730,6 +1804,7 @@ if (document.readyState === 'loading') {
   void cargarNoticiasDashboard();
   renderActividadEnVivo();
   setupDialogosActividad();
+  setupBannerInferior();
 }
 
 function obtenerPosicionActual() {
@@ -1888,7 +1963,7 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'cur
     <div style="display: flex; flex-direction: column; gap: 12px; padding: 4px 0 16px 0;">
       <ul class="bs-nav-rows">
         <li>
-          <button type="button" class="btn-nav-row" onclick="iniciarPlaneoRutaHaciaCoordenadas('${escapeHtml(nombreLugar)}', ${safeLat}, ${safeLng})">
+          <button type="button" class="btn-nav-row" data-route-plan="1" onclick="iniciarPlaneoRutaHaciaCoordenadas('${escapeHtml(nombreLugar)}', ${safeLat}, ${safeLng})">
             🎯 Planificar viaje en colectivo hasta aquí
           </button>
         </li>
@@ -1908,6 +1983,13 @@ function abrirBottomSheetGuardarUbicacion(nombreLugar, lat, lng, contexto = 'cur
 function iniciarPlaneoRutaHaciaCoordenadas(nombre, lat, lng) {
   _routePlanTarget = { feature: null, nombre: String(nombre || 'Destino'), lat: Number(lat), lng: Number(lng), stopId: null };
   void mostrarOpcionesRutaParaTarget(true);
+}
+
+// Mismo planeo, con el orden de argumentos que usan los paneles de paradas guardadas.
+// Se llamaba desde ahí (onclick) sin estar definida en ningún lado: el botón
+// "Planificar viaje" de una parada guardada tiraba ReferenceError.
+function iniciarPlaneoRutaHaciaPunto(lat, lng, nombre) {
+  iniciarPlaneoRutaHaciaCoordenadas(nombre, lat, lng);
 }
 
 function abrirBottomSheetLugarGuardado(nombreLugar, lat, lng, paradaCercana = null) {
@@ -1983,7 +2065,7 @@ function abrirBottomSheetLugarGuardado(nombreLugar, lat, lng, paradaCercana = nu
     <div style="display: flex; flex-direction: column; gap: 10px; padding: 4px 0 16px 0;">
       <ul class="bs-nav-rows">
         <li>
-          <button type="button" class="btn-nav-row" onclick="iniciarPlaneoRutaHaciaCoordenadas('${escapeHtml(nombreLugar)}', ${safeLat}, ${safeLng})">
+          <button type="button" class="btn-nav-row" data-route-plan="1" onclick="iniciarPlaneoRutaHaciaCoordenadas('${escapeHtml(nombreLugar)}', ${safeLat}, ${safeLng})">
             🎯 Planificar viaje en colectivo hasta aquí
           </button>
         </li>
@@ -3256,6 +3338,13 @@ if (bsContent) {
       return;
     }
 
+    const btnBackPrevio = target.closest('button[data-route-back="previo"]');
+    if (btnBackPrevio instanceof HTMLButtonElement) {
+      ev.stopPropagation();
+      volverAVistaPreviaPlaneo();
+      return;
+    }
+
     const btnBackOpciones = target.closest('button[data-route-back="options"]');
     if (btnBackOpciones instanceof HTMLButtonElement) {
       ev.stopPropagation();
@@ -3722,7 +3811,7 @@ async function centrarEnParadaGuardada(parada) {
           ${parada.lineas ? `<p style="font-size: 13px; color: #38bdf8;"><strong>Líneas asociadas:</strong> ${escapeHtml(parada.lineas)}</p>` : ''}
           <ul class="bs-nav-rows" style="margin-top: 14px;">
             <li>
-              <button type="button" class="btn-nav-row" onclick="iniciarPlaneoRutaHaciaPunto(${latNum}, ${lngNum}, '${escapeHtml(nombre).replace(/'/g, "\\'")}')">
+              <button type="button" class="btn-nav-row" data-route-plan="1" onclick="iniciarPlaneoRutaHaciaPunto(${latNum}, ${lngNum}, '${escapeHtml(nombre).replace(/'/g, "\\'")}')">
                 🎯 Planificar viaje hacia esta parada
               </button>
             </li>
@@ -4082,20 +4171,6 @@ function obtenerNombreParadaBase(feature) {
   return obtenerEtiquetaParada(feature);
 }
 
-function extraerVarianteDesdeLinea(linea) {
-  const txt = String(linea || '').trim();
-  const m = txt.match(/([ABC])$/);
-  return m ? m[1] : '';
-}
-
-function extraerDireccionDesdeNombreParada(nombreParada) {
-  const txt = String(nombreParada || '').trim();
-  // Soporta sufijos del estilo: "... S", "... S -A", "... S-A".
-  const m = txt.match(/\s([SNEO])(?:\s*-\s*[ABCD])?\s*$/i);
-  return m ? String(m[1]).toUpperCase() : '';
-}
-
-
 const STOP_WORDS_PARADA = new Set([
   'y', 'de', 'del', 'la', 'las', 'el', 'los', 'en',
   'av', 'avenida', 'avda', 'calle', 'ruta', 'rn', 'rp', 'nacional', 'provincial',
@@ -4143,102 +4218,26 @@ function calcularSimilitudJaccard(setA, setB) {
   return matchCount / unionSize;
 }
 
+/**
+ * Claves para buscar una línea: primero la ref tal cual y, si no existe, la línea
+ * madre sin la letra de ramal (`262D` → `262`, `440A` → `440`).
+ *
+ * El fallback solo entra cuando la ref completa no está en el índice: los ramales
+ * que el feed sí modela (`440-A`…`441-F`) matchean directo y nunca llegan acá. Hoy
+ * lo usan `262D` y `262E`, que existen en OpenStreetMap (462 paradas) pero no en el
+ * feed: se les muestra el horario de la 262. Es una aproximación —el ramal puede
+ * tener su propia frecuencia—, pero es preferible a dejar esas paradas sin horario.
+ */
 function obtenerClavesLineaLookup(linea) {
   const base = normalizarLineaParaLookup(linea);
   if (!base) return [];
 
   const claves = [base];
-  const sinVariante = base.replace(/([ABC])$/, '');
+  // Solo se recorta si queda algo antes de la letra: las líneas que SON una letra
+  // (`A`, `B`, `C`, `D`, `E`) no tienen línea madre.
+  const sinVariante = base.replace(/([A-F])$/, '');
   if (sinVariante && sinVariante !== base) claves.push(sinVariante);
   return claves;
-}
-
-function resolverKeyLineaEnObjeto(objeto, linea) {
-  if (!objeto || typeof objeto !== 'object') return null;
-  const clavesLookup = obtenerClavesLineaLookup(linea);
-
-  // 1. Opciones principales primero (_opcion_0 o _ida)
-  for (const kLookup of clavesLookup) {
-    for (const key of Object.keys(objeto)) {
-      const normKey = normalizarLineaParaLookup(key);
-      if (normKey === kLookup || normKey.startsWith(kLookup + 'OPCION0') || normKey.startsWith(kLookup + 'IDA')) return key;
-    }
-  }
-  // 2. Fallback general
-  for (const kLookup of clavesLookup) {
-    for (const key of Object.keys(objeto)) {
-      if (normalizarLineaParaLookup(key).includes(kLookup)) return key;
-    }
-  }
-  return null;
-}
-
-function agregarParadasDeTodasLasOpciones(dataParadas, lineaRef) {
-  const paradasAgregadas = {};
-  if (!dataParadas || typeof dataParadas !== 'object') return paradasAgregadas;
-
-  const lineaNorm = normalizarLineaParaLookup(lineaRef);
-  if (!lineaNorm) return paradasAgregadas;
-
-  const targetPrefix = lineaNorm.replace(/([ABC])$/, '');
-
-  for (const [key, lineData] of Object.entries(dataParadas)) {
-    if (!lineData?.paradas) continue;
-
-    let keyNorm = normalizarLineaParaLookup(key);
-    keyNorm = keyNorm.replace(/OPCION[0-9]+$/i, '');
-
-    if (keyNorm === targetPrefix || keyNorm === lineaNorm) {
-      for (const [pName, pId] of Object.entries(lineData.paradas)) {
-        if (!paradasAgregadas[pName]) paradasAgregadas[pName] = pId;
-      }
-    }
-  }
-
-  return paradasAgregadas;
-}
-
-async function resolverParadaDesdeJson(linea, nombreParada) {
-  const original = String(nombreParada || '').trim();
-  if (!original) return { id_p: '', paradaResuelta: '' };
-
-  let data = await cargarParadasPorLinea();
-  if (!data || Object.keys(data).length === 0) {
-    data = await cargarParadasPorLinea({ noCache: true });
-  }
-
-  const paradasObj = agregarParadasDeTodasLasOpciones(data, linea);
-
-  if (Object.keys(paradasObj).length === 0) {
-    console.warn(`[resolverParada] Sin paradas para línea "${linea}"`);
-    return { id_p: '', paradaResuelta: '' };
-  }
-
-  // 1) Match exacto
-  if (Object.prototype.hasOwnProperty.call(paradasObj, original)) {
-    return { id_p: String(paradasObj[original] || ''), paradaResuelta: original };
-  }
-
-  // 2) Match por Token Jaccard Similarity
-  const tokensQuery = tokenizarNombreParada(original);
-  let bestMatch = '';
-  let bestScore = 0;
-
-  for (const cand of Object.keys(paradasObj)) {
-    const tokensCand = tokenizarNombreParada(cand);
-    const score = calcularSimilitudJaccard(tokensQuery, tokensCand);
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = cand;
-    }
-  }
-
-  if (bestScore >= 0.5 && bestMatch) {
-    return { id_p: String(paradasObj[bestMatch] || ''), paradaResuelta: bestMatch };
-  }
-
-  return { id_p: '', paradaResuelta: '' };
 }
 
 function obtenerCandidatosNombreParada(feature, nombreBase = '') {
@@ -4267,316 +4266,12 @@ function obtenerCandidatosNombreParada(feature, nombreBase = '') {
   return out;
 }
 
-async function obtenerCandidatosIdParadaParaArrivals(linea, paradaInput, paradaResueltaPreferida) {
-  const out = [];
-  const refLinea = String(linea || '').trim();
-  if (!refLinea) return out;
-
-  let data = await cargarParadasPorLinea();
-  if (!data || Object.keys(data).length === 0) {
-    data = await cargarParadasPorLinea({ noCache: true });
-  }
-
-  const paradasObj = agregarParadasDeTodasLasOpciones(data, refLinea);
-  const preferida = String(paradaResueltaPreferida || '').trim();
-
-  if (preferida && Object.prototype.hasOwnProperty.call(paradasObj, preferida)) {
-    out.push({ paradaResuelta: preferida, id_p: String(paradasObj[preferida] || '') });
-  }
-
-  const tokensQuery = tokenizarNombreParada(paradaInput);
-  const matchedList = [];
-
-  for (const cand of Object.keys(paradasObj)) {
-    if (cand === preferida) continue;
-    const tokensCand = tokenizarNombreParada(cand);
-    const score = calcularSimilitudJaccard(tokensQuery, tokensCand);
-    if (score >= 0.5) {
-      matchedList.push({ cand, score });
-    }
-  }
-
-  matchedList.sort((a, b) => b.score - a.score);
-
-  for (const m of matchedList) {
-    out.push({ paradaResuelta: m.cand, id_p: String(paradasObj[m.cand] || '') });
-  }
-
-  const seen = new Set();
-  const dedup = [];
-  for (const c of out) {
-    const id = String(c?.id_p || '').trim();
-    if (!id || seen.has(id)) continue;
-    seen.add(id);
-    dedup.push({ paradaResuelta: String(c.paradaResuelta || '').trim(), id_p: id });
-  }
-
-  return dedup;
-}
-
-async function consultarArribosApi(linea, paradaNombre, opts = {}) {
-  const lineaNorm = String(linea || '').trim();
-  const paradaTxt = String(paradaNombre || '').trim();
-  if (!lineaNorm || !paradaTxt) {
-    return { horarios: [], tipoDatos: 'esperado', paradaConsultada: '' };
-  }
-
-  const lineaApi = normalizarLineaParaApi(lineaNorm);
-
-  const paradaFeature = opts?.paradaFeature || null;
-  const candidatosParada = paradaFeature
-    ? obtenerCandidatosNombreParada(paradaFeature, paradaTxt)
-    : [paradaTxt];
-
-  const lineaCandidatas = [];
-  for (const v of [lineaNorm, lineaApi]) {
-    const s = String(v || '').trim();
-    if (s && !lineaCandidatas.includes(s)) lineaCandidatas.push(s);
-  }
-
-  let url = '';
-  let paradaRes = { id_p: '', paradaResuelta: '', paradaInput: '' };
-
-  for (const l of lineaCandidatas) {
-    url = url || await resolverUrlDesdeJson(l);
-    if (!paradaRes?.id_p) {
-      paradaRes = await resolverParadaDesdeJsonConCandidatos(l, candidatosParada);
-    }
-    if (url && paradaRes?.id_p) break;
-  }
-
-  let id_p_resuelto = String(paradaRes?.id_p || '').trim();
-  let paradaResueltaFinal = String(paradaRes?.paradaResuelta || '').trim();
-
-  let paradasLineaCount = 0;
-  try {
-    let dataParadas = await cargarParadasPorLinea();
-    const paradasObj = agregarParadasDeTodasLasOpciones(dataParadas, lineaNorm);
-    paradasLineaCount = Object.keys(paradasObj).length;
-  } catch { }
-
-  const debugArrivals = {
-    linea: lineaNorm,
-    lineaApi,
-    lineaCandidatas,
-    paradaBase: paradaTxt,
-    paradaInput: paradaRes?.paradaInput || '',
-    paradaResuelta: paradaResueltaFinal || '',
-    url,
-    id_p_resuelto: String(id_p_resuelto || ''),
-    requestIntentada: false,
-    intentos: [],
-    candidatosParada: Array.isArray(candidatosParada) ? candidatosParada.slice(0, 8) : [],
-    paradasJsonError: typeof _lastParadasPorLineaError !== 'undefined' ? _lastParadasPorLineaError : '',
-    urlsJsonError: typeof _lastUrlsPorLineaError !== 'undefined' ? _lastUrlsPorLineaError : '',
-    paradasLineaCount,
-  };
-
-  if (!url || !id_p_resuelto) {
-    console.warn('[arrivals] ERROR: Falta resolver datos antes de fetch', { ...debugArrivals });
-    return {
-      horarios: [],
-      headwaySecs: 0,
-      tipoDatos: 'error',
-      paradaConsultada: paradaResueltaFinal || paradaTxt,
-      mensajeApi: !url
-        ? `🔴 No se encontró URL para línea: ${lineaNorm}`
-        : `🔴 No se encontró parada: ${paradaTxt}`,
-      apiFallo: true,
-      linea: lineaNorm,
-      debugArrivals,
-    };
-  }
-
-  try {
-    const candidatosIdP = await obtenerCandidatosIdParadaParaArrivals(lineaNorm, paradaTxt, paradaResueltaFinal || paradaTxt);
-    const listaCandidatos = candidatosIdP.length
-      ? candidatosIdP
-      : [{ paradaResuelta: paradaResueltaFinal || paradaTxt, id_p: id_p_resuelto }];
-
-    let bestParsed = null;
-    let bestScore = -1;
-    const maxIntentos = Math.max(1, Math.min(ARRIVALS_MAX_INTENTOS_PARADA, listaCandidatos.length));
-
-    for (let i = 0; i < maxIntentos; i++) {
-      const cand = listaCandidatos[i];
-      const idTry = String(cand?.id_p || '').trim();
-      const paradaTry = String(cand?.paradaResuelta || '').trim();
-      if (!idTry) continue;
-
-      debugArrivals.intentos.push({
-        parada: paradaTry,
-        id_p: idTry,
-        http: '',
-        horariosLen: 0,
-        horarioEstimado: '',
-        mensajeApi: '',
-      });
-      const intentoIndex = debugArrivals.intentos.length - 1;
-
-      try {
-        debugArrivals.requestIntentada = true;
-
-        const fetchController = new AbortController();
-        _arrivalsAbortController = fetchController;
-        const fetchTimeoutId = setTimeout(() => {
-          try { fetchController.abort(); } catch { }
-        }, ARRIVALS_TIMEOUT_MS);
-
-        let resp;
-        try {
-          resp = await fetch(ARRIVALS_API_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({ url, id_p: idTry }),
-            cache: 'no-store',
-            signal: fetchController.signal,
-          });
-          clearTimeout(fetchTimeoutId);
-          _arrivalsAbortController = null;
-        } catch (e) {
-          clearTimeout(fetchTimeoutId);
-          _arrivalsAbortController = null;
-          throw e;
-        }
-
-        const httpInfo = resp.ok ? 'ok' : `HTTP ${resp.status}`;
-        if (!resp.ok) {
-          debugArrivals.intentos[intentoIndex] = { ...debugArrivals.intentos[intentoIndex], http: httpInfo, error: httpInfo };
-          continue;
-        }
-
-        const payload = await resp.json();
-        const parsed = extraerHorariosDesdePayloadArrivals(payload);
-
-        const horariosArr = Array.isArray(parsed?.horarios) ? parsed.horarios : [];
-        const horarioEstimado = typeof parsed?.horarioEstimado === 'string' ? parsed.horarioEstimado.trim() : '';
-        const mensajeApi = typeof parsed?.mensajeApi === 'string' ? parsed.mensajeApi.trim() : '';
-
-        debugArrivals.intentos[intentoIndex] = {
-          ...debugArrivals.intentos[intentoIndex],
-          http: httpInfo,
-          horariosLen: horariosArr.length,
-          horarioEstimado,
-          mensajeApi,
-        };
-
-        const score = (horariosArr.length * 100) + (horarioEstimado ? 10 : 0) + (mensajeApi ? 5 : 0);
-        if (score > bestScore) {
-          bestScore = score;
-          bestParsed = { ...parsed, paradaConsultada: paradaTry || paradaResueltaFinal || paradaTxt };
-        }
-
-        if (horariosArr.length > 0) break;
-      } catch (errTry) {
-        const msg = (errTry && String(errTry.name) === 'AbortError')
-          ? 'AbortError'
-          : (errTry?.message ? String(errTry.message) : String(errTry));
-        debugArrivals.intentos[intentoIndex] = { ...debugArrivals.intentos[intentoIndex], error: msg };
-        if (errTry && String(errTry.name) === 'AbortError') throw errTry;
-      }
-    }
-
-    if (!bestParsed) {
-      return {
-        horarios: [],
-        headwaySecs: 0,
-        tipoDatos: 'error',
-        paradaConsultada: paradaResueltaFinal || paradaTxt,
-        mensajeApi: '🔴 No se pudo obtener datos de la API de arrivals',
-        apiFallo: true,
-        linea: lineaNorm,
-        debugArrivals,
-      };
-    }
-
-    const horariosArr = Array.isArray(bestParsed?.horarios) ? bestParsed.horarios : [];
-    const horarioEstimado = typeof bestParsed?.horarioEstimado === 'string' ? bestParsed.horarioEstimado.trim() : '';
-    const mensajeApi = typeof bestParsed?.mensajeApi === 'string' ? bestParsed.mensajeApi.trim() : '';
-
-    if (horariosArr.length === 0 && !horarioEstimado && !mensajeApi) {
-      return {
-        ...bestParsed,
-        horarios: [],
-        headwaySecs: 0,
-        tipoDatos: 'error',
-        mensajeApi: 'No hay datos de arrivals disponibles',
-        apiFallo: true,
-        linea: lineaNorm,
-        paradaConsultada: bestParsed.paradaConsultada || paradaResueltaFinal || paradaTxt,
-        debugArrivals,
-      };
-    }
-
-    return { ...bestParsed, debugArrivals };
-  } catch (err) {
-    const msgAbort = (err && String(err.name) === 'AbortError') ? 'Tiempo de espera agotado al consult...' : 'Error consultando arrivals API.';
-    return {
-      horarios: [],
-      headwaySecs: 0,
-      tipoDatos: 'error',
-      paradaConsultada: paradaResueltaFinal || paradaTxt,
-      mensajeApi: msgAbort,
-      apiFallo: true,
-      linea: lineaNorm,
-      debugArrivals,
-    };
-  }
-}
-
-
-
 function normalizarLineaParaLookup(linea) {
   return String(linea || '')
     .trim()
     .toUpperCase()
     .replace(/\s+/g, '')
     .replace(/[^A-Z0-9]/g, '');
-}
-
-async function cargarParadasPorLinea({ noCache = false } = {}) {
-  if (_paradasPorLinea && !noCache) return _paradasPorLinea;
-
-  try {
-    const resp = await fetch(PARADAS_POR_LINEA_URL, { cache: noCache ? 'no-store' : 'force-cache' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const payload = await resp.json();
-    _paradasPorLinea = payload && typeof payload === 'object' ? payload : {};
-    _indicesParadasPorLinea = null;
-    _lastParadasPorLineaError = '';
-    try {
-      const teo2Check = _paradasPorLinea['TEO2']?.paradas ? Object.keys(_paradasPorLinea['TEO2'].paradas).length : 0;
-      console.debug(`[paradas] Cargadas paradas_por_linea.json: ${Object.keys(_paradasPorLinea).length} líneas, TEO2=${teo2Check} paradas, noCache=${noCache}`);
-    } catch { }
-    return _paradasPorLinea;
-  } catch (err) {
-    console.warn('No se pudo cargar paradas_por_linea.json:', err);
-    _lastParadasPorLineaError = err?.message ? String(err.message) : String(err);
-    _paradasPorLinea = {};
-    _indicesParadasPorLinea = null;
-    return _paradasPorLinea;
-  }
-}
-
-async function cargarUrlsPorLinea({ noCache = false } = {}) {
-  if (_urlsPorLinea && !noCache) return _urlsPorLinea;
-
-  try {
-    const resp = await fetch(URLS_POR_LINEA_URL, { cache: noCache ? 'no-store' : 'force-cache' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const payload = await resp.json();
-    _urlsPorLinea = payload && typeof payload === 'object' ? payload : {};
-    _lastUrlsPorLineaError = '';
-    return _urlsPorLinea;
-  } catch (err) {
-    console.warn('No se pudo cargar urls_por_linea.json:', err);
-    _lastUrlsPorLineaError = err?.message ? String(err.message) : String(err);
-    _urlsPorLinea = {};
-    return _urlsPorLinea;
-  }
 }
 
 function normalizarLineaParaApi(linea) {
@@ -4597,588 +4292,6 @@ function normalizarLineaParaApi(linea) {
   }
 
   return raw;
-}
-
-
-async function resolverUrlDesdeJson(linea) {
-  let urls = await cargarUrlsPorLinea();
-  let lk = resolverKeyLineaEnObjeto(urls, linea);
-  if (!lk) {
-    // Si se editaron los JSON en caliente, puede haber quedado cacheado en memoria.
-    urls = await cargarUrlsPorLinea({ noCache: true });
-    lk = resolverKeyLineaEnObjeto(urls, linea);
-  }
-  return lk ? String(urls[lk] || '') : '';
-}
-
-function obtenerIndiceParadasLineaDesdeCache(lineaKey, paradasObj) {
-  if (!_indicesParadasPorLinea) _indicesParadasPorLinea = new Map();
-  if (_indicesParadasPorLinea.has(lineaKey)) return _indicesParadasPorLinea.get(lineaKey);
-  const idx = construirIndiceParadasLinea(paradasObj);
-  _indicesParadasPorLinea.set(lineaKey, idx);
-  return idx;
-}
-
-
-function registrarParadaCanonicaEnIndice(indice, nombreParada) {
-  if (!(indice instanceof Map)) return;
-
-  const canonica = String(nombreParada || '').trim().replace(/\s+/g, ' ');
-  if (!canonica) return;
-
-  const clave = crearClaveParadaApi(canonica);
-  if (!clave) return;
-
-  if (!indice.has(clave)) {
-    indice.set(clave, canonica);
-  }
-}
-
-
-
-
-
-function construirIndiceParadasApi(payload) {
-  const global = new Map();
-  const porLinea = new Map();
-
-  const departamentos = payload?.red_tulum?.departamentos;
-  if (!departamentos || typeof departamentos !== 'object') {
-    return { global, porLinea };
-  }
-
-  for (const dep of Object.values(departamentos)) {
-    const lineas = dep?.lineas;
-    if (!lineas || typeof lineas !== 'object') continue;
-
-    for (const [lineaCodigo, lineaInfo] of Object.entries(lineas)) {
-      const lineaClave = normalizarLineaParaLookup(lineaCodigo);
-      if (lineaClave && !porLinea.has(lineaClave)) {
-        porLinea.set(lineaClave, new Map());
-      }
-
-      // Alias: permitir resolver con o sin variante (A/B/C) sin mezclar
-      // cuando la base ya existe como línea propia.
-      if (lineaClave) {
-        const sinVariante = lineaClave.replace(/([ABC])$/, '');
-        if (sinVariante && sinVariante !== lineaClave && !porLinea.has(sinVariante)) {
-          porLinea.set(sinVariante, porLinea.get(lineaClave));
-        }
-      }
-
-      const indiceLinea = lineaClave ? porLinea.get(lineaClave) : null;
-      const recorridos = Array.isArray(lineaInfo?.recorridos) ? lineaInfo.recorridos : [];
-
-      for (const rec of recorridos) {
-        const paradas = Array.isArray(rec?.paradas) ? rec.paradas : [];
-        for (const parada of paradas) {
-          registrarParadaCanonicaEnIndice(global, parada);
-          registrarParadaCanonicaEnIndice(indiceLinea, parada);
-        }
-      }
-    }
-  }
-
-  return { global, porLinea };
-}
-
-async function cargarIndiceParadasApi() {
-  if (_indiceParadasApi) return _indiceParadasApi;
-
-  try {
-    const resp = await fetch(RED_TULUM_PARADAS_URL, { cache: 'force-cache' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-    const payload = await resp.json();
-    _indiceParadasApi = construirIndiceParadasApi(payload);
-    return _indiceParadasApi;
-  } catch (err) {
-    console.warn('No se pudo cargar red_tulum_paradas.json para normalizar paradas:', err);
-    _indiceParadasApi = { global: new Map(), porLinea: new Map() };
-    return _indiceParadasApi;
-  }
-}
-
-async function resolverNombreParadaCanonicoParaApi(nombreParada, linea = '') {
-  const txt = String(nombreParada || '').trim().replace(/\s+/g, ' ');
-  if (!txt) return '';
-
-  const indice = await cargarIndiceParadasApi();
-  const clave = crearClaveParadaApi(txt);
-  if (!clave) return txt;
-
-  const clavesLinea = obtenerClavesLineaLookup(linea);
-  const indicesLineaCandidatos = [];
-  for (const lk of clavesLinea) {
-    const idxLinea = indice.porLinea.get(lk);
-    if (idxLinea instanceof Map) indicesLineaCandidatos.push(idxLinea);
-    const canonicaLinea = idxLinea?.get(clave);
-    if (canonicaLinea) return canonicaLinea;
-  }
-
-  // Fallback: si no hubo match exacto, intentar resolver por tokens dentro
-  // de la línea (ayuda con abreviaturas y variantes leves).
-  for (const idxLinea of indicesLineaCandidatos) {
-    const canonicaTokens = resolverCanonicoPorTokensEnIndice(idxLinea, clave);
-    if (canonicaTokens) return canonicaTokens;
-  }
-
-  const canonicaGlobal = indice.global.get(clave);
-  return canonicaGlobal || txt;
-}
-
-async function normalizarNombreParadaParaApi(nombreParada, linea = '') {
-  let txt = String(nombreParada || '').trim().replace(/\s+/g, ' ');
-  if (!txt) return '';
-
-  const direccion = extraerDireccionDesdeNombreParada(txt);
-
-  // Limpia sufijos de orientación/variante para mejorar matching en backend.
-  txt = txt
-    .replace(/\s+[SNEO]\s*-\s*[ABC]\s*$/i, '')
-    .replace(/\s+[SNEO]\s*$/i, '')
-    .replace(/\s*-\s*[ABC]\s*$/i, '')
-    .trim();
-
-  // Correcciones puntuales de escritura y normalización de nombres frecuentes.
-  txt = txt
-    .replace(/\bconmplejo\b/gi, 'complejo')
-    .replace(/\bcomplejo\s+universitario\b/gi, 'complejo')
-    .replace(/\bavenida\s+ignacio\b/gi, 'Av. Ig.')
-    .replace(/\bavenida\b/gi, 'Av.')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  txt = await resolverNombreParadaCanonicoParaApi(txt, linea);
-
-  const variante = extraerVarianteDesdeLinea(linea);
-  if (variante) {
-    const sufijo = direccion ? ` ${direccion} -${variante}` : ` -${variante}`;
-    const re = direccion
-      ? new RegExp(`\\s${direccion}\\s*-\\s*${variante}$`, 'i')
-      : new RegExp(`\\s-\\s*${variante}$`, 'i');
-    if (!re.test(txt)) txt = `${txt}${sufijo}`;
-  }
-
-  return txt;
-}
-
-function formatearHoraDesdeEpochMs(epochMs) {
-  const n = Number(epochMs);
-  if (!Number.isFinite(n)) return '';
-  const d = new Date(n);
-  if (Number.isNaN(d.getTime())) return '';
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
-}
-
-function normalizarHoraTexto(valor) {
-  const txt = String(valor || '').trim();
-  if (!txt) return '';
-
-  const hhmmss = txt.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-  if (hhmmss) {
-    const hh = String(Number(hhmmss[1])).padStart(2, '0');
-    const mm = hhmmss[2];
-    return `${hh}:${mm}`;
-  }
-
-  if (/^\d{12,}$/.test(txt)) {
-    return formatearHoraDesdeEpochMs(Number(txt));
-  }
-
-  return '';
-}
-
-function recolectarTiempoRealDesdeNodo(nodo, salida) {
-  if (!nodo) return;
-
-  if (Array.isArray(nodo)) {
-    for (const item of nodo) recolectarTiempoRealDesdeNodo(item, salida);
-    return;
-  }
-
-  if (typeof nodo !== 'object') return;
-
-  const arrivalsDirectas = nodo?.lineArrivals?.arrivals;
-  if (Array.isArray(arrivalsDirectas)) {
-    for (const a of arrivalsDirectas) {
-      const epochMs = Number(a?.rtEtdUTC ?? a?.staticEtdUTC);
-      const hora = formatearHoraDesdeEpochMs(epochMs);
-      if (hora) salida.push({ hora, epochMs });
-    }
-  }
-
-  const arrivalsNodo = nodo?.arrivals;
-  if (Array.isArray(arrivalsNodo)) {
-    for (const a of arrivalsNodo) {
-      const epochMs = Number(a?.rtEtdUTC ?? a?.staticEtdUTC);
-      const hora = formatearHoraDesdeEpochMs(epochMs);
-      if (hora) salida.push({ hora, epochMs });
-    }
-  }
-
-  // Soporta estructuras donde las llegadas vienen dentro de `raw`.
-  if (nodo.raw != null) {
-    recolectarTiempoRealDesdeNodo(nodo.raw, salida);
-  }
-}
-
-function extraerMensajeDesdePayload(payload) {
-  if (payload == null) return '';
-
-  if (Array.isArray(payload)) {
-    for (const item of payload) {
-      const m = extraerMensajeDesdePayload(item);
-      if (m) return m;
-    }
-    return '';
-  }
-
-  if (typeof payload === 'object') {
-    const message = payload.message;
-    if (typeof message === 'string' && message.trim()) return message.trim();
-    if (payload.raw != null) return extraerMensajeDesdePayload(payload.raw);
-    return '';
-  }
-
-  return '';
-}
-
-function extraerHorarioEstimadoDesdePayload(payload, _seen = null) {
-  if (payload == null) return '';
-
-  if (Array.isArray(payload)) {
-    for (const item of payload) {
-      const h = extraerHorarioEstimadoDesdePayload(item, _seen);
-      if (h) return h;
-    }
-    return '';
-  }
-
-  if (typeof payload === 'object') {
-    const seen = _seen instanceof Set ? _seen : new Set();
-    if (seen.has(payload)) return '';
-    seen.add(payload);
-
-    const he = payload.horario_estimado;
-    if (typeof he === 'string' && he.trim()) return he.trim();
-    if (typeof he === 'number' && Number.isFinite(he)) return String(he);
-
-    if (payload.raw != null) {
-      const h = extraerHorarioEstimadoDesdePayload(payload.raw, seen);
-      if (h) return h;
-    }
-
-    for (const v of Object.values(payload)) {
-      const h = extraerHorarioEstimadoDesdePayload(v, seen);
-      if (h) return h;
-    }
-  }
-
-  return '';
-}
-
-function extraerHorariosDesdePayloadArrivals(payload) {
-  const salidaTiempoReal = [];
-  const mensajeApi = extraerMensajeDesdePayload(payload);
-  const horarioEstimado = extraerHorarioEstimadoDesdePayload(payload);
-  recolectarTiempoRealDesdeNodo(payload, salidaTiempoReal);
-
-  if (salidaTiempoReal.length > 0) {
-    salidaTiempoReal.sort((a, b) => a.epochMs - b.epochMs);
-    const dedup = [];
-    const seen = new Set();
-    for (const it of salidaTiempoReal) {
-      if (seen.has(it.hora)) continue;
-      seen.add(it.hora);
-      dedup.push(it.hora);
-      if (dedup.length >= MAX_HORARIOS_MOSTRAR) break;
-    }
-    return { horarios: dedup, tipoDatos: 'tiempo_real', mensajeApi, horarioEstimado };
-  }
-
-  const esperados = [];
-  const pushExpected = (value) => {
-    if (value == null) return;
-
-    if (Array.isArray(value)) {
-      for (const v of value) pushExpected(v);
-      return;
-    }
-
-    if (typeof value === 'object') {
-      pushExpected(value.horario);
-      pushExpected(value.hora);
-      pushExpected(value.message);
-      pushExpected(value.expected);
-      pushExpected(value.arrival);
-      pushExpected(value.arrivals);
-      pushExpected(value.raw);
-      return;
-    }
-
-    const hora = normalizarHoraTexto(value);
-    if (hora) esperados.push(hora);
-  };
-
-  pushExpected(payload);
-
-  if (esperados.length > 0) {
-    const dedup = [];
-    const seen = new Set();
-    for (const h of esperados) {
-      if (seen.has(h)) continue;
-      seen.add(h);
-      dedup.push(h);
-      if (dedup.length >= MAX_HORARIOS_MOSTRAR) break;
-    }
-    return { horarios: dedup, tipoDatos: 'esperado', mensajeApi, horarioEstimado };
-  }
-
-  return { horarios: [], tipoDatos: 'esperado', mensajeApi, horarioEstimado };
-}
-
-
-async function resolverParadaDesdeJsonConCandidatos(linea, candidatos) {
-  const arr = Array.isArray(candidatos) ? candidatos : [];
-  for (const c of arr) {
-    const res = await resolverParadaDesdeJson(linea, c);
-    if (res?.id_p) return { ...res, paradaInput: c };
-  }
-  return { id_p: '', paradaResuelta: '', paradaInput: '' };
-}
-
-
-
-
-function estimarOffsetArriboParadaSegsDesdeRutas(rutas, paradaLat, paradaLng) {
-  // Estima cuánto tarda el bus desde el “inicio” del recorrido hasta la parada,
-  // usando distancia acumulada sobre la geometría y una velocidad promedio.
-  if (!Array.isArray(rutas) || rutas.length === 0) return 0;
-  const latP = Number(paradaLat);
-  const lngP = Number(paradaLng);
-  if (!Number.isFinite(latP) || !Number.isFinite(lngP)) return 0;
-
-  let best = null;
-  for (const f of rutas) {
-    const latLngs = extraerLatLngsDeGeometria(f?.geometry);
-    if (!Array.isArray(latLngs) || latLngs.length < 2) continue;
-
-    const idx = indiceMasCercanoEnCaminoPreciso(latP, lngP, latLngs);
-    if (idx < 0) continue;
-
-    const p = latLngs[idx];
-    const dToLine = calcularDistancia(latP, lngP, p[0], p[1]);
-    // Si la parada queda demasiado lejos del trazado, evitamos offsets basura
-    if (!Number.isFinite(dToLine) || dToLine > 350) continue;
-
-    const totalLen = distanciaAcumuladaEnCamino(latLngs, 0, latLngs.length - 1);
-    const fromStart = distanciaAcumuladaEnCamino(latLngs, 0, idx);
-    // Como no sabemos si start_time corresponde al extremo A o B, tomamos el menor
-    // (equivale a asumir que el servicio puede iniciar en cualquiera de los extremos).
-    const along = Math.min(fromStart, Math.max(0, totalLen - fromStart));
-    const offsetSecs = along / BUS_SPEED_M_S;
-
-    if (!best || dToLine < best.dToLine) {
-      best = { offsetSecs, dToLine };
-    }
-  }
-
-  return best && Number.isFinite(best.offsetSecs) ? Math.max(0, Math.round(best.offsetSecs)) : 0;
-}
-
-/**
- * Genera el HTML con los próximos horarios para mostrar en el bottom-sheet.
- */
-function renderHorariosLlegada(horarios, lineaRef, lineaNombre, headwaySecs = 0, mostrarVolverParada = false, opts = {}) {
-  const titulo = lineaRef ? `Línea ${escapeHtml(lineaRef)}` : 'Línea';
-  const detalle = lineaNombre ? ` — ${escapeHtml(lineaNombre)}` : '';
-  const headwayMins = headwaySecs > 0 ? Math.round(headwaySecs / 60) : 0;
-  const tipoDatos = opts?.tipoDatos === 'tiempo_real' ? 'tiempo_real' : (opts?.tipoDatos === 'error' ? 'error' : 'esperado');
-  const apiFallo = Boolean(opts?.apiFallo);
-  const esTiempoReal = tipoDatos === 'tiempo_real';
-  const esError = tipoDatos === 'error';
-  const colorPrincipal = esTiempoReal ? '#1E8E3E' : '#007BFF';
-  const subtituloProximo = esTiempoReal ? '🟢 Tiempo real' : '⏱ Horario esperado';
-  const textoPie = esTiempoReal
-    ? 'Datos en tiempo real obtenidos desde arrivals API'
-    : 'Horarios esperados obtenidos desde arrivals API';
-  const mensajeApi = typeof opts?.mensajeApi === 'string' ? opts.mensajeApi.trim() : '';
-  const horarioEstimado = typeof opts?.horarioEstimado === 'string' ? opts.horarioEstimado.trim() : '';
-
-  const volverHtml = htmlFilaVolverALineasDeParada(mostrarVolverParada);
-
-  const paradaInfoHtml = opts?.paradaConsultada
-    ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted, #777);">Parada: ${escapeHtml(opts.paradaConsultada)}</p>`
-    : '';
-
-  // Si falló la API, mostrar mensaje de error
-  if (esError && apiFallo) {
-    return `
-      ${volverHtml}
-      <p style="margin: 0 0 14px 0; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
-      ${paradaInfoHtml}
-      <div style="
-        padding: 16px 14px;
-        border-radius: 10px;
-        background: rgba(220, 38, 38, 0.08);
-        border: 1px solid rgba(220, 38, 38, 0.3);
-        margin: 12px 0;
-      ">
-        <p style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary, #333); font-weight: 600;">❌ Fallo en la consulta de API</p>
-        <p style="margin: 0; font-size: 13px; color: var(--text-secondary, #666);">${escapeHtml(mensajeApi)}</p>
-      </div>
-      <p style="margin: 12px 0 0 0; font-size: 12px; color: var(--text-muted, #aaa); text-align: center;">Por favor, intenta de nuevo en unos momentos.</p>
-    `;
-  }
-
-  const mensajeMinMatch = mensajeApi.match(/^\s*(\d+)\s*min(?:utos?)?\s*$/i);
-  const mensajeHoraMatch = mensajeApi.match(/^\s*(\d{1,2}:\d{2})\s*$/);
-  const mensajeComoLlegadaHtml = mensajeMinMatch
-    ? `
-      <li style="
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px 14px;
-        border-radius: 10px;
-        background: rgba(30,142,62,0.10);
-        border: 1px solid rgba(30,142,62,0.35);
-        margin-bottom: 10px;
-      ">
-        <span style="font-size: 36px; font-weight: 700; color: #1E8E3E; min-width: 70px;">${escapeHtml(mensajeApi)}</span>
-        <span style="font-size: 13px; color: var(--text-secondary, #888);">🟢 Próxima llegada</span>
-      </li>
-    `
-    : (mensajeHoraMatch
-      ? `
-        <li style="
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 16px 14px;
-          border-radius: 10px;
-          background: rgba(120,120,120,0.10);
-          border: 1px solid rgba(120,120,120,0.35);
-          margin-bottom: 10px;
-        ">
-          <span style="font-size: 36px; font-weight: 700; color: #5f6368; min-width: 70px;">${escapeHtml(mensajeHoraMatch[1])}</span>
-          <span style="font-size: 13px; color: var(--text-secondary, #888);">⏱ Horario esperado</span>
-        </li>
-      `
-      : '');
-
-  const estimadoMinMatch = horarioEstimado.match(/^\s*(\d+)\s*min(?:utos?)?\s*$/i);
-  const estimadoHoraMatch = horarioEstimado.match(/^\s*(\d{1,2}:\d{2})\s*$/);
-  const estimadoComoLlegadaHtml = estimadoMinMatch
-    ? `
-      <li style="
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px 14px;
-        border-radius: 10px;
-        background: rgba(120,120,120,0.10);
-        border: 1px solid rgba(120,120,120,0.35);
-        margin-bottom: 10px;
-      ">
-        <span style="font-size: 36px; font-weight: 700; color: #5f6368; min-width: 70px;">${escapeHtml(horarioEstimado)}</span>
-        <span style="font-size: 13px; color: var(--text-secondary, #888);">⏱ Estimado</span>
-      </li>
-    `
-    : (estimadoHoraMatch
-      ? `
-        <li style="
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 16px 14px;
-          border-radius: 10px;
-          background: rgba(120,120,120,0.10);
-          border: 1px solid rgba(120,120,120,0.35);
-          margin-bottom: 10px;
-        ">
-          <span style="font-size: 36px; font-weight: 700; color: #5f6368; min-width: 70px;">${escapeHtml(estimadoHoraMatch[1])}</span>
-          <span style="font-size: 13px; color: var(--text-secondary, #888);">⏱ Estimado</span>
-        </li>
-      `
-      : '');
-
-
-  // Bloque de anuncios (igual que en el spinner y lista de líneas)
-  const adsHtml = `<div class="tsj-ad-slot" data-tsj-ads-placeholder="da8bd74959eaf231b990a00938209088"></div>`;
-
-  if (!horarios || horarios.length === 0) {
-    if (mensajeComoLlegadaHtml) {
-      return `
-        ${volverHtml}
-        <p style="margin-bottom: 12px; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
-        ${paradaInfoHtml}
-        <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
-        <ul style="list-style: none; padding: 0; margin: 0;">${mensajeComoLlegadaHtml}</ul>
-        ${adsHtml}
-        <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
-      `;
-    }
-
-    if (estimadoComoLlegadaHtml) {
-      return `
-        ${volverHtml}
-        <p style="margin-bottom: 12px; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
-        ${paradaInfoHtml}
-        <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
-        <ul style="list-style: none; padding: 0; margin: 0;">${estimadoComoLlegadaHtml}</ul>
-        ${adsHtml}
-        <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
-      `;
-    }
-
-    return `
-      ${volverHtml}
-      <p style="margin-bottom: 12px; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
-      ${paradaInfoHtml}
-      ${adsHtml}
-      <p style="font-size: 14px; color: var(--text-muted, #999); text-align: center; padding: 14px 0;">Sin datos de horarios disponibles.</p>
-    `;
-  }
-
-  const itemsHorarios = horarios.map((h, i) => {
-    const esProximo = i === 0;
-    const subtitulo = esProximo
-      ? subtituloProximo
-      : headwayMins > 0
-        ? `En ~${headwayMins * i} min`
-        : '';
-    return `
-      <li style="
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px 14px;
-        border-radius: 10px;
-        background: ${esProximo ? (esTiempoReal ? 'rgba(30,142,62,0.10)' : 'rgba(0,123,255,0.08)') : 'transparent'};
-        border: 1px solid ${esProximo ? (esTiempoReal ? 'rgba(30,142,62,0.35)' : 'rgba(0,123,255,0.25)') : 'rgba(0,0,0,0.07)'};
-        margin-bottom: 10px;
-      ">
-        <span style="font-size: 32px; font-weight: 700; color: ${esProximo ? colorPrincipal : 'var(--text-primary, #333)'}; min-width: 70px;">${escapeHtml(h)}</span>
-        <span style="font-size: 13px; color: var(--text-secondary, #888);">${subtitulo}</span>
-      </li>
-    `;
-  }).join('');
-
-  const items = `${mensajeComoLlegadaHtml}${itemsHorarios}`;
-
-  return `
-    ${volverHtml}
-    <p style="margin: 0 0 14px 0; font-size: 16px; color: var(--text-primary, #333); font-weight: 600;">${titulo}</p>
-    ${paradaInfoHtml}
-    <h4 style="margin: 0 0 14px 0; font-size: 18px; font-weight: 700; color: var(--text-primary, #222); text-transform: uppercase; letter-spacing: 0.5px;">🚌 Próximas llegadas</h4>
-    <ul style="list-style: none; padding: 0; margin: 0;">${items}</ul>
-    ${adsHtml}
-    <p style="margin: 14px 0 0 0; font-size: 11px; color: var(--text-muted, #aaa); text-align: center;">${textoPie}</p>
-  `;
 }
 
 function renderEstadoCargaArribos(lineaRef, lineaNombre) {
@@ -5780,17 +4893,8 @@ async function mostrarRecorridoDeLinea(ref, name = '', rutaIndex = null, inverti
   if (paradaOrigen) {
     try {
       const paradaOrigenNombre = obtenerNombreParadaBase(paradaOrigen);
-      const mapaHorarios = await cargarHorariosAproximados();
-      const lineaEntryArribos = buscarLineaEnHorariosAproximados(mapaHorarios, ref);
-      if (!lineaEntryArribos) {
-        infoArribosHtml = renderArribosPreviewHtml([], paradaOrigenNombre, true);
-      } else {
-        const candidatosArribos = obtenerCandidatosNombreParada(paradaOrigen, paradaOrigenNombre);
-        const stopMatchArribos = buscarParadaEnLineaAproximada(lineaEntryArribos, candidatosArribos);
-        const offsetMinArribos = Number(stopMatchArribos?.est_offset_min) || 0;
-        const itemsArribos = generarProximasLlegadasAproximadas(lineaEntryArribos, offsetMinArribos, new Date(), 3);
-        infoArribosHtml = renderArribosPreviewHtml(itemsArribos, paradaOrigenNombre, false);
-      }
+      const { items: itemsArribos, sinDatos } = await obtenerArribosDeLinea(paradaOrigen, ref, 3);
+      infoArribosHtml = renderArribosPreviewHtml(itemsArribos, paradaOrigenNombre, sinDatos);
     } catch (err) {
       console.warn('Error calculando horario aproximado en recorrido de línea:', err);
       infoArribosHtml = renderArribosPreviewHtml([], obtenerNombreParadaBase(paradaOrigen), true);
@@ -5961,7 +5065,7 @@ function mostrarLineasEnContenedorParadas(feature, opts = {}) {
     <div style="display: flex; flex-direction: column; gap: 12px; padding: 4px 0 16px 0;">
       <ul class="bs-nav-rows">
         <li>
-          <button type="button" class="btn-nav-row" onclick="iniciarPlaneoRutaHastaParadaSeleccionada(window._currentFeature || null)">
+          <button type="button" class="btn-nav-row" data-route-plan="1" onclick="iniciarPlaneoRutaHastaParadaSeleccionada(window._currentFeature || null)">
             🎯 Planificar viaje hacia esta parada
           </button>
         </li>
@@ -6988,28 +6092,29 @@ async function llegadasPorLineaEnParada(feature, maxLineas = AV_MAX_LINEAS_PARAD
   if (lineas.length === 0) return { items: [], total: 0 };
 
   const seleccion = lineas.slice(0, maxLineas);
-  let mapaHorarios = null;
+  let rt = null;
   try {
-    mapaHorarios = await cargarHorariosAproximados();
+    rt = await cargarApiHorarios();
   } catch {
-    mapaHorarios = null;
+    rt = null;
   }
 
   const nombreBase = typeof obtenerNombreParadaBase === 'function' ? obtenerNombreParadaBase(feature) : '';
   const candidatos = typeof obtenerCandidatosNombreParada === 'function'
     ? obtenerCandidatosNombreParada(feature, nombreBase)
     : [nombreBase];
-  const ahora = new Date();
 
   const items = seleccion.map((l) => {
     const ref = String(l.ref || l.name || '').trim();
     const base = { ref, nombre: String(l.name || '').trim(), proxima: null };
-    const entry = mapaHorarios ? buscarLineaEnHorariosAproximados(mapaHorarios, ref) : null;
-    if (!entry) return base;
 
-    const stopMatch = buscarParadaEnLineaAproximada(entry, candidatos);
-    const offsetMin = Number(stopMatch?.est_offset_min) || 0;
-    const proximas = generarProximasLlegadasAproximadas(entry, offsetMin, ahora, 1);
+    const entrada = resolverLineaEnIndice(rt, ref);
+    if (!entrada) return base;
+
+    const parada = buscarParadaEnLinea(entrada, candidatos);
+    if (!parada) return base;
+
+    const proximas = proximasLlegadasDeLinea(rt, entrada.linea, parada.id, 1);
     return { ...base, proxima: proximas[0] || null };
   });
 
@@ -10382,33 +9487,6 @@ async function obtenerIndiceParadasPuntosPorId() {
   return _indiceParadasPuntosPorId;
 }
 
-async function obtenerIndiceLineasPorStopId() {
-  if (_indiceLineasPorStopId) return _indiceLineasPorStopId;
-
-  const data = await cargarParadasPorLinea();
-  const map = new Map();
-  _stopIdsSetPorLinea = new Map();
-
-  for (const ref of Object.keys(data || {})) {
-    const paradasObj = data?.[ref]?.paradas;
-    if (!paradasObj || typeof paradasObj !== 'object') continue;
-
-    const set = new Set();
-    for (const stopId of Object.values(paradasObj)) {
-      const sid = typeof stopId === 'string' ? stopId.trim() : '';
-      if (!sid) continue;
-      set.add(sid);
-      const prev = map.get(sid);
-      if (prev) prev.add(ref);
-      else map.set(sid, new Set([ref]));
-    }
-    _stopIdsSetPorLinea.set(ref, set);
-  }
-
-  _indiceLineasPorStopId = map;
-  return _indiceLineasPorStopId;
-}
-
 async function obtenerStopsIndexPorLinea() {
   if (_stopsIndexPorLinea) return _stopsIndexPorLinea;
   const idxByLine = new Map();
@@ -10446,13 +9524,6 @@ async function obtenerStopsIndexPorLinea() {
 
   _stopsIndexPorLinea = idxByLine;
   return _stopsIndexPorLinea;
-}
-
-function stopIdsDeLinea(ref) {
-  const r = String(ref || '').trim();
-  if (!r) return new Set();
-  const set = _stopIdsSetPorLinea?.get(r);
-  return set instanceof Set ? set : new Set();
 }
 
 function stopIdsDeLineaRelations(ref) {
@@ -10616,7 +9687,43 @@ function encuadrarOrigenYDestinoPlaneo(latOrigen, lngOrigen, latDestino, lngDest
   }
 }
 
+// Paneles propios del planificador: si se entra a "Opciones de ruta" desde uno de
+// ellos no hay que pisar la vista previa, o el "← Volver" terminaría dando vueltas
+// dentro del planificador en vez de salir a donde arrancó el usuario.
+const TITULOS_PLANIFICADOR = new Set([
+  'opciones de ruta', 'punto de partida', 'elegir destino', 'planificar viaje', 'ruta',
+]);
+
+/** Recuerda el panel desde el que se pidió planear un viaje. */
+function recordarVistaPreviaPlaneo() {
+  const previa = _bottomSheetActual;
+  if (!previa) return;
+  if (TITULOS_PLANIFICADOR.has(String(previa.titulo || '').trim().toLowerCase())) return;
+  _routePlanVistaPrevia = previa;
+}
+
+/** Vuelve al panel desde el que se abrió el planificador. */
+function volverAVistaPreviaPlaneo() {
+  const previa = _routePlanVistaPrevia;
+  if (!previa) return false;
+  abrirBottomSheet(previa.titulo, previa.contenidoHtml, previa.tipo, previa.subtitulo);
+  return true;
+}
+
+/** Fila "← Volver" para el panel de opciones de ruta. '' si no hay a dónde volver. */
+function htmlFilaVolverDesdePlaneo() {
+  const previa = _routePlanVistaPrevia;
+  if (!previa) return '';
+  const tipo = String(previa.tipo || '').trim();
+  const destino = tipo === 'parada' ? 'a la parada'
+    : tipo === 'ubicacion' ? 'al lugar'
+      : tipo === 'linea' ? 'a la línea' : '';
+  const label = destino ? `← Volver ${destino}` : '← Volver';
+  return `<ul class="bs-nav-rows"><li><button type="button" class="btn-nav-row" data-route-back="previo">${escapeHtml(label)}</button></li></ul>`;
+}
+
 async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
+  recordarVistaPreviaPlaneo();
   limpiarRecorrido();
   const layerParadas = asegurarParadasLayer();
   if (layerParadas) layerParadas.clearLayers();
@@ -10634,7 +9741,8 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
   try {
     abrirBottomSheet(
       'Opciones de ruta',
-      '<div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">'
+      htmlFilaVolverDesdePlaneo()
+      + '<div class="bottom-sheet-loading" role="status" aria-live="polite" aria-busy="true">'
       + '<div class="bottom-sheet-loading-spinner" aria-hidden="true"></div>'
       + '<p class="bottom-sheet-loading-title">Calculando opciones...</p>'
       + '</div>',
@@ -10812,6 +9920,7 @@ async function mostrarOpcionesRutaParaTarget(permitirTrasbordo) {
   `;
 
   const html = `
+    ${htmlFilaVolverDesdePlaneo()}
     ${origenRowHtml}
     <p style="margin: 0 0 10px 0; font-size: 17px; font-weight: 900; color: var(--text-primary, #222); text-align: center;">Sin trasbordo</p>
     ${directHtml}

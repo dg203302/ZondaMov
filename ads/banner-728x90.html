@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <title>Publicidad</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 728px;
+      height: 90px;
+      overflow: hidden;
+      background: transparent;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Unidad de 728x90. Va en su propia página, cargada dentro de un <iframe> desde
+       index.html, por dos motivos:
+
+       1. invoke.js lee la global `atOptions` en el momento en que se ejecuta. Si
+          hubiera dos unidades en la misma ventana, la segunda pisaría la configuración
+          de la primera. Acá cada anuncio tiene su propio window.
+       2. El script escribe en el documento donde corre; así lo hace en este, y no en
+          el de la app.
+
+       El contenedor de index.html (#app-banner) lo escala al ancho del dock inferior:
+       este documento siempre mide 728x90. -->
+  <script>
+    atOptions = {
+      'key': '9a000db7ff1f20cd9e4bccb0b2cfe021',
+      'format': 'iframe',
+      'height': 90,
+      'width': 728,
+      'params': {}
+    };
+  </script>
+  <script src="https://www.highrevenueformat.com/9a000db7ff1f20cd9e4bccb0b2cfe021/invoke.js"></script>
+</body>
+
+</html>
