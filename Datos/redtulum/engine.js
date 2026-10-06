@@ -1,5 +1,7 @@
 /**
- * Motor de consulta sobre el índice compacto (formato 2) generado por tools/build-index.mjs.
+ * Motor de consulta sobre el índice compacto generado por scripts/redtulum/build-index.mjs
+ * (formato 2, patrones de viaje) o por scripts/redtulum/build-colectivossj.mjs (formato 3,
+ * horas por parada en `route.times`). Un mismo índice puede traer las dos estructuras.
  *
  * Módulo ES sin dependencias ni APIs de Node: corre igual en el navegador, en Deno y en Node.
  * El arranque es liviano a propósito: lo costoso (formateador de zona horaria, normalización
@@ -53,7 +55,7 @@ export function naturalCompare(a, b) {
 /* -------------------------------------------------------------- motor */
 
 export function createEngine(index, { tz: tzOverride } = {}) {
-  if (!index || index.meta?.formato !== 2) throw new Error('Índice inválido o de un formato no soportado (se espera formato 2)');
+  if (!index || ![2, 3].includes(index.meta?.formato)) throw new Error('Índice inválido o de un formato no soportado (se espera formato 2 o 3)');
 
   const tz = tzOverride || index.meta.tz || 'America/Argentina/San_Juan';
   const services = index.services;
@@ -74,7 +76,7 @@ export function createEngine(index, { tz: tzOverride } = {}) {
     for (const m of posBySeq) for (const s of m.keys()) stopSet.add(s);
     let primary = 0;
     r.seqs.forEach((seq, i) => { if (seq.length > r.seqs[primary].length) primary = i; });
-    return { ...r, posBySeq, stopSet, primary };
+    return { ...r, posBySeq, stopSet, primary, timesCache: new Map() };
   });
 
   const routeByLine = new Map(routes.map((r) => [normLine(r.linea), r]));
@@ -110,6 +112,22 @@ export function createEngine(index, { tz: tzOverride } = {}) {
 
   /* ------------------------------------------------------------ tiempo */
 
+  /** Formato 3: horas de una parada (minutos por calendario). Se guardan como deltas; se decodifican una vez. */
+  function timesAt(route, stopIdx) {
+    const raw = route.times?.[stopIdx];
+    if (!raw) return null;
+    let dec = route.timesCache.get(stopIdx);
+    if (!dec) {
+      dec = {};
+      for (const cal in raw) {
+        let acc = 0;
+        dec[cal] = raw[cal].map((d) => (acc += d));
+      }
+      route.timesCache.set(stopIdx, dec);
+    }
+    return dec;
+  }
+
   /** Fecha calendario (yyyymmdd) y día de semana (0 = domingo) de base + offset días. */
   function dayInfo(base, offset) {
     const dt = new Date(Date.UTC(base.y, base.mo - 1, base.d + offset));
@@ -139,7 +157,21 @@ export function createEngine(index, { tz: tzOverride } = {}) {
     for (const off of [-1, 0, 1]) {
       const day = dayInfo(base, off);
       const nowInServiceDay = base.secs - off * 86400;
-      for (const pat of route.patterns) {
+      const porParada = timesAt(route, stopIdx);
+      if (porParada) {
+        // Formato 3: lista de horas (minutos) por calendario, ya ordenada.
+        for (const svc in porParada) {
+          if (!serviceActive(svc, day)) continue;
+          const mins = porParada[svc];
+          const first = lowerBound(mins, nowInServiceDay / 60);
+          const last = Math.min(mins.length, first + n);
+          for (let k = first; k < last; k++) {
+            const t = mins[k] * 60;
+            found.push({ wait: t - nowInServiceDay, t, off });
+          }
+        }
+      }
+      for (const pat of route.patterns || []) {
         const positions = route.posBySeq[pat.seq].get(stopIdx);
         if (!positions) continue;
         for (const svc in pat.starts) {

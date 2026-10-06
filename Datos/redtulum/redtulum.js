@@ -21,6 +21,7 @@ const fail = (codigo, error, extra) => ({ error, codigo, ...extra });
 
 export function createRedTulum(index, options = {}) {
   const E = createEngine(index, options);
+  const aviso = index.meta?.aviso || AVISO; // cada índice puede aclarar de dónde salen sus horarios
 
   /** Resuelve la parada: id exacto (ST0001) o texto. Devuelve { idx } o { fallo }. */
   function resolveStop(param, route) {
@@ -94,7 +95,7 @@ export function createRedTulum(index, options = {}) {
         .filter((l) => l.proximos.length > 0)
         .sort((a, c) => a.proximos[0].en_min - c.proximos[0].en_min);
 
-      return { parada: E.stopInfo(idx), consulta_local: E.fmtBase(b), lineas, aproximado: true, aviso: AVISO };
+      return { parada: E.stopInfo(idx), consulta_local: E.fmtBase(b), lineas, aproximado: true, aviso };
     },
 
     /** Próximas pasadas de UNA línea por una parada. `parada` = id (ST0001) o texto del nombre. */
@@ -125,7 +126,7 @@ export function createRedTulum(index, options = {}) {
         consulta_local: E.fmtBase(b),
         proximos: E.nextArrivals(route, r.idx, b, clampInt(n, 5, 1, 20)),
         aproximado: true,
-        aviso: AVISO,
+        aviso,
       };
     },
   };

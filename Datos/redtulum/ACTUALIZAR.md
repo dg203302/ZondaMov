@@ -131,8 +131,40 @@ URL es la única forma de invalidar la caché.
 Conviene subir también el `?v=` de `script_index.js` en `index.html` (buscá
 `script_index.js?v=`, cerca de la línea 8493).
 
-Después: commit de `Datos/redtulum/index.json`, del GTFS nuevo y de los dos `?v=`, y
+Regenerá también las páginas de SEO (una por línea, listado y `sitemap.xml`), que salen del
+mismo `index.json`:
+
+```bash
+node scripts/seo/generar-paginas-lineas.mjs
+```
+
+Después: commit de `Datos/redtulum/index.json`, de `linea/`, `lineas/` y `sitemap.xml`, del GTFS nuevo y de los dos `?v=`, y
 desplegá.
+
+---
+
+## Caso C — Horarios reales desde colectivossj.com.ar (formato 3)
+
+Alternativa al GTFS aproximado: `scripts/redtulum/build-colectivossj.mjs` convierte los JSON
+que esa web sirve desde su CDN (`topology`, `stops`, `schedules`) en un índice formato 3, con
+la hora real de paso por parada en vez de frecuencias interpoladas, y con coordenadas
+(`coords`). Antes de usarlo en producción, pedile permiso al autor y acordá atribución.
+
+```bash
+node scripts/redtulum/build-colectivossj.mjs --descargar     # baja a Datos/colectivossj_src/ y genera
+node scripts/redtulum/verificar-colectivossj.mjs             # tiene que dar 0 diferencias
+```
+
+Genera `Datos/redtulum/index.colectivossj.json` (no pisa el índice en uso). Para usarlo,
+renombralo a `index.json` y subí el `?v=` como en el Caso A, paso 5. Opciones: `--src`,
+`--out`, `--gtfs-previo` (de ahí salen nombre y agencia de cada línea), `--dias-vigencia`
+(60 por defecto; pasado ese plazo el motor no devuelve nada) y `--corte-madrugada`.
+
+Límites conocidos de los datos de origen (el conversor no los corrige):
+- 6 líneas sin horarios: 342, 441-A, 501, 505, 602, 850.
+- Lunes a viernes sin la mañana en 9 líneas (100, 101, 102, 103, 104, 127, 212, 261, E).
+- Domingo cortado alrededor de las 14 h en ~39 líneas.
+- Sin feriados ni desvíos, igual que el caso A.
 
 ---
 
