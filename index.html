@@ -7,7 +7,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <title>ZondaMov</title>
+  <title>ZondaMov: colectivos y horarios de San Juan en el mapa (RedTulum)</title>
+  <meta name="description"
+    content="Mirá en el mapa las líneas de colectivo de San Juan, sus paradas y los próximos horarios de RedTulum. Gratis, sin registro y desde el celular.">
+  <link rel="canonical" href="https://zondamov.com.ar/">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="application-name" content="ZondaMov">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ZondaMov">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:title" content="ZondaMov: colectivos y horarios de San Juan en el mapa">
+  <meta property="og:description"
+    content="Líneas, paradas y próximos horarios de RedTulum en el mapa de San Juan. Gratis y sin registro.">
+  <meta property="og:url" content="https://zondamov.com.ar/">
+  <meta property="og:image" content="https://zondamov.com.ar/Icons/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="apple-touch-icon" href="Icons/apple-icon-180.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://zondamov.com.ar/#sitio",
+        "url": "https://zondamov.com.ar/",
+        "name": "ZondaMov",
+        "inLanguage": "es-AR"
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://zondamov.com.ar/#app",
+        "name": "ZondaMov",
+        "url": "https://zondamov.com.ar/",
+        "description": "App web de transporte público de San Juan, Argentina: líneas de colectivo, paradas y próximos horarios de RedTulum en el mapa.",
+        "applicationCategory": "TravelApplication",
+        "operatingSystem": "Web, Android, iOS",
+        "inLanguage": "es-AR",
+        "areaServed": { "@type": "AdministrativeArea", "name": "San Juan, Argentina" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ARS" },
+        "isPartOf": { "@id": "https://zondamov.com.ar/#sitio" }
+      }
+    ]
+  }
+  </script>
   <link rel="icon" type="image/png" href="Icons/logo transit.png" />
   <style>
     /* Convención de esta hoja: TODA regla :hover va dentro de
@@ -8179,6 +8223,12 @@
     </div>
   </div>
 
+  <noscript>
+    <p style="padding:16px;font-family:system-ui,sans-serif">ZondaMov necesita JavaScript para mostrar el mapa.
+      Mientras tanto podés consultar el <a href="/lineas/">listado de líneas de colectivo de San Juan</a>
+      con sus recorridos, paradas y horarios.</p>
+  </noscript>
+
   <main>
     <!-- VISTA 1: DASHBOARD INICIAL -->
     <section id="view-dashboard" class="app-view active">
@@ -8436,6 +8486,7 @@
             </div>
           </div>
           <div class="credits-list">
+            <p><a href="/lineas/">Todas las líneas de colectivo de San Juan</a></p>
             <p>Créditos a <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a></p>
             <p>Créditos a <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a></p>
             <p>Créditos a <a href="https://lucide.dev/" target="_blank" rel="noopener">Lucide</a></p>
@@ -8797,7 +8848,7 @@
   </footer>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="scripts/script_index.js?v=2026-09-19-arribos-ui"></script>
+  <script src="scripts/script_index.js?v=2026-10-06-enlace-linea"></script>
 </body>
 
 </html>

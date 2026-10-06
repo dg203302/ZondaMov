@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+# GTFS crudo (18 MB): no tiene sentido rastrearlo. NO bloquear /Datos/ entero ni /scripts/:
+# la app los necesita para renderizar y Googlebot tiene que poder cargarlos.
+Disallow: /Datos/redtulum_gtfs_aproximado_v2/
+
+Sitemap: https://zondamov.com.ar/sitemap.xml

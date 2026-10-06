@@ -10353,6 +10353,53 @@ function seguirCargaDelMapa(desde = 15, hasta = 88) {
   });
 }
 
+// ─── Enlace profundo a una línea: /?linea=100 ──────────────────────────────
+// Lo usan las páginas estáticas de SEO (linea/<slug>/) para abrir la app directo en el
+// recorrido de esa línea. La app es de una sola URL, así que la línea viaja por query.
+const CENTRO_SAN_JUAN = { lat: -31.5375, lng: -68.5364 };
+
+/** Línea pedida por la URL (?linea=), o '' si no hay o no es razonable. */
+function leerLineaDeUrl() {
+  try {
+    const valor = (new URLSearchParams(window.location.search).get('linea') || '').trim();
+    return valor.length > 0 && valor.length <= 20 ? valor : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Abre el recorrido de la línea pedida por la URL. Compara sin guiones ni espacios
+ * ("440-A", "440 a" y "440A" son lo mismo), igual que el resto de la app.
+ * Devuelve true si la abrió; si la línea no existe en el mapa devuelve false y no toca nada.
+ */
+async function abrirLineaDesdeUrl(param) {
+  const clave = (v) => String(v ?? '').replace(/[-\s]/g, '').toUpperCase();
+  const data = await cargarParadasGeojson();
+  if (!data) return false;
+
+  const objetivo = clave(param);
+  const ruta = data.features.find((f) => {
+    const p = f?.properties;
+    return p && p.type === 'route' && p.route === 'bus' && typeof p.ref === 'string' && clave(p.ref) === objetivo;
+  });
+  if (!ruta) return false;
+
+  // Quien llega desde un buscador no dio permiso de ubicación: el mapa se crea acá,
+  // centrado en la ciudad, y mostrarRecorridoDeLinea() lo encuadra sobre el recorrido.
+  cambiarVista('view-map');
+  if (!leafletMap) cargarLF(CENTRO_SAN_JUAN, ZOOM_CALLE);
+  if (!leafletMap) return false;
+
+  // El mapa acaba de crearse o de mostrarse: sin esto Leaflet todavía cree que el
+  // contenedor mide 0 y el fitBounds del recorrido termina en el zoom máximo.
+  reaplicarVistaMapaActiva();
+  await mostrarRecorridoDeLinea(ruta.properties.ref.trim(), ruta.properties.name || '');
+  requestAnimationFrame(() => reaplicarVistaMapaActiva());
+  window.setTimeout(() => reaplicarVistaMapaActiva(), 300);
+  return true;
+}
+
 window.onload = async () => {
   try {
     actualizarPasoPantallaCarga('Buscando tu ubicación...');
@@ -10366,6 +10413,12 @@ window.onload = async () => {
     //  · las tiles del mapa cubren el arranque (12 → 38);
     //  · la descarga del GeoJSON de paradas —decenas de MB, lo que de verdad se está
     //    esperando— cubre el grueso (38 → 95).
+    const lineaUrl = leerLineaDeUrl();
+    // Con ?linea= el mapa se crea antes de seguir sus tiles, así la barra de carga lo engancha.
+    if (lineaUrl) {
+      cambiarVista('view-map');
+      cargarLF(CENTRO_SAN_JUAN, ZOOM_CALLE);
+    }
     const cargaDelMapa = seguirCargaDelMapa(12, 38);
 
     // El tramo del GeoJSON arranca justo donde terminan las tiles (38) en vez de
@@ -10376,7 +10429,15 @@ window.onload = async () => {
       actualizarProgresoPantallaCarga(38 + (57 * fraccion));
     };
 
-    const centrado = Centrar();
+    // Con ?linea= no se pide la ubicación al arrancar: se abre el recorrido. Si esa línea no
+    // existe en el mapa, se vuelve al inicio y se arranca como siempre.
+    const centrado = lineaUrl
+      ? abrirLineaDesdeUrl(lineaUrl).then((abierta) => {
+        if (abierta) return undefined;
+        cambiarVista('view-dashboard');
+        return Centrar();
+      })
+      : Centrar();
 
     // Tener el mapa dibujado es lo que sí hay que esperar antes de mostrar la app.
     await cargaDelMapa;

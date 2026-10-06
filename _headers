@@ -1,0 +1,8 @@
+# Datos y scripts que la app necesita cargar, pero que no deben aparecer como resultados de búsqueda.
+# "noindex" no impide que Googlebot los descargue para renderizar la página.
+/Datos/*
+  X-Robots-Tag: noindex
+/scripts/*
+  X-Robots-Tag: noindex
+/ads/*
+  X-Robots-Tag: noindex
